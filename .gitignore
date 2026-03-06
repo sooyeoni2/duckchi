@@ -1,6 +1,7 @@
 # IntelliJ
 .idea/
 *.iml
+.mvn/
 
 # Gradle
 .gradle/
@@ -28,3 +29,4 @@ ios/Pods/
 
 # local config
 application-local.yml
+
