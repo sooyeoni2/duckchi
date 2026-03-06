@@ -1,0 +1,30 @@
+# IntelliJ
+.idea/
+*.iml
+
+# Gradle
+.gradle/
+build/
+out/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.*
+
+# Node
+node_modules/
+
+# React Native
+android/.gradle/
+android/app/build/
+ios/Pods/
+
+# local config
+application-local.yml
