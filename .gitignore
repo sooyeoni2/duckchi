@@ -28,5 +28,4 @@ android/app/build/
 ios/Pods/
 
 # local config
-application-local.yml
 
