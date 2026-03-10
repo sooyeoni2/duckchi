@@ -5,10 +5,10 @@ const mockProfileDetail: ProfileDetailDto = {
   userId: 1,
   email: 'test@ssafy.co.kr',
   name: '김싸피',
-  tag: '#DADADA',
+  tag: '#123',
   transferLimit: 30000,
   createdAt: '2026-03-04T12:41:30+09:00',
-  profileImageUrl: 'https://i.pravatar.cc/150?img=3',
+  profileImageUrl: 'https://api.dicebear.com/9.x/lorelei/png?seed=duckduck&size=150',
   accounts: [
     {
       accountId: 10,

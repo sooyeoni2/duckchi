@@ -2,7 +2,7 @@ import { MaterialCommunityIcons as MaterialDesignIcons } from '@expo/vector-icon
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import React from 'react';
 import { HomeScreen } from '../../features/home/HomeScreen';
-import { ProfileScreen } from '../../features/profile/ProfileScreen';
+import { ProfileScreen } from '../../features/profile/presentation/profile/ProfileScreen';
 import { ReportScreen } from '../../features/report/ReportScreen';
 import { RoomScreen } from '../../features/room/RoomScreen';
 import { AppTabParamList } from './types';
