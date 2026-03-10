@@ -1,10 +1,10 @@
 import type { BadgeListEntity, ProfileEntity, ProfileSummaryEntity } from '../../domain/profile/ProfileEntity';
-import type { ProfileEditRequest } from './profileDto';
+import type { ProfileEditParams, ProfileRepository } from '../../domain/profile/ProfileRepository';
 import { ProfileMapper } from './profileMapper';
 import type { ProfileDataSource } from './dataSource/ProfileDataSource';
 import { mockProfileDataSource } from './dataSource/MockProfileDataSource';
 
-export class ProfileRepositoryImpl {
+export class ProfileRepositoryImpl implements ProfileRepository {
   constructor(private readonly dataSource: ProfileDataSource = mockProfileDataSource) {}
 
   async fetchProfileDetail(): Promise<ProfileEntity> {
@@ -12,8 +12,8 @@ export class ProfileRepositoryImpl {
     return ProfileMapper.toEntity(dto);
   }
 
-  async patchProfile(request: ProfileEditRequest): Promise<ProfileSummaryEntity> {
-    const dto = await this.dataSource.patchProfile(request);
+  async patchProfile(params: ProfileEditParams): Promise<ProfileSummaryEntity> {
+    const dto = await this.dataSource.patchProfile(params);
     return ProfileMapper.toSummaryEntity(dto);
   }
 
