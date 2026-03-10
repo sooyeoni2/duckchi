@@ -34,7 +34,8 @@ export function AccountCard({ account }: AccountCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    paddingBottom: 24,
+    paddingVertical: 20,
+    paddingBottom: 28,
   },
   row: {
     flexDirection: 'row',
@@ -49,7 +50,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   bankIconText: {
-    ...KBODiaGothicTextStyle.bold({ fontSize: 16, color: AppColorStyles.black }),
+    ...KBODiaGothicTextStyle.bold({ fontSize: 20, color: AppColorStyles.black }),
   },
   info: {
     gap: 8,
