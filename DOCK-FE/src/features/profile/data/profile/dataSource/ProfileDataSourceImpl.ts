@@ -5,6 +5,7 @@ import {
   profileSummaryDtoSchema,
   type BadgeListDto,
   type ProfileDetailDto,
+  type ProfileEditRequest,
   type ProfileSummaryDto,
 } from '../profileDto';
 import type { ProfileDataSource } from './ProfileDataSource';
@@ -15,8 +16,8 @@ export class ProfileDataSourceImpl implements ProfileDataSource {
     return profileDetailDtoSchema.parse(response.data.data);
   }
 
-  async patchProfile(transferLimit: number): Promise<ProfileSummaryDto> {
-    const response = await axiosClient.post('/api/v1/profiles/edit', { transferLimit });
+  async patchProfile(request: ProfileEditRequest): Promise<ProfileSummaryDto> {
+    const response = await axiosClient.post('/api/v1/profiles/edit', request);
     return profileSummaryDtoSchema.parse(response.data.data);
   }
 

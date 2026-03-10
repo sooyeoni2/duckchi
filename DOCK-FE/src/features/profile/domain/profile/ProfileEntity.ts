@@ -21,6 +21,7 @@ export interface ProfileEntity {
   tag: string;
   transferLimit: number;
   createdAt: Date;
+  profileImageUrl: string | null;
   accounts: AccountEntity[];
   badges: ProfileBadgeEntity[];
 }
@@ -30,6 +31,7 @@ export interface ProfileSummaryEntity {
   email: string;
   name: string;
   tag: string;
+  profileImageUrl: string | null;
   transferLimit: number;
   createdAt: Date;
 }

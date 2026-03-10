@@ -1,7 +1,7 @@
-import type { BadgeListDto, ProfileDetailDto, ProfileSummaryDto } from '../profileDto';
+import type { BadgeListDto, ProfileDetailDto, ProfileEditRequest, ProfileSummaryDto } from '../profileDto';
 
 export interface ProfileDataSource {
   fetchProfileDetail(): Promise<ProfileDetailDto>;
-  patchProfile(transferLimit: number): Promise<ProfileSummaryDto>;
+  patchProfile(request: ProfileEditRequest): Promise<ProfileSummaryDto>;
   fetchBadges(): Promise<BadgeListDto>;
 }

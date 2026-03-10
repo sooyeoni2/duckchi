@@ -23,8 +23,14 @@ export const profileDetailDtoSchema = z.object({
   tag: z.string(),
   transferLimit: z.number(),
   createdAt: z.string(),
+  profileImageUrl: z.string().nullable(),
   accounts: z.array(accountDtoSchema),
   badges: z.array(profileBadgeDtoSchema),
+});
+
+export const profileEditRequestSchema = z.object({
+  transferLimit: z.number().optional(),
+  profileImageKey: z.string().optional(),
 });
 
 export const profileSummaryDtoSchema = z.object({
@@ -32,6 +38,7 @@ export const profileSummaryDtoSchema = z.object({
   email: z.string(),
   name: z.string(),
   tag: z.string(),
+  profileImageUrl: z.string().nullable(),
   transferLimit: z.number(),
   createdAt: z.string(),
 });
@@ -61,6 +68,7 @@ export const badgeListDtoSchema = z.object({
 export type ProfileDetailDto = z.infer<typeof profileDetailDtoSchema>;
 export type AccountDto = z.infer<typeof accountDtoSchema>;
 export type ProfileBadgeDto = z.infer<typeof profileBadgeDtoSchema>;
+export type ProfileEditRequest = z.infer<typeof profileEditRequestSchema>;
 export type ProfileSummaryDto = z.infer<typeof profileSummaryDtoSchema>;
 export type AcquiredBadgeDto = z.infer<typeof acquiredBadgeDtoSchema>;
 export type LockedBadgeDto = z.infer<typeof lockedBadgeDtoSchema>;

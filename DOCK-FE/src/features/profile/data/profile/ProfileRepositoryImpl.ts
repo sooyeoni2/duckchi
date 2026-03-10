@@ -1,4 +1,5 @@
 import type { BadgeListEntity, ProfileEntity, ProfileSummaryEntity } from '../../domain/profile/ProfileEntity';
+import type { ProfileEditRequest } from './profileDto';
 import { ProfileMapper } from './profileMapper';
 import type { ProfileDataSource } from './dataSource/ProfileDataSource';
 import { mockProfileDataSource } from './dataSource/MockProfileDataSource';
@@ -11,8 +12,8 @@ export class ProfileRepositoryImpl {
     return ProfileMapper.toEntity(dto);
   }
 
-  async patchProfile(transferLimit: number): Promise<ProfileSummaryEntity> {
-    const dto = await this.dataSource.patchProfile(transferLimit);
+  async patchProfile(request: ProfileEditRequest): Promise<ProfileSummaryEntity> {
+    const dto = await this.dataSource.patchProfile(request);
     return ProfileMapper.toSummaryEntity(dto);
   }
 
