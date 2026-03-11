@@ -24,7 +24,7 @@ src/
         └── data/
             └── {sub_feature}/
                 └── dataSource/
-                    ├── I{Name}DataSource.ts           # 인터페이스
+                    ├── {Name}DataSource.ts            # 인터페이스
                     ├── {Name}DataSourceImpl.ts        # API 구현
                     └── Mock{Name}DataSource.ts        # Mock 구현
 ```
@@ -37,10 +37,10 @@ src/
 
 ### 1. 인터페이스
 ```typescript
-// features/auth/data/login/dataSource/ILoginDataSource.ts
+// features/auth/data/login/dataSource/LoginDataSource.ts
 import { LoginDto } from '../loginDto';
 
-export interface ILoginDataSource {
+export interface LoginDataSource {
   fetchLogin(email: string, password: string): Promise<LoginDto>;
   logout(): Promise<void>;
 }
@@ -51,9 +51,9 @@ export interface ILoginDataSource {
 // features/auth/data/login/dataSource/LoginDataSourceImpl.ts
 import { axiosClient } from '@core/network/axiosClient';
 import { LoginDto, loginDtoSchema } from '../loginDto';
-import { ILoginDataSource } from './ILoginDataSource';
+import { LoginDataSource } from './LoginDataSource';
 
-export class LoginDataSourceImpl implements ILoginDataSource {
+export class LoginDataSourceImpl implements LoginDataSource {
   // ❌ try-catch 하지 않음 - 예외는 그대로 throw
   async fetchLogin(email: string, password: string): Promise<LoginDto> {
     const response = await axiosClient.post('/api/auth/login', { email, password });
@@ -71,9 +71,9 @@ export class LoginDataSourceImpl implements ILoginDataSource {
 ```typescript
 // features/auth/data/login/dataSource/MockLoginDataSource.ts
 import { LoginDto } from '../loginDto';
-import { ILoginDataSource } from './ILoginDataSource';
+import { LoginDataSource } from './LoginDataSource';
 
-export class MockLoginDataSource implements ILoginDataSource {
+export class MockLoginDataSource implements LoginDataSource {
   async fetchLogin(email: string, password: string): Promise<LoginDto> {
     await new Promise(resolve => setTimeout(resolve, 1000));
 
@@ -197,7 +197,7 @@ export class GatheringDataSourceImpl implements IGatheringDataSource {
 
 ### 1. 모임방 DataSource
 ```typescript
-// features/gathering/data/gathering_list/dataSource/IGatheringDataSource.ts
+// features/gathering/data/gathering_list/dataSource/GatheringDataSource.ts
 import { GatheringDto } from '../gatheringDto';
 
 export interface FetchGatheringsParams {
@@ -205,7 +205,7 @@ export interface FetchGatheringsParams {
   size?: number;
 }
 
-export interface IGatheringDataSource {
+export interface GatheringDataSource {
   fetchGatherings(params: FetchGatheringsParams): Promise<GatheringDto[]>;
   fetchGatheringById(id: number): Promise<GatheringDto>;
   postGathering(data: Record<string, unknown>): Promise<GatheringDto>;
@@ -218,9 +218,9 @@ export interface IGatheringDataSource {
 // features/gathering/data/gathering_list/dataSource/GatheringDataSourceImpl.ts
 import { axiosClient } from '@core/network/axiosClient';
 import { GatheringDto, gatheringDtoSchema } from '../gatheringDto';
-import { FetchGatheringsParams, IGatheringDataSource } from './IGatheringDataSource';
+import { FetchGatheringsParams, GatheringDataSource } from './GatheringDataSource';
 
-export class GatheringDataSourceImpl implements IGatheringDataSource {
+export class GatheringDataSourceImpl implements GatheringDataSource {
   async fetchGatherings(params: FetchGatheringsParams): Promise<GatheringDto[]> {
     const response = await axiosClient.get('/api/gatherings', {
       params: {
@@ -254,10 +254,10 @@ export class GatheringDataSourceImpl implements IGatheringDataSource {
 
 ### 2. 영수증 OCR DataSource (Multipart)
 ```typescript
-// features/payment/data/receipt_scan/dataSource/IReceiptScanDataSource.ts
+// features/payment/data/receipt_scan/dataSource/ReceiptScanDataSource.ts
 import { ReceiptScanDto } from '../receiptScanDto';
 
-export interface IReceiptScanDataSource {
+export interface ReceiptScanDataSource {
   postReceiptScan(imageData: FormData): Promise<ReceiptScanDto>;
 }
 ```
@@ -266,9 +266,9 @@ export interface IReceiptScanDataSource {
 // features/payment/data/receipt_scan/dataSource/ReceiptScanDataSourceImpl.ts
 import { axiosClient } from '@core/network/axiosClient';
 import { ReceiptScanDto, receiptScanDtoSchema } from '../receiptScanDto';
-import { IReceiptScanDataSource } from './IReceiptScanDataSource';
+import { ReceiptScanDataSource } from './ReceiptScanDataSource';
 
-export class ReceiptScanDataSourceImpl implements IReceiptScanDataSource {
+export class ReceiptScanDataSourceImpl implements ReceiptScanDataSource {
   async postReceiptScan(formData: FormData): Promise<ReceiptScanDto> {
     const response = await axiosClient.post('/api/payments/ocr', formData, {
       headers: {
@@ -282,7 +282,7 @@ export class ReceiptScanDataSourceImpl implements IReceiptScanDataSource {
 
 ### 3. N빵 뽑기 DataSource
 ```typescript
-// features/nbang/data/nbang_draw/dataSource/INbangDrawDataSource.ts
+// features/nbang/data/nbang_draw/dataSource/NbangDrawDataSource.ts
 import { NbangDrawResultDto } from '../nbangDrawDto';
 
 export interface PostNbangDrawParams {
@@ -291,14 +291,14 @@ export interface PostNbangDrawParams {
   payment_ids: number[];
 }
 
-export interface INbangDrawDataSource {
+export interface NbangDrawDataSource {
   postNbangDraw(params: PostNbangDrawParams): Promise<NbangDrawResultDto>;
 }
 ```
 
 ```typescript
 // features/nbang/data/nbang_draw/dataSource/NbangDrawDataSourceImpl.ts
-export class NbangDrawDataSourceImpl implements INbangDrawDataSource {
+export class NbangDrawDataSourceImpl implements NbangDrawDataSource {
   async postNbangDraw(params: PostNbangDrawParams): Promise<NbangDrawResultDto> {
     const response = await axiosClient.post('/api/gatherings/nbang/draw', params);
     return nbangDrawResultDtoSchema.parse(response.data);
@@ -315,7 +315,7 @@ Mock DataSource에서 메모리 내 데이터를 관리하는 경우,
 
 ```typescript
 // features/gathering/data/gathering_list/dataSource/MockGatheringDataSource.ts
-export class MockGatheringDataSource implements IGatheringDataSource {
+export class MockGatheringDataSource implements GatheringDataSource {
   private gatherings: GatheringDto[] = [];
   private nextId = 1;
   private initialized = false;

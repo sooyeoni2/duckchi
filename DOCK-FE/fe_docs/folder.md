@@ -62,7 +62,7 @@ src/
 │   │   ├── data/
 │   │   │   ├── login/
 │   │   │   │   ├── dataSource/
-│   │   │   │   │   ├── ILoginDataSource.ts          # 인터페이스
+│   │   │   │   │   ├── LoginDataSource.ts           # 인터페이스
 │   │   │   │   │   ├── LoginDataSourceImpl.ts       # API 구현
 │   │   │   │   │   └── MockLoginDataSource.ts       # Mock 구현
 │   │   │   │   ├── loginDto.ts                      # DTO + Zod 스키마
@@ -71,8 +71,10 @@ src/
 │   │   │   └── registration/
 │   │   ├── domain/
 │   │   │   ├── login/
+│   │   │   │   ├── usecases/                        # UseCase (복잡한 로직만)
+│   │   │   │   │   └── {Action}LoginUseCase.ts
 │   │   │   │   ├── LoginEntity.ts                   # Entity 타입
-│   │   │   │   └── ILoginRepository.ts              # Repository 인터페이스
+│   │   │   │   └── LoginRepository.ts               # Repository 인터페이스
 │   │   │   └── registration/
 │   │   └── presentation/
 │   │       ├── login/
@@ -83,83 +85,8 @@ src/
 │   │       └── registration/
 │   │
 │   ├── gathering/                  # 모임방
-│   │   ├── data/
-│   │   │   ├── gathering_list/
-│   │   │   │   ├── dataSource/
-│   │   │   │   │   ├── IGatheringDataSource.ts
-│   │   │   │   │   ├── GatheringDataSourceImpl.ts
-│   │   │   │   │   └── MockGatheringDataSource.ts
-│   │   │   │   ├── gatheringDto.ts
-│   │   │   │   ├── gatheringMapper.ts
-│   │   │   │   └── GatheringRepositoryImpl.ts
-│   │   │   └── gathering_detail/
-│   │   ├── domain/
-│   │   │   ├── gathering_list/
-│   │   │   │   ├── GatheringEntity.ts
-│   │   │   │   └── IGatheringRepository.ts
-│   │   │   └── gathering_detail/
-│   │   │       └── usecases/
-│   │   │           └── DelegateHostUseCase.ts       # 방장 위임
-│   │   └── presentation/
-│   │       ├── gathering_list/
-│   │       │   ├── GatheringListScreen.tsx
-│   │       │   ├── useGatheringListViewModel.ts
-│   │       │   └── components/
-│   │       │       └── GatheringCard.tsx
-│   │       └── gathering_detail/
-│   │           ├── GatheringDetailScreen.tsx
-│   │           ├── useGatheringDetailViewModel.ts
-│   │           └── components/
-│   │
 │   ├── payment/                    # 결제/정산
-│   │   ├── data/
-│   │   │   ├── receipt_scan/       # OCR 영수증 스캔
-│   │   │   │   ├── dataSource/
-│   │   │   │   │   ├── IReceiptScanDataSource.ts
-│   │   │   │   │   ├── ReceiptScanDataSourceImpl.ts
-│   │   │   │   │   └── MockReceiptScanDataSource.ts
-│   │   │   │   ├── receiptScanDto.ts
-│   │   │   │   ├── receiptScanMapper.ts
-│   │   │   │   └── ReceiptScanRepositoryImpl.ts
-│   │   │   └── payment_list/
-│   │   ├── domain/
-│   │   │   ├── receipt_scan/
-│   │   │   │   ├── ReceiptScanEntity.ts
-│   │   │   │   └── IReceiptScanRepository.ts
-│   │   │   └── payment_list/
-│   │   │       └── usecases/
-│   │   │           └── AssignMenuMembersUseCase.ts  # 메뉴별 멤버 지정
-│   │   └── presentation/
-│   │       ├── receipt_scan/
-│   │       │   ├── ReceiptScanScreen.tsx
-│   │       │   ├── useReceiptScanViewModel.ts
-│   │       │   └── components/
-│   │       │       ├── ReceiptItemList.tsx
-│   │       │       └── MemberAssignModal.tsx
-│   │       └── payment_list/
-│   │
 │   ├── nbang/                      # N빵 뽑기
-│   │   ├── data/
-│   │   │   └── nbang_draw/
-│   │   │       ├── dataSource/
-│   │   │       │   ├── INbangDrawDataSource.ts
-│   │   │       │   ├── NbangDrawDataSourceImpl.ts
-│   │   │       │   └── MockNbangDrawDataSource.ts
-│   │   │       ├── nbangDrawDto.ts
-│   │   │       ├── nbangDrawMapper.ts
-│   │   │       └── NbangDrawRepositoryImpl.ts
-│   │   ├── domain/
-│   │   │   └── nbang_draw/
-│   │   │       ├── NbangDrawEntity.ts
-│   │   │       └── INbangDrawRepository.ts
-│   │   └── presentation/
-│   │       └── nbang_draw/
-│   │           ├── NbangDrawScreen.tsx
-│   │           ├── useNbangDrawViewModel.ts
-│   │           └── components/
-│   │               ├── DrawCardGrid.tsx
-│   │               └── DrawResultCard.tsx
-│   │
 │   ├── spendReport/                # 소비 리포트
 │   └── profile/                    # 프로필
 │
@@ -194,7 +121,7 @@ src/
 ```
 {feature_name}/data/{sub_feature}/
 ├── dataSource/
-│   ├── I{Name}DataSource.ts           # 인터페이스
+│   ├── {Name}DataSource.ts            # 인터페이스
 │   ├── {Name}DataSourceImpl.ts        # API 구현
 │   └── Mock{Name}DataSource.ts        # Mock 구현
 ├── {name}Dto.ts                       # DTO + Zod 스키마 정의
@@ -206,7 +133,7 @@ src/
 ```
 {feature_name}/domain/{sub_feature}/
 ├── {Name}Entity.ts                    # Entity 타입 정의
-├── I{Name}Repository.ts               # Repository 인터페이스
+├── {Name}Repository.ts                # Repository 인터페이스
 └── usecases/                          # UseCase (복잡한 로직만)
     └── {Action}{Name}UseCase.ts
 ```
@@ -230,9 +157,9 @@ src/
 | Screen | `{Name}Screen.tsx` | `GatheringListScreen.tsx` |
 | ViewModel 훅 | `use{Name}ViewModel.ts` | `useGatheringListViewModel.ts` |
 | Entity | `{Name}Entity.ts` | `GatheringEntity.ts` |
-| Repository 인터페이스 | `I{Name}Repository.ts` | `IGatheringRepository.ts` |
+| Repository 인터페이스 | `{Name}Repository.ts` | `GatheringRepository.ts` |
 | Repository 구현 | `{Name}RepositoryImpl.ts` | `GatheringRepositoryImpl.ts` |
-| DataSource 인터페이스 | `I{Name}DataSource.ts` | `IGatheringDataSource.ts` |
+| DataSource 인터페이스 | `{Name}DataSource.ts` | `GatheringDataSource.ts` |
 | DataSource 구현 | `{Name}DataSourceImpl.ts` | `GatheringDataSourceImpl.ts` |
 | DTO | `{name}Dto.ts` | `gatheringDto.ts` |
 | Mapper | `{name}Mapper.ts` | `gatheringMapper.ts` |

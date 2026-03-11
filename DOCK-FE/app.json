@@ -1,4 +1,24 @@
 {
-  "name": "FrontEnd",
-  "displayName": "FrontEnd"
+  "expo": {
+    "name": "덕치",
+    "slug": "duckduck",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#F2F3F5"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#F2F3F5"
+      },
+      "package": "com.ssafy.duckduck"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.ssafy.duckduck"
+    },
+    "newArchEnabled": false
+  }
 }
