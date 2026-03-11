@@ -1,0 +1,211 @@
+﻿<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SSAFY Finance Tester</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="header-grid">
+        <section class="panel hero-panel">
+          <p class="eyebrow">Standalone Banking Playground</p>
+          <h1>SSAFY 금융망 테스트 대시보드</h1>
+          <p class="hero-copy">공통 설정은 위에서 한 번만 잡고, 아래에서 기능 선택, 입력, 결과 확인을 같은 시야에서 처리합니다.</p>
+        </section>
+
+        <section class="panel setup-panel">
+          <div class="panel-head compact-head">
+            <div>
+              <p class="section-kicker">Setup</p>
+              <h2>공통 설정</h2>
+            </div>
+            <div class="topbar-actions">
+              <button id="saveConfigButton" class="secondary">설정 저장</button>
+              <button id="resetConfigButton" class="ghost">초기화</button>
+            </div>
+          </div>
+
+          <section class="auth-box">
+            <div class="auth-box-head">
+              <div>
+                <div class="auth-title">사용자 로그인 / 생성</div>
+                <div class="auth-subtitle">회원 API를 이용해 userKey를 자동으로 채웁니다.</div>
+              </div>
+              <div id="authState" class="auth-state">로그인된 사용자가 없습니다.</div>
+            </div>
+            <div class="auth-grid">
+              <label>
+                <span>사용자 이메일</span>
+                <input id="authUserId" type="text" placeholder="tester@ssafy.co.kr" />
+              </label>
+              <div class="auth-actions">
+                <button id="createUserButton" class="secondary">사용자 생성</button>
+                <button id="searchUserButton" class="primary">조회 후 로그인</button>
+                <button id="clearUserButton" class="ghost">로그아웃</button>
+              </div>
+            </div>
+            <div id="authFeedback" class="auth-feedback empty-auth-feedback">
+              아직 인증 이력이 없습니다. 사용자 생성이나 조회 후 로그인을 실행해보세요.
+            </div>
+          </section>
+
+          <div class="settings-inline-grid">
+            <label>
+              <span>Base URL</span>
+              <input id="baseUrl" type="text" />
+            </label>
+            <label>
+              <span>API Key</span>
+              <input id="apiKey" type="text" />
+            </label>
+            <label>
+              <span>User Key</span>
+              <input id="userKey" type="text" />
+            </label>
+            <label>
+              <span>기관 코드</span>
+              <input id="institutionCode" type="text" />
+            </label>
+            <label>
+              <span>핀테크 앱 번호</span>
+              <input id="fintechAppNo" type="text" />
+            </label>
+            <label>
+              <span>Proxy URL</span>
+              <input id="proxyUrl" type="text" />
+            </label>
+          </div>
+        </section>
+      </section>
+
+      <section class="workspace-tabs panel">
+        <div class="workspace-tab-row">
+          <button type="button" class="workspace-tab active" data-workspace-tab="tester">API Tester</button>
+          <button type="button" class="workspace-tab" data-workspace-tab="banking">Mobile Banking</button>
+        </div>
+      </section>
+
+      <section class="workspace-pane active" data-workspace-pane="tester">
+        <section class="workspace-triple-grid">
+        <section class="panel actions-panel column-panel">
+          <div class="panel-head compact-head">
+            <div>
+              <p class="section-kicker">Actions</p>
+              <h2>테스트 기능</h2>
+            </div>
+          </div>
+          <p id="selectedOperationMeta" class="meta operation-meta"></p>
+          <div id="operationList" class="operation-list-vertical"></div>
+        </section>
+
+        <section class="panel form-panel column-panel">
+          <div class="panel-head">
+            <div>
+              <p class="section-kicker">Form</p>
+              <h2 id="formTitle">입력 폼</h2>
+              <p id="endpointText" class="meta"></p>
+            </div>
+            <div class="actions-inline">
+              <button id="refreshTemplateButton" class="secondary">헤더 재생성</button>
+              <button id="resetTemplateButton" class="ghost">폼 초기화</button>
+            </div>
+          </div>
+
+          <div id="formSummary" class="form-summary"></div>
+          <div id="dynamicForm" class="dynamic-form"></div>
+
+          <div class="request-footer sticky-footer">
+            <div id="statusBadge" class="status-badge idle">대기 중</div>
+            <button id="sendRequestButton" class="primary large-button">실행하기</button>
+          </div>
+
+          <details class="raw-toggle">
+            <summary>디버그용 JSON 보기</summary>
+            <div class="raw-grid single-raw-grid">
+              <label class="textarea-label">
+                <span>Request JSON</span>
+                <textarea id="requestBody" spellcheck="false"></textarea>
+              </label>
+              <label class="textarea-label">
+                <span>Response JSON</span>
+                <textarea id="responseBody" readonly spellcheck="false"></textarea>
+              </label>
+            </div>
+          </details>
+        </section>
+
+        <section class="panel preview-panel column-panel">
+          <div class="panel-head compact-head">
+            <div>
+              <p class="section-kicker">Preview</p>
+              <h2>사용자 화면</h2>
+            </div>
+            <div class="preview-head-actions">
+              <p id="responseMeta" class="meta">아직 요청을 보내지 않았습니다.</p>
+              <button id="clearResponseButton" class="ghost small-button">초기화</button>
+            </div>
+          </div>
+
+          <div class="phone-shell desktop-phone">
+            <div class="phone-header">
+              <div>
+                <div class="phone-title" id="previewTitle">금융 테스트</div>
+                <div class="phone-subtitle" id="previewSubtitle">결과가 여기에 표시됩니다.</div>
+              </div>
+            </div>
+            <div id="responsePreview" class="phone-content empty-state">
+              아직 불러온 데이터가 없습니다. 왼쪽에서 기능을 고르고 가운데에서 실행해보세요.
+            </div>
+          </div>
+        </section>
+        </section>
+      </section>
+
+      <section class="workspace-pane" data-workspace-pane="banking">
+        <section class="banking-app-grid">
+        <section class="panel banking-phone-panel">
+          <div class="panel-head compact-head">
+            <div>
+              <p class="section-kicker">Mobile App</p>
+              <h2>모바일 뱅킹</h2>
+            </div>
+            <div id="bankingAppStatus" class="auth-state">로그인 후 계좌를 불러옵니다.</div>
+          </div>
+          <div class="phone-shell banking-phone-shell">
+            <div class="phone-header banking-phone-header">
+              <div>
+                <div class="phone-title">내 금융 홈</div>
+                <div class="phone-subtitle" id="bankingPhoneSubtitle">로그인한 사용자 계좌를 앱처럼 다룹니다.</div>
+              </div>
+            </div>
+            <div id="bankingPhoneContent" class="phone-content empty-state">
+              로그인 후 계좌 목록이 이곳에 표시됩니다.
+            </div>
+          </div>
+        </section>
+
+        <section class="panel banking-action-panel">
+          <div class="panel-head compact-head">
+            <div>
+              <p class="section-kicker">Quick Banking</p>
+              <h2>바로 실행</h2>
+            </div>
+            <button id="bankingRefreshButton" class="ghost small-button">새로고침</button>
+          </div>
+          <div id="bankingSelectedAccount" class="banking-selected-account">선택된 계좌가 없습니다.</div>
+          <div id="bankingActionTabs" class="banking-action-tabs"></div>
+          <div id="bankingActionForm" class="banking-action-form"></div>
+          <div class="request-footer">
+            <div id="bankingActionStatus" class="status-badge idle">대기 중</div>
+            <button id="bankingSubmitButton" class="primary">앱에서 실행</button>
+          </div>
+        </section>
+        </section>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
