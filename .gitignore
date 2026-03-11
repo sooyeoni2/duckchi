@@ -28,4 +28,5 @@ android/app/build/
 ios/Pods/
 
 # local config
-
+ai-context/
+documents/
