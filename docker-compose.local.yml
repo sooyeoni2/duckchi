@@ -1,0 +1,36 @@
+services:
+  kafka:
+    image: apache/kafka:latest
+    container_name: kafka
+    ports:
+      - "127.0.0.1:9092:9092"
+    environment:
+      KAFKA_NODE_ID: 1 #Kafka broker의 노드 id
+      KAFKA_PROCESS_ROLES: broker,controller #이 컨테이너가 broker와 controller 역할을 둘 다 수행 (Kafka KRaft 모드에서 사용)
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093 #Kafka가 실제로 수신 대기할 주소(모든인터페이스에서 9092포트로 클라이언트 연결 수신,9003포트로 controller 역할 수행)
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092 #Kafka가 수신할 주소 알려주는 값
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT #각 listener 이름이 어떤 프로토콜 쓰는지 매핑
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093 #controller quorum 정보 (nodeId@address 형식)
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1 #consumer offset 저장용 내부 토픽 복제 수
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1 #Kafka 트랜잭션 상태 로그 관련 설정
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1 #Kafka 트랜잭션 상태 로그 관련 설정
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0 #Consumer group이 처음 만들어질때 rebalance 대기 시간을 0으로 설정
+      KAFKA_NUM_PARTITIONS: 3 #새 토픽 기본 파티션 수
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+
+  redis:
+    image: redis/redis-stack:latest
+    container_name: redis
+    ports:
+      - "127.0.0.1:6379:6379" #Redis 서버 포트
+      - "127.0.0.1:8001:8001" #Redis Stack UI 포트
+    environment:
+      REDIS_ARGS: --appendonly yes
+    volumes:
+      - redis-data:/data
+
+volumes:
+  kafka-data:
+  redis-data:
