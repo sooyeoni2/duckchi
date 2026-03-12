@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: pay-service
+
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+
+server:
+  port: 8082

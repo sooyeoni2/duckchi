@@ -28,5 +28,5 @@ android/app/build/
 ios/Pods/
 
 # local config
-application-local.yml
-
+ai-context/
+documents/
