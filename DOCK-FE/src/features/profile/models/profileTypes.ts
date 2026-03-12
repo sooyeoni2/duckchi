@@ -12,6 +12,7 @@ export interface ProfileBadge {
   name: string;
   isAcquired: boolean;
   acquiredAt: Date | null;
+  imageUrl: string | null;
 }
 
 export interface Profile {
@@ -42,6 +43,7 @@ export interface AcquiredBadge {
   name: string;
   acquiredAt: Date;
   description: string;
+  imageUrl: string | null;
 }
 
 export interface LockedBadge {
@@ -51,6 +53,7 @@ export interface LockedBadge {
   description: string;
   requiredCount: number;
   currentCount: number;
+  imageUrl: string | null;
 }
 
 export interface BadgeList {

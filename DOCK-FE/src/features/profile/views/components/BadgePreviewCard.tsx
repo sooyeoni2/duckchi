@@ -31,7 +31,6 @@ export function BadgePreviewCard({ badges }: BadgePreviewCardProps) {
               <BadgeItem
                 key={badge.id}
                 badge={badge}
-                badgeIndex={row * 3 + col}
               />
             ))}
           </View>

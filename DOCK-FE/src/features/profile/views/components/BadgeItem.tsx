@@ -4,26 +4,24 @@ import { Image, StyleSheet, Text, View } from 'react-native';
 
 import { AppColorStyles } from '../../../../core/theme/colors';
 import { KBODiaGothicTextStyle } from '../../../../core/theme/typography';
-import { BADGE_IMAGES, BADGE_LOCKED_IMAGE } from '../../../../core/constants/badgeImages';
+import { BADGE_LOCKED_IMAGE } from '../../../../core/constants/badgeImages';
 import type { ProfileBadge } from '../../models/profileTypes';
 
 interface BadgeItemProps {
   badge: ProfileBadge;
-  /** 배지 슬롯 번호 (0~9) → duck1~duck10 이미지 결정 */
-  badgeIndex: number;
 }
 
 const BADGE_SIZE = 80;
 
-export const BadgeItem: React.FC<BadgeItemProps> = ({ badge, badgeIndex }) => {
-  const imageSource = badge.isAcquired
-    ? BADGE_IMAGES[badgeIndex % BADGE_IMAGES.length]
+export const BadgeItem: React.FC<BadgeItemProps> = ({ badge }) => {
+  const imageSource = badge.isAcquired && badge.imageUrl
+    ? { uri: badge.imageUrl }
     : BADGE_LOCKED_IMAGE;
 
   return (
     <View style={styles.container}>
       <View style={styles.imageWrapper}>
-        <Image source={imageSource} style={[styles.image, !badge.isAcquired && { opacity: 0.4 }]} />
+        <Image source={imageSource} style={[styles.image, !badge.isAcquired && styles.locked]} />
       </View>
       <Text
         style={[styles.name, !badge.isAcquired && styles.nameDisabled]}
@@ -57,5 +55,8 @@ const styles = StyleSheet.create({
   },
   nameDisabled: {
     color: AppColorStyles.textDisabled,
+  },
+  locked: {
+    opacity: 0.4,
   },
 });

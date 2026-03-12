@@ -30,6 +30,7 @@ const profileBadgeSchema = z.object({
   name: z.string(),
   isAcquired: z.boolean(),
   requiredAt: z.string(),
+  imageUrl: z.string().nullable().optional(),
 });
 
 const profileDetailSchema = z.object({
@@ -60,6 +61,7 @@ const acquiredBadgeSchema = z.object({
   name: z.string(),
   acquiredAt: z.string(),
   description: z.string(),
+  imageUrl: z.string().nullable().optional(),
 });
 
 const lockedBadgeSchema = z.object({
@@ -69,6 +71,7 @@ const lockedBadgeSchema = z.object({
   description: z.string(),
   requiredCount: z.number(),
   currentCount: z.number(),
+  imageUrl: z.string().nullable().optional(),
 });
 
 const badgeListSchema = z.object({
@@ -96,6 +99,7 @@ const toProfileBadge = (raw: z.infer<typeof profileBadgeSchema>): ProfileBadge =
   name: raw.name,
   isAcquired: raw.isAcquired,
   acquiredAt: raw.isAcquired ? toDate(raw.requiredAt) : null,
+  imageUrl: raw.imageUrl ?? null,
 });
 
 const toAcquiredBadge = (raw: z.infer<typeof acquiredBadgeSchema>): AcquiredBadge => ({
@@ -104,6 +108,7 @@ const toAcquiredBadge = (raw: z.infer<typeof acquiredBadgeSchema>): AcquiredBadg
   name: raw.name,
   acquiredAt: toDate(raw.acquiredAt),
   description: raw.description,
+  imageUrl: raw.imageUrl ?? null,
 });
 
 const toLockedBadge = (raw: z.infer<typeof lockedBadgeSchema>): LockedBadge => ({
@@ -113,6 +118,7 @@ const toLockedBadge = (raw: z.infer<typeof lockedBadgeSchema>): LockedBadge => (
   description: raw.description,
   requiredCount: raw.requiredCount,
   currentCount: raw.currentCount,
+  imageUrl: raw.imageUrl ?? null,
 });
 
 // ─────────────────────────────────────────
@@ -139,33 +145,32 @@ let mockProfile = profileDetailSchema.parse({
     },
   ],
   badges: [
-    { id: 1, code: 'FIRST_GATHER', name: '첫 모임', isAcquired: true, requiredAt: '2026-03-04T15:30:00+09:00' },
-    { id: 2, code: 'FAST_SETTLER', name: '번개 정산러', isAcquired: true, requiredAt: '2026-03-04T15:30:00+09:00' },
-    { id: 3, code: 'INSSA', name: '프로 참여러', isAcquired: false, requiredAt: '2026-03-04T15:30:00+09:00' },
-    { id: 4, code: 'EARLY_BIRD', name: '얼리버드', isAcquired: false, requiredAt: '2026-03-04T15:30:00+09:00' },
-    { id: 5, code: 'BIG_SPENDER', name: '큰손', isAcquired: false, requiredAt: '2026-03-04T15:30:00+09:00' },
-    { id: 6, code: 'SPLITTER', name: '정산왕', isAcquired: false, requiredAt: '2026-03-04T15:30:00+09:00' },
-    { id: 7, code: 'LUCKY', name: '행운의 덕', isAcquired: false, requiredAt: '2026-03-04T15:30:00+09:00' },
-    { id: 8, code: 'SOCIAL', name: '인싸덕', isAcquired: false, requiredAt: '2026-03-04T15:30:00+09:00' },
-    { id: 9, code: 'LOYAL', name: '단골덕', isAcquired: false, requiredAt: '2026-03-04T15:30:00+09:00' },
-    { id: 10, code: 'LEGEND', name: '전설의 덕', isAcquired: false, requiredAt: '2026-03-04T15:30:00+09:00' },
+    { id: 1, code: 'NOBLE_DUCK', name: '귀족 덕치', isAcquired: false, requiredAt: '2026-03-04T15:30:00+09:00' },
+    { id: 2, code: 'ASSASSIN_DUCK', name: '칼입금 암살자', isAcquired: false, requiredAt: '2026-03-04T15:30:00+09:00' },
+    { id: 3, code: 'TURTLE_DUCK', name: '거북이덕', isAcquired: false, requiredAt: '2026-03-04T15:30:00+09:00' },
+    { id: 4, code: 'INSSA_DUCK', name: '인싸덕', isAcquired: false, requiredAt: '2026-03-04T15:30:00+09:00' },
+    { id: 5, code: 'SCANNER_DUCK', name: '영수증 스캐너덕', isAcquired: false, requiredAt: '2026-03-04T15:30:00+09:00' },
+    { id: 6, code: 'INVITE_MASTER', name: '초대 마스터', isAcquired: false, requiredAt: '2026-03-04T15:30:00+09:00' },
+    { id: 7, code: 'ALLEY_BOSS', name: '골목 대장덕', isAcquired: false, requiredAt: '2026-03-04T15:30:00+09:00' },
+    { id: 8, code: 'ALLROUNDER_DUCK', name: '팔방미인덕', isAcquired: false, requiredAt: '2026-03-04T15:30:00+09:00' },
+    { id: 9, code: 'MANSOUR_DUCK', name: '만수르덕', isAcquired: false, requiredAt: '2026-03-04T15:30:00+09:00' },
+    { id: 10, code: 'NIGHTOWL_DUCK', name: '야행성 올빼미덕', isAcquired: false, requiredAt: '2026-03-04T15:30:00+09:00' },
   ],
 });
 
 const mockBadgeList = badgeListSchema.parse({
-  acquiredBadges: [
-    { id: 1, code: 'FIRST_GATHER', name: '첫 모임', acquiredAt: '2026-03-04T15:30:00+09:00', description: '첫 모임방 참여' },
-    { id: 2, code: 'FAST_SETTLER', name: '번개 정산러', acquiredAt: '2026-03-04T15:30:00+09:00', description: '24h 이내 정산 10회' },
-  ],
+  acquiredBadges: [],
   lockedBadges: [
-    { id: 3, code: 'INSSA', name: '프로 참여러', description: '모임 참여 10회', requiredCount: 10, currentCount: 4 },
-    { id: 4, code: 'EARLY_BIRD', name: '얼리버드', description: '오전 7시 이전 정산 3회', requiredCount: 3, currentCount: 1 },
-    { id: 5, code: 'BIG_SPENDER', name: '큰손', description: '단건 결제 10만원 이상 3회', requiredCount: 3, currentCount: 0 },
-    { id: 6, code: 'SPLITTER', name: '정산왕', description: '정산 완료 20회', requiredCount: 20, currentCount: 7 },
-    { id: 7, code: 'LUCKY', name: '행운의 덕', description: 'N빵 당첨 5회', requiredCount: 5, currentCount: 2 },
-    { id: 8, code: 'SOCIAL', name: '인싸덕', description: '모임 인원 10명 이상 3회', requiredCount: 3, currentCount: 1 },
-    { id: 9, code: 'LOYAL', name: '단골덕', description: '같은 멤버와 5회 이상 모임', requiredCount: 5, currentCount: 3 },
-    { id: 10, code: 'LEGEND', name: '전설의 덕', description: '모든 배지 획득', requiredCount: 9, currentCount: 2 },
+    { id: 1, code: 'NOBLE_DUCK', name: '귀족 덕치', description: '누적 결제 금액 달성', requiredCount: 1000000, currentCount: 0 },
+    { id: 2, code: 'ASSASSIN_DUCK', name: '칼입금 암살자', description: '정산 요청 1시간 이내 입금 10회', requiredCount: 10, currentCount: 0 },
+    { id: 3, code: 'TURTLE_DUCK', name: '거북이덕', description: '48시간 이상 지연 송금 3회', requiredCount: 3, currentCount: 0 },
+    { id: 4, code: 'INSSA_DUCK', name: '인싸덕', description: '모임방 참여 10회', requiredCount: 10, currentCount: 0 },
+    { id: 5, code: 'SCANNER_DUCK', name: '영수증 스캐너덕', description: 'OCR 영수증 인식 10회', requiredCount: 10, currentCount: 0 },
+    { id: 6, code: 'INVITE_MASTER', name: '초대 마스터', description: '초대 링크로 누적 10명 입장', requiredCount: 10, currentCount: 0 },
+    { id: 7, code: 'ALLEY_BOSS', name: '골목 대장덕', description: '모임방 방장 10회', requiredCount: 10, currentCount: 0 },
+    { id: 8, code: 'ALLROUNDER_DUCK', name: '팔방미인덕', description: '모든 모임 카테고리 참여', requiredCount: 5, currentCount: 0 },
+    { id: 9, code: 'MANSOUR_DUCK', name: '만수르덕', description: '계좌 3개 이상 등록', requiredCount: 3, currentCount: 0 },
+    { id: 10, code: 'NIGHTOWL_DUCK', name: '야행성 올빼미덕', description: '자정~새벽 5시 송금 5회', requiredCount: 5, currentCount: 0 },
   ],
 });
 
