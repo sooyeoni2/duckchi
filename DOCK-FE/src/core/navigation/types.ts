@@ -4,6 +4,11 @@ export type RootStackParamList = {
   App: undefined;
 };
 
+export type ProfileStackParamList = {
+  ProfileMain: undefined;
+  BadgeList: undefined;
+};
+
 export type AuthStackParamList = {
   Login: undefined;
   Registration: undefined;
@@ -13,5 +18,5 @@ export type AppTabParamList = {
   Home: undefined;
   Room: undefined;
   Report: undefined;
-  Profile: undefined;
+  Profile: { screen: keyof ProfileStackParamList } | undefined;
 };

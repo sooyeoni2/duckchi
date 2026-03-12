@@ -12,6 +12,7 @@ import { MaterialCommunityIcons as MaterialDesignIcons } from '@expo/vector-icon
 
 import { AppColorStyles } from '../../../core/theme/colors';
 import { KBODiaGothicTextStyle } from '../../../core/theme/typography';
+import { CustomAppBar } from '../../../shared/components/app_bar/CustomAppBar';
 import { useProfileViewModel } from '../viewmodels/useProfileViewModel';
 import { ProfileHeader } from './components/ProfileHeader';
 import { AccountCard } from './components/AccountCard';
@@ -45,19 +46,22 @@ export function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <CustomAppBar
+        title="프로필"
+        centerTitle={false}
+        showBackButton={false}
+        backgroundColor={AppColorStyles.background}
+        actions={[
+          <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <MaterialDesignIcons name="cog-outline" size={24} color={AppColorStyles.black} />
+          </TouchableOpacity>,
+        ]}
+      />
       <ScrollView
         style={styles.screen}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.appBar}>
-          <Text style={styles.appBarTitle}>프로필</Text>
-          <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <MaterialDesignIcons name="cog-outline" size={24} color={AppColorStyles.black} />
-          </TouchableOpacity>
-        </View>
-        <View style={styles.divider} />
-
         <ProfileHeader profile={profile} />
         {representativeAccount && <AccountCard account={representativeAccount} />}
         <TransferLimitCard transferLimit={profile.transferLimit} />
@@ -97,22 +101,5 @@ const styles = StyleSheet.create({
   },
   retryText: {
     ...KBODiaGothicTextStyle.medium({ fontSize: 14, color: AppColorStyles.black }),
-  },
-  appBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    paddingTop: 16,
-    paddingBottom: 8,
-  },
-  appBarTitle: {
-    ...KBODiaGothicTextStyle.medium({ fontSize: 20, color: AppColorStyles.black }),
-  },
-  divider: {
-    borderBottomWidth: 1,
-    borderBottomColor: AppColorStyles.gray3,
-    borderStyle: 'dashed',
-    marginHorizontal: 2,
   },
 });

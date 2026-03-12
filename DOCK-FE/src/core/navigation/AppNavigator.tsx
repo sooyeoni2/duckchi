@@ -3,7 +3,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import React from 'react';
 import { AppColorStyles } from '../theme/colors';
 import { HomeScreen } from '../../features/home/HomeScreen';
-import { ProfileScreen } from '../../features/profile/views/ProfileScreen';
+import { ProfileNavigator } from '../../features/profile/ProfileNavigator';
 import { ReportScreen } from '../../features/report/ReportScreen';
 import { RoomScreen } from '../../features/room/RoomScreen';
 import { AppTabParamList } from './types';
@@ -38,10 +38,28 @@ export function AppNavigator() {
         },
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Room" component={RoomScreen} />
-      <Tab.Screen name="Report" component={ReportScreen} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen
+        name="Home"
+        component={HomeScreen}
+        listeners={({ navigation }) => ({
+          tabPress: () => navigation.navigate('Home'),
+        })}
+      />
+      <Tab.Screen
+        name="Room"
+        component={RoomScreen}
+        listeners={({ navigation }) => ({
+          tabPress: () => navigation.navigate('Room'),
+        })}
+      />
+      <Tab.Screen
+        name="Report"
+        component={ReportScreen}
+        listeners={({ navigation }) => ({
+          tabPress: () => navigation.navigate('Report'),
+        })}
+      />
+      <Tab.Screen name="Profile" component={ProfileNavigator} />
     </Tab.Navigator>
   );
 }

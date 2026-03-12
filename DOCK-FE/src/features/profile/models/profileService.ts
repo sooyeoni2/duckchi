@@ -149,28 +149,29 @@ let mockProfile = profileDetailSchema.parse({
     { id: 2, code: 'ASSASSIN_DUCK', name: '칼입금 암살자', isAcquired: false, requiredAt: '2026-03-04T15:30:00+09:00' },
     { id: 3, code: 'TURTLE_DUCK', name: '거북이덕', isAcquired: false, requiredAt: '2026-03-04T15:30:00+09:00' },
     { id: 4, code: 'INSSA_DUCK', name: '인싸덕', isAcquired: false, requiredAt: '2026-03-04T15:30:00+09:00' },
-    { id: 5, code: 'SCANNER_DUCK', name: '영수증 스캐너덕', isAcquired: false, requiredAt: '2026-03-04T15:30:00+09:00' },
+    { id: 5, code: 'SCANNER_DUCK', name: '스캐너덕', isAcquired: true, requiredAt: '2026-03-04T15:30:00+09:00' },
     { id: 6, code: 'INVITE_MASTER', name: '초대 마스터', isAcquired: false, requiredAt: '2026-03-04T15:30:00+09:00' },
     { id: 7, code: 'ALLEY_BOSS', name: '골목 대장덕', isAcquired: false, requiredAt: '2026-03-04T15:30:00+09:00' },
     { id: 8, code: 'ALLROUNDER_DUCK', name: '팔방미인덕', isAcquired: false, requiredAt: '2026-03-04T15:30:00+09:00' },
     { id: 9, code: 'MANSOUR_DUCK', name: '만수르덕', isAcquired: false, requiredAt: '2026-03-04T15:30:00+09:00' },
-    { id: 10, code: 'NIGHTOWL_DUCK', name: '야행성 올빼미덕', isAcquired: false, requiredAt: '2026-03-04T15:30:00+09:00' },
+    { id: 10, code: 'NIGHTOWL_DUCK', name: '올빼미덕', isAcquired: false, requiredAt: '2026-03-04T15:30:00+09:00' },
   ],
 });
 
 const mockBadgeList = badgeListSchema.parse({
-  acquiredBadges: [],
+  acquiredBadges: [
+    { id: 5, code: 'SCANNER_DUCK', name: '스캐너덕', description: '영수증 인식 10회', acquiredAt: '2026-03-04T15:30:00+09:00' },
+  ],
   lockedBadges: [
     { id: 1, code: 'NOBLE_DUCK', name: '귀족 덕치', description: '누적 결제 금액 달성', requiredCount: 1000000, currentCount: 0 },
     { id: 2, code: 'ASSASSIN_DUCK', name: '칼입금 암살자', description: '정산 요청 1시간 이내 입금 10회', requiredCount: 10, currentCount: 0 },
     { id: 3, code: 'TURTLE_DUCK', name: '거북이덕', description: '48시간 이상 지연 송금 3회', requiredCount: 3, currentCount: 0 },
-    { id: 4, code: 'INSSA_DUCK', name: '인싸덕', description: '모임방 참여 10회', requiredCount: 10, currentCount: 0 },
-    { id: 5, code: 'SCANNER_DUCK', name: '영수증 스캐너덕', description: 'OCR 영수증 인식 10회', requiredCount: 10, currentCount: 0 },
+    { id: 4, code: 'INSSA_DUCK', name: '인싸덕', description: '모임방 참여 10회', requiredCount: 10, currentCount: 6 },
     { id: 6, code: 'INVITE_MASTER', name: '초대 마스터', description: '초대 링크로 누적 10명 입장', requiredCount: 10, currentCount: 0 },
     { id: 7, code: 'ALLEY_BOSS', name: '골목 대장덕', description: '모임방 방장 10회', requiredCount: 10, currentCount: 0 },
     { id: 8, code: 'ALLROUNDER_DUCK', name: '팔방미인덕', description: '모든 모임 카테고리 참여', requiredCount: 5, currentCount: 0 },
     { id: 9, code: 'MANSOUR_DUCK', name: '만수르덕', description: '계좌 3개 이상 등록', requiredCount: 3, currentCount: 0 },
-    { id: 10, code: 'NIGHTOWL_DUCK', name: '야행성 올빼미덕', description: '자정~새벽 5시 송금 5회', requiredCount: 5, currentCount: 0 },
+    { id: 10, code: 'NIGHTOWL_DUCK', name: '올빼미덕', description: '자정~새벽 5시 송금 5회', requiredCount: 5, currentCount: 0 },
   ],
 });
 
