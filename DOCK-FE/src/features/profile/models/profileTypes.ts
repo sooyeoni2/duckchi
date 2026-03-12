@@ -1,4 +1,4 @@
-export interface AccountEntity {
+export interface Account {
   accountId: number;
   bankCode: string;
   bankName: string;
@@ -6,7 +6,7 @@ export interface AccountEntity {
   registeredAt: Date;
 }
 
-export interface ProfileBadgeEntity {
+export interface ProfileBadge {
   id: number;
   code: string;
   name: string;
@@ -14,7 +14,7 @@ export interface ProfileBadgeEntity {
   acquiredAt: Date | null;
 }
 
-export interface ProfileEntity {
+export interface Profile {
   userId: number;
   email: string;
   name: string;
@@ -22,11 +22,11 @@ export interface ProfileEntity {
   transferLimit: number;
   createdAt: Date;
   profileImageUrl: string | null;
-  accounts: AccountEntity[];
-  badges: ProfileBadgeEntity[];
+  accounts: Account[];
+  badges: ProfileBadge[];
 }
 
-export interface ProfileSummaryEntity {
+export interface ProfileSummary {
   userId: number;
   email: string;
   name: string;
@@ -36,7 +36,7 @@ export interface ProfileSummaryEntity {
   createdAt: Date;
 }
 
-export interface AcquiredBadgeEntity {
+export interface AcquiredBadge {
   id: number;
   code: string;
   name: string;
@@ -44,7 +44,7 @@ export interface AcquiredBadgeEntity {
   description: string;
 }
 
-export interface LockedBadgeEntity {
+export interface LockedBadge {
   id: number;
   code: string;
   name: string;
@@ -53,7 +53,12 @@ export interface LockedBadgeEntity {
   currentCount: number;
 }
 
-export interface BadgeListEntity {
-  acquiredBadges: AcquiredBadgeEntity[];
-  lockedBadges: LockedBadgeEntity[];
+export interface BadgeList {
+  acquiredBadges: AcquiredBadge[];
+  lockedBadges: LockedBadge[];
+}
+
+export interface UpdateProfileParams {
+  transferLimit?: number;
+  profileImageKey?: string;
 }

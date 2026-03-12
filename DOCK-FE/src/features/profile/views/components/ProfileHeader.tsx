@@ -2,12 +2,12 @@ import React, { useState } from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { MaterialCommunityIcons as MaterialDesignIcons } from '@expo/vector-icons';
 
-import { AppColorStyles } from '../../../../../core/theme/colors';
-import { KBODiaGothicTextStyle } from '../../../../../core/theme/typography';
-import type { ProfileEntity } from '../../../domain/profile/ProfileEntity';
+import { AppColorStyles } from '../../../../core/theme/colors';
+import { KBODiaGothicTextStyle } from '../../../../core/theme/typography';
+import type { Profile } from '../../models/profileTypes';
 
 interface ProfileHeaderProps {
-  profile: Pick<ProfileEntity, 'name' | 'tag' | 'email' | 'profileImageUrl'>;
+  profile: Pick<Profile, 'name' | 'tag' | 'email' | 'profileImageUrl'>;
 }
 
 export function ProfileHeader({ profile }: ProfileHeaderProps) {

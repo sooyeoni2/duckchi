@@ -2,12 +2,12 @@ import React from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons as MaterialDesignIcons } from '@expo/vector-icons';
 
-import { AppColorStyles } from '../../../../../core/theme/colors';
-import { KBODiaGothicTextStyle } from '../../../../../core/theme/typography';
-import type { ProfileBadgeEntity } from '../../../domain/profile/ProfileEntity';
+import { AppColorStyles } from '../../../../core/theme/colors';
+import { KBODiaGothicTextStyle } from '../../../../core/theme/typography';
+import type { ProfileBadge } from '../../models/profileTypes';
 
 interface BadgeItemProps {
-  badge: ProfileBadgeEntity;
+  badge: ProfileBadge;
   /** acquired 뱃지 중 몇 번째인지 (플레이스홀더 색상 결정용) */
   acquiredIndex: number;
   /** 실제 배지 이미지 URI (추후 연동 시 전달) */
@@ -15,10 +15,10 @@ interface BadgeItemProps {
 }
 
 const ACQUIRED_COLORS = [
-  '#FEEC7E',
+  AppColorStyles.yellow,
   '#D980FF',
-  '#FF9F3F',
-  '#3FFF65',
+  AppColorStyles.caution,
+  AppColorStyles.success,
 ];
 
 const BADGE_SIZE = 60;

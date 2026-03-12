@@ -1,14 +1,14 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import { KBODiaGothicTextStyle } from '../../../../../core/theme/typography';
-import { AppColorStyles } from '../../../../../core/theme/colors';
+import { AppColorStyles } from '../../../../core/theme/colors';
+import { KBODiaGothicTextStyle } from '../../../../core/theme/typography';
 import { profileCardStyle } from '../profileCardStyle';
 import { BadgeItem } from './BadgeItem';
-import type { ProfileBadgeEntity } from '../../../domain/profile/ProfileEntity';
+import type { ProfileBadge } from '../../models/profileTypes';
 
 interface BadgePreviewCardProps {
-  badges: ProfileBadgeEntity[];
+  badges: ProfileBadge[];
 }
 
 export function BadgePreviewCard({ badges }: BadgePreviewCardProps) {

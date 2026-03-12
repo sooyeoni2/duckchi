@@ -1,14 +1,14 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { AppColorStyles } from '../../../../../core/theme/colors';
-import { KBODiaGothicTextStyle } from '../../../../../core/theme/typography';
-import { getBankColor } from '../../../../../core/constants/bankColors';
+import { AppColorStyles } from '../../../../core/theme/colors';
+import { KBODiaGothicTextStyle } from '../../../../core/theme/typography';
+import { getBankColor } from '../../../../core/constants/bankColors';
 import { profileCardStyle } from '../profileCardStyle';
-import type { AccountEntity } from '../../../domain/profile/ProfileEntity';
+import type { Account } from '../../models/profileTypes';
 
 interface AccountCardProps {
-  account: AccountEntity;
+  account: Account;
 }
 
 export function AccountCard({ account }: AccountCardProps) {

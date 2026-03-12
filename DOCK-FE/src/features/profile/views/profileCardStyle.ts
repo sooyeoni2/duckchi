@@ -1,6 +1,7 @@
 import { StyleSheet } from 'react-native';
-import { AppColorStyles } from '../../../../core/theme/colors';
-import { KBODiaGothicTextStyle } from '../../../../core/theme/typography';
+
+import { AppColorStyles } from '../../../core/theme/colors';
+import { KBODiaGothicTextStyle } from '../../../core/theme/typography';
 
 export const profileCardStyle = StyleSheet.create({
   card: {
@@ -9,7 +10,7 @@ export const profileCardStyle = StyleSheet.create({
     backgroundColor: AppColorStyles.surface,
     borderRadius: 10,
     padding: 16,
-    shadowColor: '#676767',
+    shadowColor: AppColorStyles.gray2,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 2,

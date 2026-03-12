@@ -1,9 +1,9 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { KBODiaGothicTextStyle } from '../../../../../core/theme/typography';
-import { AppColorStyles } from '../../../../../core/theme/colors';
-import { formatAmount } from '../../../../../core/utils/formatters';
+import { AppColorStyles } from '../../../../core/theme/colors';
+import { KBODiaGothicTextStyle } from '../../../../core/theme/typography';
+import { formatAmount } from '../../../../core/utils/formatters';
 import { profileCardStyle } from '../profileCardStyle';
 
 interface TransferLimitCardProps {

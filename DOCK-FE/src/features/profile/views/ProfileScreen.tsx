@@ -10,9 +10,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons as MaterialDesignIcons } from '@expo/vector-icons';
 
-import { AppColorStyles } from '../../../../core/theme/colors';
-import { KBODiaGothicTextStyle } from '../../../../core/theme/typography';
-import { useProfileViewModel } from './useProfileViewModel';
+import { AppColorStyles } from '../../../core/theme/colors';
+import { KBODiaGothicTextStyle } from '../../../core/theme/typography';
+import { useProfileViewModel } from '../viewmodels/useProfileViewModel';
 import { ProfileHeader } from './components/ProfileHeader';
 import { AccountCard } from './components/AccountCard';
 import { TransferLimitCard } from './components/TransferLimitCard';

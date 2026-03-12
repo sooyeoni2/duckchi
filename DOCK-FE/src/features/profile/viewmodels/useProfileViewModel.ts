@@ -1,13 +1,13 @@
 import { useCallback, useEffect } from 'react';
 import { create } from 'zustand';
 
-import type { ProfileEntity } from '../../domain/profile/ProfileEntity';
-import { ProfileRepositoryImpl } from '../../data/profile/ProfileRepositoryImpl';
+import { fetchProfile } from '../models/profileService';
+import type { Profile } from '../models/profileTypes';
 
 type ProfileState =
   | { status: 'idle' }
   | { status: 'loading' }
-  | { status: 'loaded'; profile: ProfileEntity }
+  | { status: 'loaded'; profile: Profile }
   | { status: 'error'; message: string };
 
 interface ProfileStore {
@@ -20,15 +20,13 @@ const useProfileStore = create<ProfileStore>(set => ({
   setState: state => set({ state }),
 }));
 
-const repository = new ProfileRepositoryImpl();
-
 export const useProfileViewModel = () => {
   const { state, setState } = useProfileStore();
 
   const loadProfile = useCallback(async () => {
     setState({ status: 'loading' });
     try {
-      const profile = await repository.fetchProfileDetail();
+      const profile = await fetchProfile();
       setState({ status: 'loaded', profile });
     } catch (error) {
       setState({
