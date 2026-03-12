@@ -139,18 +139,33 @@ let mockProfile = profileDetailSchema.parse({
     },
   ],
   badges: [
-    { id: 2, code: 'FAST_SETTLER', name: '⚡ 번개 정산러', isAcquired: true, requiredAt: '2026-03-04T15:30:00+09:00' },
-    { id: 3, code: 'INSSA', name: '⚡ 프로 참여러', isAcquired: false, requiredAt: '2026-03-04T15:30:00+09:00' },
+    { id: 1, code: 'FIRST_GATHER', name: '첫 모임', isAcquired: true, requiredAt: '2026-03-04T15:30:00+09:00' },
+    { id: 2, code: 'FAST_SETTLER', name: '번개 정산러', isAcquired: true, requiredAt: '2026-03-04T15:30:00+09:00' },
+    { id: 3, code: 'INSSA', name: '프로 참여러', isAcquired: false, requiredAt: '2026-03-04T15:30:00+09:00' },
+    { id: 4, code: 'EARLY_BIRD', name: '얼리버드', isAcquired: false, requiredAt: '2026-03-04T15:30:00+09:00' },
+    { id: 5, code: 'BIG_SPENDER', name: '큰손', isAcquired: false, requiredAt: '2026-03-04T15:30:00+09:00' },
+    { id: 6, code: 'SPLITTER', name: '정산왕', isAcquired: false, requiredAt: '2026-03-04T15:30:00+09:00' },
+    { id: 7, code: 'LUCKY', name: '행운의 덕', isAcquired: false, requiredAt: '2026-03-04T15:30:00+09:00' },
+    { id: 8, code: 'SOCIAL', name: '인싸덕', isAcquired: false, requiredAt: '2026-03-04T15:30:00+09:00' },
+    { id: 9, code: 'LOYAL', name: '단골덕', isAcquired: false, requiredAt: '2026-03-04T15:30:00+09:00' },
+    { id: 10, code: 'LEGEND', name: '전설의 덕', isAcquired: false, requiredAt: '2026-03-04T15:30:00+09:00' },
   ],
 });
 
 const mockBadgeList = badgeListSchema.parse({
   acquiredBadges: [
-    { id: 2, code: 'FAST_SETTLER', name: '⚡ 번개 정산러', acquiredAt: '2026-03-04T15:30:00+09:00', description: '24h이내 10회' },
-    { id: 3, code: 'INSSA', name: '⚡ 프로 참여러', acquiredAt: '2026-03-04T15:30:00+09:00', description: '모임 참여 10회 이상' },
+    { id: 1, code: 'FIRST_GATHER', name: '첫 모임', acquiredAt: '2026-03-04T15:30:00+09:00', description: '첫 모임방 참여' },
+    { id: 2, code: 'FAST_SETTLER', name: '번개 정산러', acquiredAt: '2026-03-04T15:30:00+09:00', description: '24h 이내 정산 10회' },
   ],
   lockedBadges: [
-    { id: 4, code: 'EARLY_BIRD', name: '🌅 얼리버드', description: '오전 7시 이전 정산 3회', requiredCount: 3, currentCount: 1 },
+    { id: 3, code: 'INSSA', name: '프로 참여러', description: '모임 참여 10회', requiredCount: 10, currentCount: 4 },
+    { id: 4, code: 'EARLY_BIRD', name: '얼리버드', description: '오전 7시 이전 정산 3회', requiredCount: 3, currentCount: 1 },
+    { id: 5, code: 'BIG_SPENDER', name: '큰손', description: '단건 결제 10만원 이상 3회', requiredCount: 3, currentCount: 0 },
+    { id: 6, code: 'SPLITTER', name: '정산왕', description: '정산 완료 20회', requiredCount: 20, currentCount: 7 },
+    { id: 7, code: 'LUCKY', name: '행운의 덕', description: 'N빵 당첨 5회', requiredCount: 5, currentCount: 2 },
+    { id: 8, code: 'SOCIAL', name: '인싸덕', description: '모임 인원 10명 이상 3회', requiredCount: 3, currentCount: 1 },
+    { id: 9, code: 'LOYAL', name: '단골덕', description: '같은 멤버와 5회 이상 모임', requiredCount: 5, currentCount: 3 },
+    { id: 10, code: 'LEGEND', name: '전설의 덕', description: '모든 배지 획득', requiredCount: 9, currentCount: 2 },
   ],
 });
 

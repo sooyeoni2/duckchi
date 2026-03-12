@@ -25,12 +25,16 @@ export function BadgePreviewCard({ badges }: BadgePreviewCardProps) {
         </TouchableOpacity>
       </View>
       <View style={styles.grid}>
-        {displayBadges.map(badge => (
-          <BadgeItem
-            key={badge.id}
-            badge={badge}
-            acquiredIndex={acquiredBadges.indexOf(badge)}
-          />
+        {[0, 1].map(row => (
+          <View key={row} style={styles.row}>
+            {displayBadges.slice(row * 3, row * 3 + 3).map((badge, col) => (
+              <BadgeItem
+                key={badge.id}
+                badge={badge}
+                badgeIndex={row * 3 + col}
+              />
+            ))}
+          </View>
         ))}
       </View>
     </View>
@@ -51,8 +55,10 @@ const styles = StyleSheet.create({
     ...KBODiaGothicTextStyle.medium({ fontSize: 10, color: AppColorStyles.textDisabled }),
   },
   grid: {
+    gap: 8,
+  },
+  row: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     justifyContent: 'space-around',
   },
 });

@@ -1,8 +1,9 @@
 import { MaterialCommunityIcons as MaterialDesignIcons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import React from 'react';
+import { AppColorStyles } from '../theme/colors';
 import { HomeScreen } from '../../features/home/HomeScreen';
-import { ProfileScreen } from '../../features/profile/presentation/profile/ProfileScreen';
+import { ProfileScreen } from '../../features/profile/views/ProfileScreen';
 import { ReportScreen } from '../../features/report/ReportScreen';
 import { RoomScreen } from '../../features/room/RoomScreen';
 import { AppTabParamList } from './types';
@@ -27,12 +28,12 @@ export function AppNavigator() {
             : tabIcons[route.name].inactive;
           return <MaterialDesignIcons name={icon as any} size={size} color={color} />;
         },
-        tabBarActiveTintColor: '#000000',
-        tabBarInactiveTintColor: '#CECECE',
+        tabBarActiveTintColor: AppColorStyles.black,
+        tabBarInactiveTintColor: AppColorStyles.gray2,
         tabBarShowLabel: false,
         tabBarStyle: {
-          backgroundColor: '#F2F3F5',
-          borderTopColor: '#E0E0E0',
+          backgroundColor: AppColorStyles.background,
+          borderTopColor: AppColorStyles.gray3,
           paddingTop: 8,
         },
       })}

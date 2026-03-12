@@ -1,46 +1,29 @@
 import React from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
-import { MaterialCommunityIcons as MaterialDesignIcons } from '@expo/vector-icons';
+
 
 import { AppColorStyles } from '../../../../core/theme/colors';
 import { KBODiaGothicTextStyle } from '../../../../core/theme/typography';
+import { BADGE_IMAGES, BADGE_LOCKED_IMAGE } from '../../../../core/constants/badgeImages';
 import type { ProfileBadge } from '../../models/profileTypes';
 
 interface BadgeItemProps {
   badge: ProfileBadge;
-  /** acquired 뱃지 중 몇 번째인지 (플레이스홀더 색상 결정용) */
-  acquiredIndex: number;
-  /** 실제 배지 이미지 URI (추후 연동 시 전달) */
-  imageUri?: string;
+  /** 배지 슬롯 번호 (0~9) → duck1~duck10 이미지 결정 */
+  badgeIndex: number;
 }
 
-const ACQUIRED_COLORS = [
-  AppColorStyles.yellow,
-  '#D980FF',
-  AppColorStyles.caution,
-  AppColorStyles.success,
-];
+const BADGE_SIZE = 80;
 
-const BADGE_SIZE = 60;
-
-export const BadgeItem: React.FC<BadgeItemProps> = ({ badge, acquiredIndex, imageUri }) => {
-  const placeholderColor = badge.isAcquired
-    ? ACQUIRED_COLORS[acquiredIndex % ACQUIRED_COLORS.length]
-    : AppColorStyles.gray4;
+export const BadgeItem: React.FC<BadgeItemProps> = ({ badge, badgeIndex }) => {
+  const imageSource = badge.isAcquired
+    ? BADGE_IMAGES[badgeIndex % BADGE_IMAGES.length]
+    : BADGE_LOCKED_IMAGE;
 
   return (
     <View style={styles.container}>
-      <View style={[styles.imageWrapper, { backgroundColor: placeholderColor }]}>
-        {imageUri ? (
-          <Image source={{ uri: imageUri }} style={styles.image} />
-        ) : (
-          <MaterialDesignIcons
-            name={badge.isAcquired ? 'star' : 'lock-outline'}
-            size={28}
-            color={badge.isAcquired ? AppColorStyles.white : AppColorStyles.gray2}
-          />
-        )}
-        {!badge.isAcquired && <View style={styles.lockedOverlay} />}
+      <View style={styles.imageWrapper}>
+        <Image source={imageSource} style={[styles.image, !badge.isAcquired && { opacity: 0.4 }]} />
       </View>
       <Text
         style={[styles.name, !badge.isAcquired && styles.nameDisabled]}
@@ -61,23 +44,12 @@ const styles = StyleSheet.create({
   imageWrapper: {
     width: BADGE_SIZE,
     height: BADGE_SIZE,
-    borderRadius: BADGE_SIZE / 2,
-    alignItems: 'center',
-    justifyContent: 'center',
     marginBottom: 6,
-    overflow: 'hidden',
   },
   image: {
     width: BADGE_SIZE,
     height: BADGE_SIZE,
-  },
-  lockedOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(242, 243, 245, 0.5)',
+    resizeMode: 'contain',
   },
   name: {
     ...KBODiaGothicTextStyle.medium({ fontSize: 11, color: AppColorStyles.textPrimary }),
