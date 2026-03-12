@@ -56,9 +56,10 @@ export const CustomAppBar: React.FC<CustomAppBarProps> = ({
   const effectiveBg = backgroundColor ?? AppColorStyles.white;
   const effectiveFg = foregroundColor ?? AppColorStyles.black;
 
+  const hasLeading = leading != null || showBackButton;
+
   const renderLeading = () => {
     if (leading != null) return leading;
-    if (!showBackButton) return <View style={styles.leadingPlaceholder} />;
     return (
       <TouchableOpacity
         onPress={onBackPress}
@@ -77,8 +78,8 @@ export const CustomAppBar: React.FC<CustomAppBarProps> = ({
         backgroundColor="transparent"
         translucent={Platform.OS === 'android'}
       />
-      <View style={[styles.container, { backgroundColor: effectiveBg }, style]}>
-        <View style={styles.leadingArea}>{renderLeading()}</View>
+      <View style={[styles.container, { backgroundColor: effectiveBg }, !hasLeading && styles.containerNoLeading, style]}>
+        {hasLeading && <View style={styles.leadingArea}>{renderLeading()}</View>}
 
         <View style={[styles.titleArea, centerTitle && styles.titleCenter]}>
           {titleWidget ?? (
@@ -190,6 +191,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 4,
   },
+  containerNoLeading: {
+    paddingLeft: 16,
+  },
   leadingArea: {
     width: 48,
     alignItems: 'center',
@@ -216,6 +220,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     minWidth: 48,
     justifyContent: 'flex-end',
+    paddingRight: 16,
   },
   tabbedContainer: {},
   tabbedTitleRow: {
