@@ -1,4 +1,4 @@
-import MaterialDesignIcons from '@react-native-vector-icons/material-design-icons';
+import { MaterialCommunityIcons as MaterialDesignIcons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import React from 'react';
 import { HomeScreen } from '../../features/home/HomeScreen';

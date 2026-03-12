@@ -1,16 +1,26 @@
 # 📁 폴더 구조 가이드
 
 ## ✅ 목적
-Feature-First 구조를 기반으로 각 기능별로 Clean Architecture의 레이어를 구성하여
-확장 가능하고 유지보수가 용이한 React Native 프로젝트 구조를 제공합니다.
+Feature-First 구조를 기반으로 MVVM 패턴을 적용하여
+직관적이고 유지보수가 쉬운 React Native 프로젝트 구조를 제공합니다.
 
 ---
 
 ## 🧱 설계 원칙
 - **기능별 독립성**: 각 Feature는 독립적으로 개발/테스트 가능
-- **레이어 분리**: Data, Domain, Presentation 레이어 명확히 구분
-- **단방향 의존성**: 상위 레이어(Presentation) → 하위 레이어(Domain → Data)로만 의존
-- **Mapper 분리**: DTO와 Entity 변환은 Mapper가 전담
+- **3계층 분리**: Model, ViewModel, View 명확히 구분
+- **단방향 데이터 흐름**: View → ViewModel → Model
+- **단순함 우선**: 불필요한 추상화 없이 직관적인 구조
+
+---
+
+## ✅ MVVM 레이어 역할
+
+| 레이어 | 역할 | 파일 |
+|--------|------|------|
+| **Model** | API 통신, 타입 정의 | `{name}Service.ts`, `{name}Types.ts` |
+| **ViewModel** | 상태 관리, 비즈니스 로직 | `use{Name}ViewModel.ts` |
+| **View** | UI 렌더링, 사용자 입력 | `{Name}Screen.tsx`, `components/` |
 
 ---
 
@@ -22,7 +32,7 @@ Feature-First 구조를 기반으로 각 기능별로 Clean Architecture의 레�
 | 상태 관리 | Zustand |
 | HTTP 클라이언트 | Axios |
 | 네비게이션 | React Navigation |
-| 타입 정의/직렬화 검증 | TypeScript 인터페이스 + Zod |
+| 타입 검증 | Zod |
 | ViewModel | 커스텀 훅 (useXxxViewModel) |
 
 ---
@@ -32,139 +42,48 @@ Feature-First 구조를 기반으로 각 기능별로 Clean Architecture의 레�
 ```
 src/
 ├── core/                           # 공통 기능
-│   ├── constants/                  # 상수 정의
+│   ├── constants/
 │   │   ├── apiConstants.ts         # API URL, endpoint, timeout 등
-│   │   └── appConstants.ts         # 앱 전역 상수 (버전, 설정값 등)
-│   ├── theme/                      # 테마 관련
-│   │   ├── colors.ts               # 색상 정의
-│   │   ├── typography.ts           # 폰트 스타일
-│   │   └── theme.ts                # 테마 통합
-│   ├── navigation/                 # ✨ React Navigation 설정
-│   │   ├── RootNavigator.tsx       # 루트 네비게이터 (인증 분기)
-│   │   ├── AppNavigator.tsx        # 인증 후 네비게이터 (Bottom Tab)
-│   │   ├── AuthNavigator.tsx       # 인증 전 Stack 네비게이터
-│   │   └── types.ts                # 네비게이션 타입 정의
-│   ├── network/                    # 네트워크 설정
-│   │   ├── axiosClient.ts          # Axios 인스턴스 생성 및 설정
+│   │   └── appConstants.ts         # 앱 전역 상수
+│   ├── theme/
+│   │   ├── colors.ts
+│   │   ├── typography.ts
+│   │   └── theme.ts
+│   ├── navigation/
+│   │   ├── RootNavigator.tsx
+│   │   ├── AppNavigator.tsx
+│   │   ├── AuthNavigator.tsx
+│   │   └── types.ts
+│   ├── network/
+│   │   ├── axiosClient.ts
 │   │   └── interceptors/
-│   │       ├── authInterceptor.ts  # 토큰 주입/갱신
-│   │       └── errorInterceptor.ts # 에러 핸들링
-│   ├── utils/                      # 유틸리티 함수
-│   │   ├── dateUtils.ts
-│   │   ├── validatorUtils.ts
-│   │   └── formatUtils.ts
-│   └── errors/                     # 에러 정의
-│       ├── AppError.ts             # 커스텀 에러 클래스
-│       └── errorTypes.ts           # 에러 타입 상수
+│   │       ├── authInterceptor.ts
+│   │       └── errorInterceptor.ts
+│   └── utils/
+│       ├── dateUtils.ts
+│       ├── validatorUtils.ts
+│       └── formatUtils.ts
 │
 ├── features/                       # 기능별 폴더
 │   ├── auth/
-│   │   ├── data/
-│   │   │   ├── login/
-│   │   │   │   ├── dataSource/
-│   │   │   │   │   ├── ILoginDataSource.ts          # 인터페이스
-│   │   │   │   │   ├── LoginDataSourceImpl.ts       # API 구현
-│   │   │   │   │   └── MockLoginDataSource.ts       # Mock 구현
-│   │   │   │   ├── loginDto.ts                      # DTO + Zod 스키마
-│   │   │   │   ├── loginMapper.ts                   # DTO ↔ Entity 변환
-│   │   │   │   └── LoginRepositoryImpl.ts           # Repository 구현
-│   │   │   └── registration/
-│   │   ├── domain/
-│   │   │   ├── login/
-│   │   │   │   ├── LoginEntity.ts                   # Entity 타입
-│   │   │   │   └── ILoginRepository.ts              # Repository 인터페이스
-│   │   │   └── registration/
-│   │   └── presentation/
-│   │       ├── login/
-│   │       │   ├── LoginScreen.tsx                  # 화면
-│   │       │   ├── useLoginViewModel.ts             # ViewModel 훅
-│   │       │   └── components/                      # 화면별 컴포넌트
-│   │       │       └── LoginForm.tsx
-│   │       └── registration/
+│   │   ├── models/
+│   │   │   ├── authTypes.ts        # 타입 정의
+│   │   │   └── authService.ts      # API 호출 함수
+│   │   ├── viewmodels/
+│   │   │   └── useLoginViewModel.ts
+│   │   └── views/
+│   │       ├── LoginScreen.tsx
+│   │       └── components/
+│   │           └── LoginForm.tsx
 │   │
 │   ├── gathering/                  # 모임방
-│   │   ├── data/
-│   │   │   ├── gathering_list/
-│   │   │   │   ├── dataSource/
-│   │   │   │   │   ├── IGatheringDataSource.ts
-│   │   │   │   │   ├── GatheringDataSourceImpl.ts
-│   │   │   │   │   └── MockGatheringDataSource.ts
-│   │   │   │   ├── gatheringDto.ts
-│   │   │   │   ├── gatheringMapper.ts
-│   │   │   │   └── GatheringRepositoryImpl.ts
-│   │   │   └── gathering_detail/
-│   │   ├── domain/
-│   │   │   ├── gathering_list/
-│   │   │   │   ├── GatheringEntity.ts
-│   │   │   │   └── IGatheringRepository.ts
-│   │   │   └── gathering_detail/
-│   │   │       └── usecases/
-│   │   │           └── DelegateHostUseCase.ts       # 방장 위임
-│   │   └── presentation/
-│   │       ├── gathering_list/
-│   │       │   ├── GatheringListScreen.tsx
-│   │       │   ├── useGatheringListViewModel.ts
-│   │       │   └── components/
-│   │       │       └── GatheringCard.tsx
-│   │       └── gathering_detail/
-│   │           ├── GatheringDetailScreen.tsx
-│   │           ├── useGatheringDetailViewModel.ts
-│   │           └── components/
-│   │
 │   ├── payment/                    # 결제/정산
-│   │   ├── data/
-│   │   │   ├── receipt_scan/       # OCR 영수증 스캔
-│   │   │   │   ├── dataSource/
-│   │   │   │   │   ├── IReceiptScanDataSource.ts
-│   │   │   │   │   ├── ReceiptScanDataSourceImpl.ts
-│   │   │   │   │   └── MockReceiptScanDataSource.ts
-│   │   │   │   ├── receiptScanDto.ts
-│   │   │   │   ├── receiptScanMapper.ts
-│   │   │   │   └── ReceiptScanRepositoryImpl.ts
-│   │   │   └── payment_list/
-│   │   ├── domain/
-│   │   │   ├── receipt_scan/
-│   │   │   │   ├── ReceiptScanEntity.ts
-│   │   │   │   └── IReceiptScanRepository.ts
-│   │   │   └── payment_list/
-│   │   │       └── usecases/
-│   │   │           └── AssignMenuMembersUseCase.ts  # 메뉴별 멤버 지정
-│   │   └── presentation/
-│   │       ├── receipt_scan/
-│   │       │   ├── ReceiptScanScreen.tsx
-│   │       │   ├── useReceiptScanViewModel.ts
-│   │       │   └── components/
-│   │       │       ├── ReceiptItemList.tsx
-│   │       │       └── MemberAssignModal.tsx
-│   │       └── payment_list/
-│   │
 │   ├── nbang/                      # N빵 뽑기
-│   │   ├── data/
-│   │   │   └── nbang_draw/
-│   │   │       ├── dataSource/
-│   │   │       │   ├── INbangDrawDataSource.ts
-│   │   │       │   ├── NbangDrawDataSourceImpl.ts
-│   │   │       │   └── MockNbangDrawDataSource.ts
-│   │   │       ├── nbangDrawDto.ts
-│   │   │       ├── nbangDrawMapper.ts
-│   │   │       └── NbangDrawRepositoryImpl.ts
-│   │   ├── domain/
-│   │   │   └── nbang_draw/
-│   │   │       ├── NbangDrawEntity.ts
-│   │   │       └── INbangDrawRepository.ts
-│   │   └── presentation/
-│   │       └── nbang_draw/
-│   │           ├── NbangDrawScreen.tsx
-│   │           ├── useNbangDrawViewModel.ts
-│   │           └── components/
-│   │               ├── DrawCardGrid.tsx
-│   │               └── DrawResultCard.tsx
-│   │
 │   ├── spendReport/                # 소비 리포트
 │   └── profile/                    # 프로필
 │
 └── shared/                         # 공유 컴포넌트
-    ├── components/                 # 공통 컴포넌트
+    ├── components/
     │   ├── navigation/
     │   │   └── BottomTabBar.tsx
     │   ├── buttons/
@@ -181,7 +100,7 @@ src/
     │   │   └── EmptyView.tsx
     │   └── layout/
     │       └── SafeAreaContainer.tsx
-    └── types/                      # 공통 타입
+    └── types/
         ├── Pagination.ts
         └── ApiResponse.ts
 ```
@@ -190,33 +109,24 @@ src/
 
 ## ✅ 각 레이어별 파일 구성
 
-### Data Layer (`data/`)
+### Model Layer (`models/`)
 ```
-{feature_name}/data/{sub_feature}/
-├── dataSource/
-│   ├── I{Name}DataSource.ts           # 인터페이스
-│   ├── {Name}DataSourceImpl.ts        # API 구현
-│   └── Mock{Name}DataSource.ts        # Mock 구현
-├── {name}Dto.ts                       # DTO + Zod 스키마 정의
-├── {name}Mapper.ts                    # DTO ↔ Entity 변환
-└── {Name}RepositoryImpl.ts            # Repository 구현
+{feature_name}/models/
+├── {name}Types.ts       # 타입 정의 (API 응답 타입, 앱 내부 타입)
+└── {name}Service.ts     # API 호출 함수 모음
 ```
 
-### Domain Layer (`domain/`)
+### ViewModel Layer (`viewmodels/`)
 ```
-{feature_name}/domain/{sub_feature}/
-├── {Name}Entity.ts                    # Entity 타입 정의
-├── I{Name}Repository.ts               # Repository 인터페이스
-└── usecases/                          # UseCase (복잡한 로직만)
-    └── {Action}{Name}UseCase.ts
+{feature_name}/viewmodels/
+└── use{Name}ViewModel.ts   # 상태 + 비즈니스 로직
 ```
 
-### Presentation Layer (`presentation/`)
+### View Layer (`views/`)
 ```
-{feature_name}/presentation/{sub_feature}/
-├── {Name}Screen.tsx                   # 화면
-├── use{Name}ViewModel.ts              # ViewModel 훅
-└── components/                        # 화면별 컴포넌트
+{feature_name}/views/
+├── {Name}Screen.tsx         # 화면
+└── components/              # 화면별 컴포넌트
     ├── {ComponentName}.tsx
     └── ...
 ```
@@ -229,15 +139,9 @@ src/
 |------|------|------|
 | Screen | `{Name}Screen.tsx` | `GatheringListScreen.tsx` |
 | ViewModel 훅 | `use{Name}ViewModel.ts` | `useGatheringListViewModel.ts` |
-| Entity | `{Name}Entity.ts` | `GatheringEntity.ts` |
-| Repository 인터페이스 | `I{Name}Repository.ts` | `IGatheringRepository.ts` |
-| Repository 구현 | `{Name}RepositoryImpl.ts` | `GatheringRepositoryImpl.ts` |
-| DataSource 인터페이스 | `I{Name}DataSource.ts` | `IGatheringDataSource.ts` |
-| DataSource 구현 | `{Name}DataSourceImpl.ts` | `GatheringDataSourceImpl.ts` |
-| DTO | `{name}Dto.ts` | `gatheringDto.ts` |
-| Mapper | `{name}Mapper.ts` | `gatheringMapper.ts` |
-| Component | `{Name}.tsx` | `GatheringCard.tsx`, `MemberAssignModal.tsx` |
-| UseCase | `{Action}{Name}UseCase.ts` | `DelegateHostUseCase.ts` |
+| Service | `{name}Service.ts` | `gatheringService.ts` |
+| Types | `{name}Types.ts` | `gatheringTypes.ts` |
+| Component | `{Name}.tsx` | `GatheringCard.tsx` |
 
 ---
 
@@ -250,7 +154,6 @@ import { View, Text, StyleSheet } from 'react-native';
 
 // 2. 서드파티 라이브러리 (알파벳 순)
 import { NavigationProp } from '@react-navigation/native';
-import axios from 'axios';
 import { create } from 'zustand';
 
 // 3. 프로젝트 내부 - core
@@ -258,8 +161,8 @@ import { axiosClient } from '@core/network/axiosClient';
 import { colors } from '@core/theme/colors';
 
 // 4. 프로젝트 내부 - features (상대 경로)
-import { GatheringEntity } from '../../domain/gathering_list/GatheringEntity';
-import { useGatheringListViewModel } from './useGatheringListViewModel';
+import { getGatherings } from '../models/gatheringService';
+import { useGatheringListViewModel } from '../viewmodels/useGatheringListViewModel';
 
 // 5. 프로젝트 내부 - shared
 import { PrimaryButton } from '@shared/components/buttons/PrimaryButton';
@@ -291,24 +194,19 @@ import type { RootStackParamList } from '@core/navigation/types';
 
 ### 1️⃣ 폴더 구조 생성
 ```bash
-mkdir -p src/features/{feature_name}/data/{sub_feature}/dataSource
-mkdir -p src/features/{feature_name}/domain/{sub_feature}/usecases
-mkdir -p src/features/{feature_name}/presentation/{sub_feature}/components
+mkdir -p src/features/{feature_name}/models
+mkdir -p src/features/{feature_name}/viewmodels
+mkdir -p src/features/{feature_name}/views/components
 ```
 
-### 2️⃣ Domain Layer 작성
-- [ ] Entity 타입 정의 (`{Name}Entity.ts`)
-- [ ] Repository 인터페이스 정의 (`I{Name}Repository.ts`)
+### 2️⃣ Model Layer 작성
+- [ ] 타입 정의 (`{name}Types.ts`)
+- [ ] API 호출 함수 작성 (`{name}Service.ts`)
 
-### 3️⃣ Data Layer 작성
-- [ ] DTO + Zod 스키마 정의 (`{name}Dto.ts`)
-- [ ] Mapper 작성 (`{name}Mapper.ts`)
-- [ ] DataSource 인터페이스 (`I{Name}DataSource.ts`)
-- [ ] DataSource 구현 (`{Name}DataSourceImpl.ts`)
-- [ ] Repository 구현 (`{Name}RepositoryImpl.ts`)
-
-### 4️⃣ Presentation Layer 작성
+### 3️⃣ ViewModel Layer 작성
 - [ ] ViewModel 훅 작성 (`use{Name}ViewModel.ts`)
+
+### 4️⃣ View Layer 작성
 - [ ] Screen 작성 (`{Name}Screen.tsx`)
 - [ ] 필요한 Component 작성 (`components/`)
 
@@ -320,11 +218,8 @@ mkdir -p src/features/{feature_name}/presentation/{sub_feature}/components
 
 ## 📎 관련 문서
 - **네이밍 규칙**: `naming.md`
-- **DTO 설계**: `dto.md`
-- **Mapper 설계**: `mapper.md`
-- **DataSource 설계**: `data_source.md`
+- **타입/Service 설계**: `model.md`
 - **State 관리**: `state.md`
 - **ViewModel 설계**: `viewmodel.md`
 - **Screen 설계**: `screen.md`
 - **Component 설계**: `component.md`
-- **UseCase 설계**: `usecase.md`

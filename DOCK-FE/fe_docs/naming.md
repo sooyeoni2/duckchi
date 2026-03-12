@@ -18,48 +18,29 @@
 
 ### 파일명
 ```typescript
-// 컴포넌트/클래스 파일 → PascalCase
+// 컴포넌트/화면 파일 → PascalCase
 LoginScreen.tsx             // ✅ 올바름
 PrimaryButton.tsx           // ✅ 올바름
-LoginEntity.ts              // ✅ 올바름
-ILoginRepository.ts         // ✅ 올바름
 
-// 훅/유틸/DTO/Mapper 파일 → camelCase
+// 훅/서비스/타입/유틸 파일 → camelCase
 useLoginViewModel.ts        // ✅ 올바름
-loginDto.ts                 // ✅ 올바름
-loginMapper.ts              // ✅ 올바름
+authService.ts              // ✅ 올바름
+authTypes.ts                // ✅ 올바름
 dateUtils.ts                // ✅ 올바름
 apiConstants.ts             // ✅ 올바름
 ```
 
-### 클래스명 (PascalCase)
-```typescript
-class LoginRepositoryImpl {}     // ✅ 올바름
-class loginRepositoryImpl {}     // ❌ 틀림
-```
-
-### 인터페이스명 (I + PascalCase)
-```typescript
-interface ILoginRepository {}    // ✅ 올바름
-interface IGatheringDataSource {}// ✅ 올바름
-interface LoginRepository {}     // ❌ I prefix 누락
-```
-
 ### 변수명/함수명 (camelCase)
 ```typescript
-const userName = '';                     // ✅ 올바름
-const getUserData = () => {};            // ✅ 올바름
-const fetchGatherings = async () => {};  // ✅ 올바름
-
-const user_name = '';                    // ❌ 틀림
-const GetUserData = () => {};            // ❌ 틀림 (함수는 camelCase)
+const userName = '';
+const getUserData = () => {};
+const fetchGatherings = async () => {};
 ```
 
 ### React 컴포넌트명 (PascalCase)
 ```typescript
-const LoginScreen: React.FC = () => {};      // ✅ 올바름
-const PrimaryButton: React.FC = () => {};    // ✅ 올바름
-const loginScreen: React.FC = () => {};      // ❌ 틀림
+const LoginScreen: React.FC = () => {};
+const PrimaryButton: React.FC = () => {};
 ```
 
 ### 상수
@@ -77,232 +58,121 @@ export const apiConstants = {
 
 ### 타입/인터페이스 (PascalCase)
 ```typescript
-type LoginState = { ... };           // ✅ 올바름
-interface UserEntity { ... }         // ✅ 올바름
-type CompanionListStatus = ...;      // ✅ 올바름
+type GatheringItem = { ... };
+interface UserProfile { ... }
 ```
 
-### Zustand Store 훅 (use + PascalCase + Store)
+### Zustand Store 훅
 ```typescript
-const useGatheringStore = create<GatheringStore>(...);  // ✅
-type GatheringStore = { ... };                          // ✅
+const useGatheringStore = create<GatheringStore>(...);
+type GatheringStore = { ... };
 ```
 
 ---
 
-## ✅ 레이어별 네이밍 규칙
+## ✅ MVVM 레이어별 네이밍 규칙
 
-### 1. Entity (Domain Layer)
+### 1. Types (`{name}Types.ts`)
 ```typescript
-// 파일명: {Name}Entity.ts
-// 타입명: {Name}Entity
+// 파일: gatheringTypes.ts
 
-// ✅ 예시
-// 파일: UserEntity.ts
-export interface UserEntity {
-  id: number;
-  email: string;
-  nickname: string;
-  profileImage?: string;
-}
-
-// 파일: GatheringEntity.ts
-export interface GatheringEntity {
+// API 응답 타입 (snake_case 허용)
+export interface GatheringResponse {
   id: number;
   title: string;
-  gameDate: Date;
-  homeTeam: string;
-  awayTeam: string;
-  maxParticipants: number;
-  currentParticipants: number;
-  isFull: boolean;        // 계산된 필드
+  host_id: number;
+  member_count: number;
+  created_at: string;
 }
-```
 
-**네이밍 팁:**
-- 비즈니스 도메인 용어 사용
-- 복수형보다 단수형 선호 (`User` not `Users`)
-- 명확한 의미 전달 (`UserProfile` not `Data`)
-
----
-
-### 2. DTO (Data Layer)
-```typescript
-// 파일명: {name}Dto.ts
-// 타입명: {Name}Dto
-
-// ✅ 예시
-// 파일: loginDto.ts
-export interface LoginDto {
+// 앱 내부에서 사용하는 타입 (camelCase)
+export interface GatheringItem {
   id: number;
-  email: string;
-  nickname: string;
-  profile_image?: string;   // API의 snake_case 그대로
-  access_token: string;
-  refresh_token: string;
+  title: string;
+  hostId: number;
+  memberCount: number;
+  createdAt: Date;
 }
 ```
 
 **네이밍 팁:**
-- API 응답 필드명과 일치 (snake_case 허용)
-- 반드시 `Dto` suffix 붙이기
+- API 응답 타입: `{Name}Response`
+- 앱 내부 타입: `{Name}Item` 또는 `{Name}`
+- 요청 파라미터 타입: `{Name}Params` 또는 `Create{Name}Request`
 
 ---
 
-### 3. Mapper
+### 2. Service (`{name}Service.ts`)
 ```typescript
-// 파일명: {name}Mapper.ts
-// 네임스페이스/객체명: {Name}Mapper
-// 메서드명: toEntity, fromEntity, toEntityList
+// 파일: gatheringService.ts
 
-// ✅ 예시
-// 파일: gatheringMapper.ts
-export const GatheringMapper = {
-  toEntity: (dto: GatheringDto): GatheringEntity => { ... },
-  toEntityList: (dtos: GatheringDto[]): GatheringEntity[] => { ... },
-  fromEntity: (entity: GatheringEntity): Partial<GatheringDto> => { ... },
-};
+export const getGatherings = async (params: GetGatheringsParams): Promise<GatheringItem[]> => { ... };
+export const getGatheringById = async (id: number): Promise<GatheringItem> => { ... };
+export const createGathering = async (data: CreateGatheringRequest): Promise<GatheringItem> => { ... };
+export const updateGathering = async (id: number, data: UpdateGatheringRequest): Promise<GatheringItem> => { ... };
+export const deleteGathering = async (id: number): Promise<void> => { ... };
 ```
 
-**메서드 네이밍 규칙:**
-| 메서드명 | 용도 |
-|---------|------|
-| `toEntity` | DTO → Entity |
-| `fromEntity` | Entity → DTO |
-| `toEntityList` | DTO[] → Entity[] |
-| `fromEntityList` | Entity[] → DTO[] |
+**함수 네이밍 규칙:**
+| 작업 | 패턴 | 예시 |
+|-----|------|------|
+| 조회 (단건) | `get{Name}By{Param}` | `getGatheringById` |
+| 조회 (목록) | `get{Names}` | `getGatherings` |
+| 생성 | `create{Name}` | `createGathering` |
+| 수정 | `update{Name}` | `updateGathering` |
+| 삭제 | `delete{Name}` | `deleteGathering` |
+| 업로드 | `upload{Name}` | `uploadReceipt` |
 
 ---
 
-### 4. Repository
+### 3. ViewModel Hook (`use{Name}ViewModel.ts`)
 ```typescript
-// 인터페이스: I{Name}Repository.ts
-// 구현: {Name}RepositoryImpl.ts
-
-// ✅ 인터페이스
-export interface IGatheringRepository {
-  getGatherings(params: GetCompanionsParams): Promise<GatheringEntity[]>;
-  getGatheringById(id: number): Promise<GatheringEntity>;
-  createGathering(data: CreateCompanionData): Promise<GatheringEntity>;
-  updateGathering(id: number, data: UpdateCompanionData): Promise<GatheringEntity>;
-  deleteGathering(id: number): Promise<void>;
-}
-```
-
-**메서드 네이밍 규칙:**
-| 작업 | 메서드명 패턴 | 예시 |
-|-----|-------------|------|
-| 조회 (단건) | `get{Name}By{Param}` | `getMemberById`, `getGatheringById` |
-| 조회 (목록) | `get{Names}` | `getGatherings`, `getUsers` |
-| 생성 | `create{Name}` | `createGathering`, `createMember` |
-| 수정 | `update{Name}` | `updateGathering`, `updateProfile` |
-| 삭제 | `delete{Name}` | `deleteGathering`, `deleteMember` |
-| 검색 | `search{Names}` | `searchGatherings`, `searchMembers` |
-
----
-
-### 5. DataSource
-```typescript
-// 인터페이스: I{Name}DataSource.ts
-// 구현: {Name}DataSourceImpl.ts
-// Mock: Mock{Name}DataSource.ts
-
-export interface IGatheringDataSource {
-  fetchGatherings(params: FetchCompanionsParams): Promise<GatheringDto[]>;
-  fetchCompanionById(id: number): Promise<GatheringDto>;
-  postGathering(data: Record<string, unknown>): Promise<GatheringDto>;
-  deleteGathering(id: number): Promise<void>;
-}
-```
-
-**DataSource vs Repository 메서드명 차이:**
-| 작업 | DataSource | Repository |
-|-----|-----------|-----------|
-| 조회 | `fetch{Name}` | `get{Name}` |
-| 생성 | `post{Name}` | `create{Name}` |
-| 수정 | `put{Name}` | `update{Name}` |
-| 삭제 | `delete{Name}` | `delete{Name}` |
-
----
-
-### 6. ViewModel Hook
-```typescript
-// 파일명: use{Name}ViewModel.ts
-// 함수명: use{Name}ViewModel
-
-// ✅ 예시
+// 파일: useGatheringListViewModel.ts
 export const useGatheringListViewModel = () => {
-  const state = useGatheringStore();
   // ...
-  return {
-    state,
-    loadGatherings,
-    refresh,
-    loadMore,
-  };
+  return { state, loadGatherings, refresh, loadMore };
 };
 ```
 
-**내부 함수 네이밍 규칙:**
-| 작업 | 함수명 패턴 | 예시 |
-|-----|-----------|------|
-| 로드 | `load{Name}` | `loadGatherings`, `loadProfile` |
+**내부 함수 네이밍:**
+| 작업 | 패턴 | 예시 |
+|-----|------|------|
+| 로드 | `load{Name}` | `loadGatherings` |
 | 새로고침 | `refresh` | `refresh` |
 | 추가 로드 | `loadMore` | `loadMore` |
 | 생성 | `create{Name}` | `createGathering` |
 | 수정 | `update{Name}` | `updateProfile` |
 | 삭제 | `delete{Name}` | `deleteGathering` |
 | 제출 | `submit` | `submit` |
-| 필드 업데이트 | `update{Field}` | `updateTitle`, `updateContent` |
+| 필드 업데이트 | `update{Field}` | `updateTitle` |
 | 검증 | `validate` | `validate` |
 | 리셋 | `reset` | `reset` |
 
 ---
 
-### 7. Screen
+### 4. Screen (`{Name}Screen.tsx`)
 ```typescript
-// 파일명: {Name}Screen.tsx
-// 컴포넌트명: {Name}Screen
-
-// ✅ 예시
 const GatheringListScreen: React.FC<GatheringListScreenProps> = ({ navigation }) => { ... };
 ```
-
 - 반드시 `Screen` suffix 붙이기
-- 예: `LoginScreen`, `GatheringListScreen`, `TicketScanScreen`
 
 ---
 
-### 8. Component
+### 5. Component (`{Name}.tsx`)
 ```typescript
-// 파일명: {Name}.tsx
-// 컴포넌트명: {Name}
-
-// ✅ 예시
-const CompanionCard: React.FC<CompanionCardProps> = ({ companion, onPress }) => { ... };
-const PrimaryButton: React.FC<PrimaryButtonProps> = ({ text, onPress }) => { ... };
+const GatheringCard: React.FC<GatheringCardProps> = ({ item, onPress }) => { ... };
 ```
-
 - 일반적으로 `Component` suffix 생략
-- 명확한 목적을 나타내는 이름 사용
 
 ---
 
 ## ✅ Props 타입 네이밍
 
 ```typescript
-// 컴포넌트명 + Props
-interface CompanionCardProps {
-  companion: GatheringEntity;
+interface GatheringCardProps {
+  item: GatheringItem;
   onPress?: () => void;
   isSelected?: boolean;
-}
-
-interface PrimaryButtonProps {
-  text: string;
-  onPress: () => void;
-  isLoading?: boolean;
-  disabled?: boolean;
 }
 ```
 
@@ -310,24 +180,11 @@ interface PrimaryButtonProps {
 
 ## ✅ Boolean 변수 네이밍
 
-```typescript
-// ✅ 올바름
-const isLoading = true;
-const hasError = false;
-const canEdit = true;
-const shouldUpdate = false;
-
-// ❌ 피하기
-const loading = true;    // 의미 불명확
-const error = false;     // 에러 객체와 혼동
-```
-
-**패턴:**
 | Prefix | 의미 | 예시 |
 |--------|-----|------|
-| `is` | 상태 | `isLoading`, `isVisible`, `isEnabled` |
-| `has` | 보유 | `hasData`, `hasError`, `hasPermission` |
-| `can` | 가능 | `canEdit`, `canDelete`, `canSubmit` |
+| `is` | 상태 | `isLoading`, `isVisible` |
+| `has` | 보유 | `hasData`, `hasError` |
+| `can` | 가능 | `canEdit`, `canDelete` |
 | `should` | 필요 | `shouldUpdate`, `shouldRefresh` |
 
 ---
@@ -337,13 +194,11 @@ const error = false;     // 에러 객체와 혼동
 ```typescript
 // 컴포넌트 내부 핸들러 → handle + 이벤트명
 const handlePress = () => {};
-const handleChange = (text: string) => {};
 const handleSubmit = async () => {};
 
 // Props로 전달하는 콜백 → on + 이벤트명
 interface ButtonProps {
   onPress: () => void;
-  onLongPress?: () => void;
 }
 ```
 
@@ -351,47 +206,21 @@ interface ButtonProps {
 
 ## ✅ 금지 사항
 
-### ❌ 축약어 사용 자제
 ```typescript
-// ❌ 피하기
-const usr = '';
-let cnt = 0;
-const msg = '';
+// ❌ 축약어 사용 자제
+const usr = '';    // → const user = '';
 
-// ✅ 명확하게
-const user = '';
-let count = 0;
-const message = '';
-```
+// ❌ 의미 없는 이름 금지
+const data: any;   // → const userData: UserProfile;
 
-### ❌ 의미 없는 이름 금지
-```typescript
-// ❌ 피하기
-const data: any;
-const temp: any;
-
-// ✅ 의미 있는 이름
-const userData: UserEntity;
-const tempUserData: Partial<UserEntity>;
-```
-
-### ❌ any 타입 사용 금지
-```typescript
-// ❌ 피하기
-const fetchData = async (): Promise<any> => { ... };
-const handleResponse = (res: any) => { ... };
-
-// ✅ 명확한 타입 사용
-const fetchData = async (): Promise<GatheringEntity[]> => { ... };
-const handleResponse = (res: GatheringDto) => { ... };
+// ❌ any 타입 사용 금지
+const fetchData = async (): Promise<any> => {};
+// → const fetchData = async (): Promise<GatheringItem[]> => {};
 ```
 
 ---
 
 ## 📎 관련 문서
 - **폴더 구조**: `folder.md`
-- **DTO 설계**: `dto.md`
-- **Mapper 설계**: `mapper.md`
-- **DataSource 설계**: `data_source.md`
-- **State 관리**: `state.md`
+- **타입/Service 설계**: `model.md`
 - **ViewModel 설계**: `viewmodel.md`

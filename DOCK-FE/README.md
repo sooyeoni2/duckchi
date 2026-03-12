@@ -1,97 +1,88 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# 덕치 (DuckDuck) - Frontend
 
-# Getting Started
+React Native + Expo 기반 모바일 앱입니다.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+## 시작하기
 
-## Step 1: Start Metro
+### 사전 준비
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+- Node.js >= 22.11.0
+- npm
+- 스마트폰에 **Expo Go** 앱 설치 ([Android](https://play.google.com/store/apps/details?id=host.exp.exponent) / [iOS](https://apps.apple.com/app/expo-go/id982107779))
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+> Android Studio나 Xcode 없이도 실행 가능합니다.
 
-```sh
-# Using npm
-npm start
-
-# OR using Yarn
-yarn start
-```
-
-## Step 2: Build and run your app
-
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
+### 설치
 
 ```sh
-# Using npm
-npm run android
-
-# OR using Yarn
-yarn android
+npm install
 ```
 
-### iOS
-
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+### 실행
 
 ```sh
-bundle install
+npx expo start
 ```
 
-Then, and every time you update your native dependencies, run:
+터미널에 QR 코드가 표시됩니다.
+
+- **Android**: Expo Go 앱을 열고 QR 코드를 스캔
+- **iOS**: 카메라 앱으로 QR 코드를 스캔
+
+> 개발 PC와 스마트폰이 **같은 Wi-Fi**에 연결되어 있어야 합니다.
+
+### 에뮬레이터로 실행
 
 ```sh
-bundle exec pod install
+# Android 에뮬레이터
+npx expo run:android
+
+# iOS 시뮬레이터 (macOS만 가능)
+npx expo run:ios
 ```
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+## 기술 스택
 
-```sh
-# Using npm
-npm run ios
+| 항목 | 버전 |
+|------|------|
+| React Native | 0.81.5 |
+| Expo SDK | 54 |
+| TypeScript | ^5.8.3 |
+| React Navigation | v7 |
+| Zustand | ^5.0.11 |
+| Zod | ^4.3.6 |
+| Axios | ^1.13.6 |
 
-# OR using Yarn
-yarn ios
+## 프로젝트 구조
+
+```
+src/
+├── core/           # 앱 공통 설정 (네비게이션, 테마 등)
+│   ├── navigation/
+│   └── theme/
+├── features/       # 기능별 화면
+│   ├── auth/
+│   ├── home/
+│   ├── onboarding/
+│   ├── profile/
+│   ├── report/
+│   └── room/
+└── shared/         # 공통 컴포넌트 및 유틸리티
+    ├── components/
+    └── ...
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+자세한 폴더 구조는 [fe_docs/folder.md](fe_docs/folder.md)를 참고하세요.
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+## 경로 별칭
 
-## Step 3: Modify your app
+```
+@core/*    →  src/core/*
+@features/* →  src/features/*
+@shared/*  →  src/shared/*
+```
 
-Now that you have successfully run the app, let's make changes!
+## 문서
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
-
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
-
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+- [폴더 구조](fe_docs/folder.md)
+- [데이터 소스](fe_docs/data_source.md)

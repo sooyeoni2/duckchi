@@ -21,12 +21,11 @@ Component는 재사용 가능한 UI 조각으로,
 src/
 └── features/
     └── {feature_name}/
-        └── presentation/
-            └── {screen_name}/
-                └── components/            # 화면별 Component ✨
-                    ├── GatheringCard.tsx
-                    ├── MemberAssignModal.tsx
-                    └── ...
+        └── views/
+            └── components/            # 화면별 Component ✨
+                ├── GatheringCard.tsx
+                ├── MemberAssignModal.tsx
+                └── ...
 ```
 
 ### 2. 공통 Component (Shared Component)
@@ -35,7 +34,7 @@ src/
 └── shared/
     └── components/
         ├── buttons/
-        │   ├── PrimaryButton.tsx          # 노란 주요 버튼 (#FCDD68)
+        │   ├── PrimaryButton.tsx          # 노란 주요 버튼 (AppColorStyles.yellow)
         │   └── OutlineButton.tsx          # 외곽선 버튼
         ├── inputs/
         │   ├── CustomTextInput.tsx
@@ -59,31 +58,31 @@ src/
 
 ### 1. 모임방 카드 (Feature Component)
 ```typescript
-// features/gathering/presentation/gathering_list/components/GatheringCard.tsx
+// features/gathering/views/components/GatheringCard.tsx
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { GatheringEntity } from '../../../domain/gathering_list/GatheringEntity';
-import { colors } from '@core/theme/colors';
+import { GatheringItem } from '../models/gatheringTypes';
+import { AppColorStyles } from '@core/theme/colors';
 
 interface GatheringCardProps {
-  gathering: GatheringEntity;
+  item: GatheringItem;
   onPress?: () => void;
 }
 
-const GatheringCard: React.FC<GatheringCardProps> = ({ gathering, onPress }) => {
+const GatheringCard: React.FC<GatheringCardProps> = ({ item, onPress }) => {
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85}>
       <View style={styles.header}>
-        <Text style={styles.title}>{gathering.title}</Text>
-        {gathering.isHost && (
+        <Text style={styles.title}>{item.title}</Text>
+        {item.isHost && (
           <View style={styles.hostBadge}>
             <Text style={styles.hostBadgeText}>방장</Text>
           </View>
         )}
       </View>
       <View style={styles.meta}>
-        <Text style={styles.category}>{gathering.category}</Text>
-        <Text style={styles.memberCount}>{gathering.memberCount}명</Text>
+        <Text style={styles.category}>{item.category}</Text>
+        <Text style={styles.memberCount}>{item.memberCount}명</Text>
       </View>
     </TouchableOpacity>
   );
@@ -91,7 +90,7 @@ const GatheringCard: React.FC<GatheringCardProps> = ({ gathering, onPress }) => 
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: AppColorStyles.surface,
     borderRadius: 12,
     padding: 16,
     marginHorizontal: 16,
@@ -105,10 +104,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#111',
+    color: AppColorStyles.textPrimary,
   },
   hostBadge: {
-    backgroundColor: '#FCDD68',
+    backgroundColor: AppColorStyles.yellow,
     borderRadius: 4,
     paddingHorizontal: 8,
     paddingVertical: 2,
@@ -116,7 +115,7 @@ const styles = StyleSheet.create({
   hostBadgeText: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#111',
+    color: AppColorStyles.black,
   },
   meta: {
     flexDirection: 'row',
@@ -125,11 +124,11 @@ const styles = StyleSheet.create({
   },
   category: {
     fontSize: 12,
-    color: '#999',
+    color: AppColorStyles.textHint,
   },
   memberCount: {
     fontSize: 12,
-    color: '#999',
+    color: AppColorStyles.textHint,
   },
 });
 
@@ -138,20 +137,21 @@ export default GatheringCard;
 
 ### 2. 멤버 지정 모달 (Feature Component)
 ```typescript
-// features/payment/presentation/receipt_scan/components/MemberAssignModal.tsx
+// features/payment/views/components/MemberAssignModal.tsx
 import React, { useState } from 'react';
 import { View, Text, Modal, TouchableOpacity, Switch, StyleSheet } from 'react-native';
-import { MemberEntity } from '../../../domain/payment_list/PaymentEntity';
+import { MemberItem } from '../models/paymentTypes';
+import { AppColorStyles } from '@core/theme/colors';
 
 interface MemberAssignItem {
-  member: MemberEntity;
+  member: MemberItem;
   isSelected: boolean;
   quantity: number;
 }
 
 interface MemberAssignModalProps {
   visible: boolean;
-  members: MemberEntity[];
+  members: MemberItem[];
   menuName: string;
   totalQuantity: number;
   onConfirm: (assignments: MemberAssignItem[]) => void;
@@ -208,8 +208,8 @@ const MemberAssignModal: React.FC<MemberAssignModalProps> = ({
               <Switch
                 value={isSelected}
                 onValueChange={() => toggleMember(member.id)}
-                trackColor={{ true: '#FCDD68' }}
-                thumbColor="#111"
+                trackColor={{ true: AppColorStyles.yellow }}
+                thumbColor={AppColorStyles.black}
               />
               {isSelected && (
                 <View style={styles.stepper}>
@@ -246,6 +246,7 @@ export default MemberAssignModal;
 // shared/components/buttons/PrimaryButton.tsx
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { AppColorStyles } from '@core/theme/colors';
 
 interface PrimaryButtonProps {
   text: string;
@@ -270,7 +271,7 @@ const PrimaryButton: React.FC<PrimaryButtonProps> = ({
       activeOpacity={0.85}
     >
       {isLoading ? (
-        <ActivityIndicator color="#111" />
+        <ActivityIndicator color={AppColorStyles.black} />
       ) : (
         <Text style={styles.text}>{text}</Text>
       )}
@@ -280,7 +281,7 @@ const PrimaryButton: React.FC<PrimaryButtonProps> = ({
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: '#FCDD68',
+    backgroundColor: AppColorStyles.yellow,
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
@@ -292,7 +293,7 @@ const styles = StyleSheet.create({
   text: {
     fontSize: 16,
     fontWeight: '900',
-    color: '#111',
+    color: AppColorStyles.black,
   },
 });
 
@@ -306,8 +307,8 @@ export default PrimaryButton;
 | 구분 | Feature Component | Shared Component |
 |-----|-----------------|-----------------|
 | **사용 범위** | 특정 화면에서만 사용 | 여러 feature에서 공통 사용 |
-| **위치** | `features/.../components/` | `shared/components/` |
-| **도메인 의존성** | Entity를 직접 받아도 됨 | 원시 타입(string, number) 선호 |
+| **위치** | `features/.../views/components/` | `shared/components/` |
+| **도메인 의존성** | Item 타입을 직접 받아도 됨 | 원시 타입(string, number) 선호 |
 | **예시** | `GatheringCard`, `MemberAssignModal` | `PrimaryButton`, `LoadingIndicator` |
 
 ---
@@ -323,9 +324,9 @@ interface DrawResultCardProps {
   onPress?: () => void;    // optional 콜백
 }
 
-// ✅ Entity를 직접 받는 경우 (Feature Component)
+// ✅ Item 타입을 직접 받는 경우 (Feature Component)
 interface GatheringCardProps {
-  gathering: GatheringEntity;
+  item: GatheringItem;
   onPress?: () => void;
 }
 ```
@@ -347,14 +348,14 @@ const GatheringCard = ({ gatheringId }: { gatheringId: number }) => {
 };
 
 // ✅ ViewModel에서 데이터를 내려받아 사용
-const GatheringCard = ({ gathering }: { gathering: GatheringEntity }) => { ... };
+const GatheringCard = ({ item }: { item: GatheringItem }) => { ... };
 ```
 
 2. **Shared Component에서 도메인 로직**
 ```typescript
 // ❌ 피하기
-const PrimaryButton = ({ gathering }: { gathering: GatheringEntity }) => {
-  const isDisabled = !gathering.isActive; // ❌ 도메인 의존
+const PrimaryButton = ({ item }: { item: GatheringItem }) => {
+  const isDisabled = !item.isActive; // ❌ 도메인 의존
 };
 
 // ✅ 순수하게 Props로만 제어
