@@ -43,14 +43,14 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   bankIconCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     alignItems: 'center',
     justifyContent: 'center',
   },
   bankIconText: {
-    ...KBODiaGothicTextStyle.bold({ fontSize: 20, color: AppColorStyles.black }),
+    ...KBODiaGothicTextStyle.bold({ fontSize: 17, color: AppColorStyles.black }),
   },
   info: {
     gap: 8,
