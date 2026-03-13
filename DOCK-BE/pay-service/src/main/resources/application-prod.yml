@@ -20,3 +20,9 @@ spring:
     hibernate:
       ddl-auto: validate
     show-sql: false
+
+# [External API] 외부 금융망 연동 설정
+finance:
+  api:
+    base-url: https://finopenapi.ssafy.io
+    key: ${FINANCE_API_KEY}
