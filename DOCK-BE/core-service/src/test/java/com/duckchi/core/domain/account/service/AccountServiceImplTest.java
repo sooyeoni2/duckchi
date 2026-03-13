@@ -165,4 +165,50 @@ class AccountServiceImplTest {
                 .extracting(ex -> ((CustomException) ex).getErrorCode())
                 .isEqualTo(ErrorCode.ACCOUNT_REGISTRATION_FAILED);
     }
+
+    // AUTH-09 서비스 정책 테스트: soft delete 반영과 유효하지 않은 계좌 예외를 검증한다.
+    // given: 삭제 가능한 VERIFIED 계좌가 존재한다.
+    // when: 계좌 삭제를 요청한다.
+    // then: deletedAt 이 설정되어 soft delete 처리된다.
+    @Test
+    @DisplayName("soft deletes verified account when delete request is valid")
+    void deleteBankAccount_whenVerifiedAccountExists_thenSoftDelete() {
+        Long userId = 1L;
+        Long accountId = 10L;
+        UserAccount verifiedAccount = UserAccount.builder()
+                .id(accountId)
+                .userId(userId)
+                .bankCode("088")
+                .bankName("SHINHAN")
+                .accountNumber("1234567890123456")
+                .registeredAt(LocalDateTime.now())
+                .status(AccountStatus.VERIFIED)
+                .build();
+
+        when(userAccountRepository.findByIdAndStatusAndDeletedAtIsNull(accountId, AccountStatus.VERIFIED))
+                .thenReturn(Optional.of(verifiedAccount));
+
+        accountService.deleteBankAccount(userId, accountId);
+
+        assertThat(verifiedAccount.getDeletedAt()).isNotNull();
+        verify(userAccountRepository).findByIdAndStatusAndDeletedAtIsNull(accountId, AccountStatus.VERIFIED);
+    }
+
+    // given: 삭제 가능한 VERIFIED 계좌가 존재하지 않는다.
+    // when: 계좌 삭제를 요청한다.
+    // then: ACCOUNT_INVALID 예외를 반환한다.
+    @Test
+    @DisplayName("throws not found when verified account does not exist")
+    void deleteBankAccount_whenVerifiedAccountMissing_thenThrowNotFound() {
+        Long userId = 1L;
+        Long accountId = 99L;
+
+        when(userAccountRepository.findByIdAndStatusAndDeletedAtIsNull(accountId, AccountStatus.VERIFIED))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> accountService.deleteBankAccount(userId, accountId))
+                .isInstanceOf(CustomException.class)
+                .extracting(ex -> ((CustomException) ex).getErrorCode())
+                .isEqualTo(ErrorCode.ACCOUNT_INVALID);
+    }
 }

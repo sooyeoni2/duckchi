@@ -2,6 +2,7 @@ package com.duckchi.core.domain.account.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
@@ -103,6 +104,48 @@ class AccountControllerTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.errorCode").value("ACCOUNT-409-1"));
+    }
+
+    // AUTH-09 API 계약 테스트: 정상 삭제 응답, path variable 검증 실패, 서비스 예외의 HTTP 매핑을 검증한다.
+    // given: 서비스가 정상적으로 삭제 요청을 처리한다.
+    // when: 삭제 API를 호출한다.
+    // then: 200 OK 와 성공 메시지를 반환한다.
+    @Test
+    @DisplayName("returns 200 and success message for valid delete request")
+    void deleteBankAccount_whenRequestValid_thenReturnOk() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/bank-accounts/10/delete"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.msg").value("계좌가 삭제되었습니다."));
+
+        verify(accountService).deleteBankAccount(1L, 10L);
+    }
+
+    // given: accountId path variable 이 Long 형식이 아니다.
+    // when: 삭제 API를 호출한다.
+    // then: 400 Bad Request 와 공통 에러 응답을 반환한다.
+    @Test
+    @DisplayName("returns 400 when account id path variable is invalid")
+    void deleteBankAccount_whenAccountIdInvalid_thenReturnBadRequest() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/bank-accounts/not-a-number/delete"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.errorCode").value("COMMON-400-1"));
+    }
+
+    // given: 서비스에서 존재하지 않는 계좌 예외가 발생한다.
+    // when: 삭제 API를 호출한다.
+    // then: 404 Not Found 로 매핑된다.
+    @Test
+    @DisplayName("maps delete service not found exception to 404 response")
+    void deleteBankAccount_whenServiceThrowsNotFound_thenReturnNotFound() throws Exception {
+        doThrow(new CustomException(ErrorCode.ACCOUNT_INVALID))
+                .when(accountService).deleteBankAccount(1L, 10L);
+
+        mockMvc.perform(post("/api/v1/auth/bank-accounts/10/delete"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.errorCode").value("ACCOUNT-404-1"));
     }
 
     private record RequestBody(String bankCode, String accountNo) {

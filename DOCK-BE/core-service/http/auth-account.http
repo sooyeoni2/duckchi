@@ -1,0 +1,12 @@
+### AUTH-03 은행 선택/계좌 등록
+POST http://localhost:8081/api/v1/auth/bank-accounts
+Content-Type: application/json
+
+{
+  "bankCode": "088",
+  "accountNo": "1234567890123456"
+}
+
+### AUTH-09 등록 계좌 삭제
+POST http://localhost:8081/api/v1/auth/bank-accounts/1/delete
+
