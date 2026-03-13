@@ -8,7 +8,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import { AppColorStyles } from '../../../core/theme/colors';
-import { PretendardTextStyle } from '../../../core/theme/typography';
+import { KBODiaGothicTextStyle } from '../../../core/theme/typography';
 
 /**
  * 덕치 앱의 주요 액션에 사용되는 Filled 버튼
@@ -40,8 +40,8 @@ export const FilledButton: React.FC<FilledButtonProps> = ({
   isLoading = false,
   isFullWidth = true,
   width,
-  height = 52,
-  borderRadius = 12,
+  height = 60,
+  borderRadius = 10,
   prefixIcon,
   suffixIcon,
   style,
@@ -71,7 +71,7 @@ export const FilledButton: React.FC<FilledButtonProps> = ({
           {prefixIcon != null && <View style={styles.iconPrefix}>{prefixIcon}</View>}
           <Text
             style={[
-              PretendardTextStyle.semiBold({ fontSize: 16 }),
+              KBODiaGothicTextStyle.bold({ fontSize: 20 }),
               { color: disabled ? AppColorStyles.textHint : AppColorStyles.black },
             ]}
           >
@@ -88,6 +88,26 @@ export const FilledButton: React.FC<FilledButtonProps> = ({
 export const FilledButtonSmall: React.FC<
   Omit<FilledButtonProps, 'isFullWidth' | 'height' | 'borderRadius'>
 > = (props) => <FilledButton {...props} isFullWidth={false} height={40} borderRadius={8} />;
+
+/** 칩 버튼 (예: 인원 선택, 상세 내역 태그) */
+export const ChipButton: React.FC<{ text: string; onPress?: () => void }> = ({ text, onPress }) => (
+  <TouchableOpacity onPress={onPress} activeOpacity={0.7} style={chipStyles.chip}>
+    <Text style={KBODiaGothicTextStyle.medium({ fontSize: 10, color: AppColorStyles.black, letterSpacing: 0.5 })}>
+      {text}
+    </Text>
+  </TouchableOpacity>
+);
+
+const chipStyles = StyleSheet.create({
+  chip: {
+    height: 24,
+    borderRadius: 6,
+    backgroundColor: '#EFEFEF',
+    paddingHorizontal: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});
 
 const styles = StyleSheet.create({
   button: {
