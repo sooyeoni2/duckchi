@@ -9,6 +9,9 @@ export { SearchBar } from './inputs/SearchBar';
 // AppBar
 export { CustomAppBar, TabbedAppBar } from './app_bar/CustomAppBar';
 
+// Dialog
+export { ConfirmDialog } from './dialog/ConfirmDialog';
+
 // Navigation
 export { MainNavigationBar, MainScaffold, MainScaffoldWithPages } from './navigation/index';
 export type { NavigationItem } from './navigation/MainNavigationBar';
