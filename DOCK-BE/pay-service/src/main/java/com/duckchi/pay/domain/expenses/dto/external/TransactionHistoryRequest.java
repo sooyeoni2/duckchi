@@ -1,5 +1,6 @@
 package com.duckchi.pay.domain.expenses.dto.external;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
 /**
@@ -12,7 +13,8 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TransactionHistoryRequest {
-    private FinanceHeader Header;    // 공통 보안 헤더임.
+    @JsonProperty("Header") // JSON 변환 시 대문자 Header 유지를 위해 명시함.
+    private FinanceHeader header;    // 공통 보안 헤더임.
     private String accountNo;        // 조회 대상 계좌 번호임.
     private String startDate;        // 조회 시작 범위 (YYYYMMDD)임.
     private String endDate;          // 조회 종료 범위 (YYYYMMDD)임.

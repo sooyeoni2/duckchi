@@ -1,5 +1,6 @@
 package com.duckchi.pay.domain.expenses.dto.external;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 import java.util.List;
 
@@ -11,8 +12,11 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TransactionHistoryResponse {
-    private FinanceHeader Header;    // 공통 보안 헤더 응답임.
-    private TransactionResultBody REC; // 실제 거래 결과 데이터 본문임.
+    @JsonProperty("Header") // JSON 응답의 대문자 Header와 매핑함.
+    private FinanceHeader header;
+
+    @JsonProperty("REC")    // JSON 응답의 대문자 REC와 매핑함.
+    private TransactionResultBody rec;
 
     @Getter
     @NoArgsConstructor
