@@ -6,4 +6,6 @@ import com.duckchi.core.domain.account.dto.response.RegisterBankAccountResponse;
 public interface AccountService {
 
     RegisterBankAccountResponse registerBankAccount(Long userId, RegisterBankAccountRequest request);
+
+    void deleteBankAccount(Long userId, Long accountId);
 }

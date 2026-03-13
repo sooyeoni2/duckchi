@@ -22,23 +22,21 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     public RegisterBankAccountResponse registerBankAccount(Long userId, RegisterBankAccountRequest request) {
-        //유저 유효 검증
+        // 사용자 유효성 검증
 //        if (!userRepository.existsById(userId)) {
 //            throw new CustomException(ErrorCode.AUTH_UNAUTHORIZED);
 //        }
-        //활성화된 등록 계좌가 있으면 중복 등록 불가
+        // 활성 등록 계좌가 있으면 중복 등록 불가
         if (userAccountRepository.existsByUserIdAndStatusAndDeletedAtIsNull(userId, AccountStatus.VERIFIED)) {
             throw new CustomException(ErrorCode.ACCOUNT_ALREADY_REGISTERED);
         }
-        //기존 1원 인증 대기 계좌는 만료 처리 후 새 등록 진행
-        //조회한 영속 엔티티의 상태를 변경하면 dirty checking으로 커밋 시 DB에도 반영됨
+        // 기존 1원 인증 대기 계좌는 만료 처리 후 새 등록 진행
         userAccountRepository.findByUserIdAndStatusAndDeletedAtIsNull(userId, AccountStatus.PENDING)
                 .ifPresent(UserAccount::expire);
-        //은행코드 유효성 검사 및 가져오기
+
         BankCode bankCode = BankCode.from(request.bankCode());
 
         try {
-            //userAccount 객체 만들어서 db에 저장
             UserAccount userAccount = userAccountRepository.save(
                     UserAccount.builder()
                             .userId(userId)
@@ -48,7 +46,7 @@ public class AccountServiceImpl implements AccountService {
                             .status(AccountStatus.PENDING)
                             .build()
             );
-            //응답 반환
+
             return new RegisterBankAccountResponse(
                     userAccount.getId(),
                     userAccount.getBankCode(),
@@ -62,11 +60,22 @@ public class AccountServiceImpl implements AccountService {
         }
     }
 
-    //계좌번호 마스킹해서 반환
+    @Override
+    public void deleteBankAccount(Long userId, Long accountId) {
+        // 사용자 유효성 검증
+//        if (!userRepository.existsById(userId)) {
+//            throw new CustomException(ErrorCode.AUTH_UNAUTHORIZED);
+//        }
+        //accountId가 유효한지 확인 (VERTIFIED고, deleted_at이 NULL인지 확인)
+        UserAccount userAccount = userAccountRepository.findByIdAndStatusAndDeletedAtIsNull(accountId,AccountStatus.VERIFIED)
+                .orElseThrow(() -> new CustomException(ErrorCode.ACCOUNT_INVALID));
+        //계좌 soft delete 처리
+        userAccount.softDelete();
+
+    }
+
     private String maskAccountNumber(String accountNumber) {
         int visibleLength = Math.min(4, accountNumber.length());
         return accountNumber.substring(0, visibleLength) + "*".repeat(accountNumber.length() - visibleLength);
     }
 }
-
-

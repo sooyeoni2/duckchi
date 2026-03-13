@@ -50,7 +50,13 @@ public class UserAccount {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
+    //계좌 만료 처리
     public void expire() {
         this.status = AccountStatus.EXPIRED;
     }
+    //계좌 soft delete 처리
+    public void softDelete(){
+        this.deletedAt = LocalDateTime.now();
+    }
+
 }
