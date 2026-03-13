@@ -29,3 +29,9 @@ jwt:
 kakao:
   client-id: ${KAKAO_CLIENT_ID}
   redirect-uri: ${KAKAO_REDIRECT_URI}
+
+# [External API] 외부 금융망 연동 설정
+finance:
+  api:
+    base-url: https://finopenapi.ssafy.io
+    key: ${FINANCE_API_KEY}
