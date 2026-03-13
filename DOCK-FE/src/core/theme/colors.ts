@@ -21,6 +21,7 @@ export const AppColorStyles = {
   success: '#3FFF65',
   warning: '#FF3F3F',
   caution: '#FF9F3F',
+  danger: '#FF6868',
 
   // ─────────────────────────────────────────
   // Grayscale

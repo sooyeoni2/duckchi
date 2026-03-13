@@ -20,7 +20,7 @@ import { TransferLimitCard } from './components/TransferLimitCard';
 import { BadgePreviewCard } from './components/BadgePreviewCard';
 
 export function ProfileScreen() {
-  const { state, refresh } = useProfileViewModel();
+  const { state, refresh, deleteAccount } = useProfileViewModel();
 
   if (state.status === 'idle' || state.status === 'loading') {
     return (
@@ -63,7 +63,7 @@ export function ProfileScreen() {
         showsVerticalScrollIndicator={false}
       >
         <ProfileHeader profile={profile} />
-        {representativeAccount && <AccountCard account={representativeAccount} />}
+        {representativeAccount && <AccountCard account={representativeAccount} onDelete={deleteAccount} />}
         <TransferLimitCard transferLimit={profile.transferLimit} />
         <BadgePreviewCard badges={profile.badges} />
       </ScrollView>

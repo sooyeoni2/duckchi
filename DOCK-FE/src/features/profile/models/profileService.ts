@@ -213,6 +213,18 @@ export const updateProfile = async (params: UpdateProfileParams): Promise<Profil
   return { ...raw, createdAt: toDate(raw.createdAt) };
 };
 
+export const deleteAccount = async (accountId: number): Promise<void> => {
+  if (USE_MOCK) {
+    await new Promise<void>(resolve => setTimeout(resolve, 300));
+    mockProfile = {
+      ...mockProfile,
+      accounts: mockProfile.accounts.filter(a => a.accountId !== accountId),
+    };
+    return;
+  }
+  await axiosClient.post(`/api/v1/auth/bank-accounts/${accountId}/delete`);
+};
+
 export const fetchBadges = async (): Promise<BadgeList> => {
   if (USE_MOCK) {
     await new Promise<void>(resolve => setTimeout(resolve, 500));

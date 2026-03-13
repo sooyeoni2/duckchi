@@ -1,7 +1,7 @@
 import { useCallback, useEffect } from 'react';
 import { create } from 'zustand';
 
-import { fetchProfile } from '../models/profileService';
+import { deleteAccount as deleteAccountService, fetchProfile } from '../models/profileService';
 import type { Profile } from '../models/profileTypes';
 
 type ProfileState =
@@ -40,9 +40,14 @@ export const useProfileViewModel = () => {
     await loadProfile();
   }, [loadProfile]);
 
+  const deleteAccount = useCallback(async (accountId: number) => {
+    await deleteAccountService(accountId);
+    await loadProfile();
+  }, [loadProfile]);
+
   useEffect(() => {
     loadProfile();
   }, [loadProfile]);
 
-  return { state, refresh };
+  return { state, refresh, deleteAccount };
 };

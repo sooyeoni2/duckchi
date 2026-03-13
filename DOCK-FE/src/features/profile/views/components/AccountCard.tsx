@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { AppColorStyles } from '../../../../core/theme/colors';
 import { KBODiaGothicTextStyle } from '../../../../core/theme/typography';
@@ -9,14 +9,27 @@ import type { Account } from '../../models/profileTypes';
 
 interface AccountCardProps {
   account: Account;
+  onDelete: (accountId: number) => void;
 }
 
-export function AccountCard({ account }: AccountCardProps) {
+export function AccountCard({ account, onDelete }: AccountCardProps) {
   const bankColor = getBankColor(account.bankCode);
+
+  const handleDelete = () => {
+    Alert.alert('계좌 삭제', '대표 계좌를 삭제하시겠습니까?', [
+      { text: '취소', style: 'cancel' },
+      { text: '삭제', style: 'destructive', onPress: () => onDelete(account.accountId) },
+    ]);
+  };
 
   return (
     <View style={[profileCardStyle.card, styles.card]}>
-      <Text style={profileCardStyle.cardLabel}>대표 계좌</Text>
+      <View style={styles.labelRow}>
+        <Text style={[profileCardStyle.cardLabel, { marginBottom: 0 }]}>대표 계좌</Text>
+        <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
+          <Text style={styles.deleteButtonText}>삭제</Text>
+        </TouchableOpacity>
+      </View>
       <View style={styles.row}>
         <View style={[styles.bankIconCircle, { backgroundColor: bankColor.bg }]}>
           <Text style={[styles.bankIconText, { color: bankColor.text }]}>
@@ -36,6 +49,25 @@ const styles = StyleSheet.create({
   card: {
     paddingVertical: 20,
     paddingBottom: 28,
+  },
+  labelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  deleteButton: {
+    width: 60,
+    height: 24,
+    borderWidth: 1,
+    borderColor: AppColorStyles.danger,
+    borderRadius: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deleteButtonText: {
+    ...KBODiaGothicTextStyle.medium({ fontSize: 10, color: AppColorStyles.danger }),
+    letterSpacing: 0.5,
   },
   row: {
     flexDirection: 'row',
