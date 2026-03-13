@@ -35,6 +35,7 @@ interface CustomAppBarProps {
   actions?: React.ReactNode[];
   leading?: React.ReactNode;
   showBackButton?: boolean;
+  showDivider?: boolean;
   backgroundColor?: string;
   foregroundColor?: string;
   onBackPress?: () => void;
@@ -48,6 +49,7 @@ export const CustomAppBar: React.FC<CustomAppBarProps> = ({
   actions,
   leading,
   showBackButton = true,
+  showDivider = false,
   backgroundColor,
   foregroundColor,
   onBackPress,
@@ -78,8 +80,8 @@ export const CustomAppBar: React.FC<CustomAppBarProps> = ({
         backgroundColor="transparent"
         translucent={Platform.OS === 'android'}
       />
-      <View style={[styles.container, { backgroundColor: effectiveBg }, !hasLeading && styles.containerNoLeading, style]}>
-        {hasLeading && <View style={styles.leadingArea}>{renderLeading()}</View>}
+      <View style={[styles.container, { backgroundColor: effectiveBg }, showDivider && styles.containerDivider, style]}>
+        <View style={styles.leadingArea}>{renderLeading()}</View>
 
         <View style={[styles.titleArea, centerTitle && styles.titleCenter]}>
           {titleWidget ?? (
@@ -191,8 +193,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 4,
   },
-  containerNoLeading: {
-    paddingLeft: 16,
+  containerDivider: {
+    borderBottomWidth: 1,
+    borderBottomColor: AppColorStyles.divider,
+    borderStyle: 'dashed',
   },
   leadingArea: {
     width: 48,
