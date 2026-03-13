@@ -61,6 +61,7 @@ export function SettingsScreen() {
         showBackButton
         backgroundColor={AppColorStyles.background}
         onBackPress={() => navigation.goBack()}
+        showDivider
       />
       <ScrollView
         style={styles.screen}
@@ -102,6 +103,8 @@ export function SettingsScreen() {
           <SettingsRow label="서비스 이용약관" onPress={() => {}} />
           <RowDivider />
           <SettingsRow label="개인정보 처리방침" onPress={() => {}} />
+          <RowDivider />
+          <SettingsRow label="오픈소스 라이선스" onPress={() => {}} />
         </View>
 
         {/* 로그아웃 */}

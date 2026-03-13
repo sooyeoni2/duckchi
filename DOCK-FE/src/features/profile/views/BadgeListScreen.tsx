@@ -98,6 +98,7 @@ export function BadgeListScreen() {
         centerTitle={false}
         onBackPress={() => navigation.goBack()}
         backgroundColor={AppColorStyles.background}
+        showDivider
       />
 
       <ScrollView

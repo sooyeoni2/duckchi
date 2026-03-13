@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
   },
   containerDivider: {
     borderBottomWidth: 1,
-    borderBottomColor: AppColorStyles.divider,
+    borderBottomColor: AppColorStyles.gray2,
     borderStyle: 'dashed',
   },
   leadingArea: {

@@ -54,6 +54,7 @@ export function ProfileScreen() {
         title="프로필"
         centerTitle={false}
         showBackButton={false}
+        showDivider
         backgroundColor={AppColorStyles.background}
         actions={[
           <TouchableOpacity
