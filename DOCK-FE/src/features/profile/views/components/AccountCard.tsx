@@ -1,9 +1,10 @@
-import React from 'react';
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { AppColorStyles } from '../../../../core/theme/colors';
 import { KBODiaGothicTextStyle } from '../../../../core/theme/typography';
 import { getBankColor } from '../../../../core/constants/bankColors';
+import { ConfirmDialog } from '../../../../shared/components';
 import { profileCardStyle } from '../profileCardStyle';
 import type { Account } from '../../models/profileTypes';
 
@@ -14,19 +15,26 @@ interface AccountCardProps {
 
 export function AccountCard({ account, onDelete }: AccountCardProps) {
   const bankColor = getBankColor(account.bankCode);
-
-  const handleDelete = () => {
-    Alert.alert('계좌 삭제', '대표 계좌를 삭제하시겠습니까?', [
-      { text: '취소', style: 'cancel' },
-      { text: '삭제', style: 'destructive', onPress: () => onDelete(account.accountId) },
-    ]);
-  };
+  const [confirmVisible, setConfirmVisible] = useState(false);
 
   return (
     <View style={[profileCardStyle.card, styles.card]}>
+      <ConfirmDialog
+        visible={confirmVisible}
+        title="계좌 삭제"
+        message="대표 계좌를 삭제하시겠습니까?"
+        cancelText="취소"
+        confirmText="삭제"
+        confirmColor={AppColorStyles.danger}
+        onCancel={() => setConfirmVisible(false)}
+        onConfirm={() => {
+          setConfirmVisible(false);
+          onDelete(account.accountId);
+        }}
+      />
       <View style={styles.labelRow}>
         <Text style={[profileCardStyle.cardLabel, { marginBottom: 0 }]}>대표 계좌</Text>
-        <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
+        <TouchableOpacity style={styles.deleteButton} onPress={() => setConfirmVisible(true)}>
           <Text style={styles.deleteButtonText}>삭제</Text>
         </TouchableOpacity>
       </View>
