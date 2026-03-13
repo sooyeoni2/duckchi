@@ -1,6 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -19,6 +19,7 @@ import type { ProfileStackParamList } from '../../../core/navigation/types';
 import { AppColorStyles } from '../../../core/theme/colors';
 import { KBODiaGothicTextStyle } from '../../../core/theme/typography';
 import { CustomAppBar } from '../../../shared/components/app_bar/CustomAppBar';
+import { usePopOnTabBlur } from '../../../shared/hooks/usePopOnTabBlur';
 import { useBadgeViewModel } from '../viewmodels/useBadgeViewModel';
 import type { AcquiredBadge, LockedBadge } from '../models/profileTypes';
 
@@ -53,14 +54,7 @@ export function BadgeListScreen() {
   const { state, reload } = useBadgeViewModel();
   const [selectedBadge, setSelectedBadge] = useState<LockedBadge | null>(null);
 
-  useEffect(() => {
-    const tabNavigation = navigation.getParent();
-    if (!tabNavigation) return;
-    const unsubscribe = tabNavigation.addListener('blur' as any, () => {
-      navigation.goBack();
-    });
-    return unsubscribe;
-  }, [navigation]);
+  usePopOnTabBlur();
 
   if (state.status === 'idle' || state.status === 'loading') {
     return (

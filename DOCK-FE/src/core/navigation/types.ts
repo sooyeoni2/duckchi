@@ -7,6 +7,7 @@ export type RootStackParamList = {
 export type ProfileStackParamList = {
   ProfileMain: undefined;
   BadgeList: undefined;
+  Settings: undefined;
 };
 
 export type AuthStackParamList = {

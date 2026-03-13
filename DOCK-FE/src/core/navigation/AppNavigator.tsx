@@ -59,7 +59,13 @@ export function AppNavigator() {
           tabPress: () => navigation.navigate('Report'),
         })}
       />
-      <Tab.Screen name="Profile" component={ProfileNavigator} />
+      <Tab.Screen
+        name="Profile"
+        component={ProfileNavigator}
+        listeners={({ navigation }) => ({
+          tabPress: () => navigation.navigate('Profile', { screen: 'ProfileMain' }),
+        })}
+      />
     </Tab.Navigator>
   );
 }

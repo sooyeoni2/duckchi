@@ -9,7 +9,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons as MaterialDesignIcons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
+import type { ProfileStackParamList } from '../../../core/navigation/types';
 import { AppColorStyles } from '../../../core/theme/colors';
 import { KBODiaGothicTextStyle } from '../../../core/theme/typography';
 import { CustomAppBar } from '../../../shared/components/app_bar/CustomAppBar';
@@ -20,6 +23,7 @@ import { TransferLimitCard } from './components/TransferLimitCard';
 import { BadgePreviewCard } from './components/BadgePreviewCard';
 
 export function ProfileScreen() {
+  const navigation = useNavigation<NativeStackNavigationProp<ProfileStackParamList>>();
   const { state, refresh, deleteAccount } = useProfileViewModel();
 
   if (state.status === 'idle' || state.status === 'loading') {
@@ -52,7 +56,10 @@ export function ProfileScreen() {
         showBackButton={false}
         backgroundColor={AppColorStyles.background}
         actions={[
-          <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <TouchableOpacity
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            onPress={() => navigation.navigate('Settings')}
+          >
             <MaterialDesignIcons name="cog-outline" size={24} color={AppColorStyles.black} />
           </TouchableOpacity>,
         ]}

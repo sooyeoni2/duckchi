@@ -46,7 +46,9 @@ export const useProfileViewModel = () => {
   }, [loadProfile]);
 
   useEffect(() => {
-    loadProfile();
+    if (useProfileStore.getState().state.status === 'idle') {
+      loadProfile();
+    }
   }, [loadProfile]);
 
   return { state, refresh, deleteAccount };
