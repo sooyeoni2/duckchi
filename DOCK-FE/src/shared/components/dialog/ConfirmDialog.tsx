@@ -57,17 +57,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   dialog: {
-    width: 270,
+    width: 310,
     backgroundColor: AppColorStyles.surface,
     borderRadius: 14,
     overflow: 'hidden',
   },
   body: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 16,
+    paddingHorizontal: 28,
+    paddingTop: 28,
+    paddingBottom: 20,
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
   },
   title: {
     ...KBODiaGothicTextStyle.bold({ fontSize: 16, color: AppColorStyles.black }),
