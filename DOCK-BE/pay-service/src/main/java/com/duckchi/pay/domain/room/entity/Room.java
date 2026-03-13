@@ -55,6 +55,7 @@ public class Room {
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
         }
+        // 엔티티 기본값을 보장해 서비스 외 경로(배치/테스트)에서도 DDL 기본값과 동일한 결과를 유지한다.
         if (category == null || category.isBlank()) {
             category = "기타";
         }

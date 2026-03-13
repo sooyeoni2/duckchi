@@ -26,6 +26,7 @@ public class RoomServiceImpl implements RoomService {
     @Override
     @Transactional
     public CreateRoomResponse createRoom(Long currentUserId, CreateRoomRequest request) {
+        // JWT 미연동 단계에서는 헤더 기반 사용자 식별을 강제해 비회원 방 생성을 막는다.
         if (currentUserId == null) {
             throw new CustomException(ErrorCode.COMMON_UNAUTHORIZED);
         }
@@ -42,6 +43,7 @@ public class RoomServiceImpl implements RoomService {
         RoomParticipant owner = RoomParticipant.builder()
                 .room(savedRoom)
                 .userId(currentUserId)
+                // 방 생성자는 이후 ROOM-02/04 흐름의 기준 주체이므로 생성 시점에 관리자/동의 상태로 저장한다.
                 .isAdmin(true)
                 .isAgreed(true)
                 .build();
@@ -52,6 +54,7 @@ public class RoomServiceImpl implements RoomService {
     }
 
     private String normalizeCategory(String category) {
+        // DDL 기본값("기타")과 서비스 동작을 맞춰 DB 기본값 의존 없이 동일 결과를 보장한다.
         if (category == null || category.isBlank()) {
             return DEFAULT_CATEGORY;
         }
