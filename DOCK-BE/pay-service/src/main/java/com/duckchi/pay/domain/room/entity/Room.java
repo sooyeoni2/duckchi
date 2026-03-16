@@ -3,8 +3,6 @@ package com.duckchi.pay.domain.room.entity;
 import com.duckchi.pay.domain.room.type.RoomStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -35,19 +33,31 @@ public class Room {
     @Column(name = "description", length = 255)
     private String description;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, length = 20)
-    private RoomStatus status;
+    @Column(name = "is_progress", nullable = false)
+    private boolean isProgress;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
     @Builder
-    private Room(String name, String category, String description, RoomStatus status) {
+    private Room(String name, String category, String description, boolean isProgress) {
         this.name = name;
         this.category = category;
         this.description = description;
-        this.status = status;
+        this.isProgress = isProgress;
+    }
+
+    public RoomStatus getStatus() {
+        // Persist as boolean in DB, expose enum status for API contract.
+        return isProgress ? RoomStatus.IN_PROGRESS : RoomStatus.READY;
+    }
+
+    public void markInProgress() {
+        this.isProgress = true;
+    }
+
+    public void markReady() {
+        this.isProgress = false;
     }
 
     @PrePersist
@@ -55,12 +65,8 @@ public class Room {
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
         }
-        // 엔티티 기본값을 보장해 서비스 외 경로(배치/테스트)에서도 DDL 기본값과 동일한 결과를 유지한다.
         if (category == null || category.isBlank()) {
             category = "기타";
-        }
-        if (status == null) {
-            status = RoomStatus.READY;
         }
     }
 }
