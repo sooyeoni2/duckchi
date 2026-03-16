@@ -9,6 +9,7 @@ export type ProfileStackParamList = {
   BadgeList: undefined;
   Settings: undefined;
   BankAccountRegister: undefined;
+  BankAccountSetup: undefined;
   BankAccountVerify: {
     accountId: number;
     bankName: string;

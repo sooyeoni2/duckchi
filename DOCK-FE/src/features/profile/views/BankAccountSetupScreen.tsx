@@ -1,0 +1,212 @@
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import React, { useState } from 'react';
+import {
+  Alert,
+  FlatList,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { getBankColor } from '../../../core/constants/bankColors';
+import type { ProfileStackParamList } from '../../../core/navigation/types';
+import { AppColorStyles } from '../../../core/theme/colors';
+import { KBODiaGothicTextStyle } from '../../../core/theme/typography';
+import { CustomAppBar } from '../../../shared/components/app_bar/CustomAppBar';
+import { FilledButton } from '../../../shared/components/buttons/FilledButton';
+import { CustomTextField } from '../../../shared/components/inputs/CustomTextField';
+import { useBankAccountViewModel } from '../viewmodels/useBankAccountViewModel';
+
+type Nav = NativeStackNavigationProp<ProfileStackParamList>;
+
+const BANKS = [
+  { code: '004', name: 'KB국민' },
+  { code: '088', name: '신한' },
+  { code: '081', name: '하나' },
+  { code: '020', name: '우리' },
+  { code: '090', name: '카카오뱅크' },
+  { code: '089', name: '케이뱅크' },
+  { code: '092', name: '토스뱅크' },
+  { code: '003', name: 'IBK기업' },
+  { code: '023', name: 'SC제일' },
+  { code: '011', name: 'NH농협은행' },
+  { code: '034', name: '지역농협' },
+  { code: '002', name: 'KDB산업' },
+  { code: '050', name: 'iM뱅크' },
+  { code: '032', name: '부산' },
+  { code: '039', name: '경남' },
+];
+
+export function BankAccountSetupScreen() {
+  const navigation = useNavigation<Nav>();
+  const { register, isRegistering } = useBankAccountViewModel();
+
+  const [selectedBank, setSelectedBank] = useState<(typeof BANKS)[0] | null>(null);
+  const [accountNo, setAccountNo] = useState('');
+  const [accountNoError, setAccountNoError] = useState('');
+
+  const handleSubmit = async () => {
+    if (!selectedBank) return;
+
+    const trimmed = accountNo.trim();
+    if (trimmed.length < 10) {
+      setAccountNoError('계좌번호를 올바르게 입력해주세요.');
+      return;
+    }
+
+    setAccountNoError('');
+    const res = await register(selectedBank.code, trimmed);
+
+    if (res.ok) {
+      navigation.replace('BankAccountVerify', {
+        accountId: res.result.accountId,
+        bankName: res.result.bankName,
+        maskedAccountNo: res.result.maskedAccountNo,
+      });
+    } else if (res.error === 'CONFLICT') {
+      Alert.alert('알림', '이미 등록된 계좌입니다.');
+    } else if (res.error === 'BAD_REQUEST') {
+      setAccountNoError('계좌번호 형식이 올바르지 않습니다.');
+    } else {
+      Alert.alert('오류', '계좌 등록에 실패했습니다. 잠시 후 다시 시도해주세요.');
+    }
+  };
+
+  const canSubmit = selectedBank !== null && accountNo.trim().length >= 10 && !isRegistering;
+
+  return (
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <CustomAppBar
+        showBackButton
+        backgroundColor={AppColorStyles.background}
+        onBackPress={() => navigation.goBack()}
+      />
+
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={styles.title}>계좌를 연결해요</Text>
+
+        <FlatList
+          data={BANKS}
+          numColumns={3}
+          keyExtractor={item => item.code}
+          scrollEnabled={false}
+          renderItem={({ item }) => {
+            const color = getBankColor(item.code);
+            const isSelected = selectedBank?.code === item.code;
+            return (
+              <TouchableOpacity
+                style={[styles.bankTile, isSelected && styles.bankTileSelected]}
+                onPress={() => setSelectedBank(item)}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.bankCircle, { backgroundColor: color.bg }]}>
+                  <Text style={[styles.bankCircleText, { color: color.text }]}>
+                    {item.name.charAt(0)}
+                  </Text>
+                </View>
+                <Text style={styles.bankLabel} numberOfLines={1}>
+                  {item.name}
+                </Text>
+              </TouchableOpacity>
+            );
+          }}
+          style={styles.bankGrid}
+        />
+
+        <View style={styles.inputArea}>
+          <CustomTextField
+            label="계좌번호"
+            hint="계좌번호를 입력해주세요"
+            value={accountNo}
+            onChangeText={text => {
+              setAccountNo(text.replace(/[^0-9]/g, ''));
+              if (accountNoError) setAccountNoError('');
+            }}
+            keyboardType="numeric"
+            returnKeyType="done"
+            errorText={accountNoError}
+            maxLength={16}
+          />
+        </View>
+      </ScrollView>
+
+      <View style={styles.bottomArea}>
+        <FilledButton
+          text="1원 인증하기"
+          onPress={canSubmit ? handleSubmit : undefined}
+          isLoading={isRegistering}
+        />
+      </View>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: AppColorStyles.background,
+  },
+  scroll: {
+    flex: 1,
+  },
+  content: {
+    paddingHorizontal: 24,
+    paddingBottom: 16,
+  },
+  title: {
+    ...KBODiaGothicTextStyle.medium({ fontSize: 26, color: AppColorStyles.black }),
+    lineHeight: 32,
+    marginBottom: 20,
+  },
+  bankGrid: {
+    marginHorizontal: -4,
+  },
+  bankTile: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 12,
+    marginHorizontal: 4,
+    marginBottom: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: AppColorStyles.gray4,
+    backgroundColor: AppColorStyles.surface,
+  },
+  bankTileSelected: {
+    borderColor: AppColorStyles.black,
+    backgroundColor: AppColorStyles.surface,
+  },
+  bankCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
+  },
+  bankCircleText: {
+    ...KBODiaGothicTextStyle.bold({ fontSize: 18, color: AppColorStyles.black }),
+  },
+  bankLabel: {
+    ...KBODiaGothicTextStyle.medium({ fontSize: 11, color: AppColorStyles.black }),
+    textAlign: 'center',
+  },
+  inputArea: {
+    marginTop: 24,
+  },
+  bottomArea: {
+    paddingHorizontal: 24,
+    paddingBottom: 24,
+    paddingTop: 8,
+  },
+});

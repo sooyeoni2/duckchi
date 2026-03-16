@@ -17,6 +17,7 @@ import { AppColorStyles } from '../../../core/theme/colors';
 import { KBODiaGothicTextStyle } from '../../../core/theme/typography';
 import { CustomAppBar } from '../../../shared/components/app_bar/CustomAppBar';
 import { usePopOnTabBlur } from '../../../shared/hooks/usePopOnTabBlur';
+import { useProfileViewModel } from '../viewmodels/useProfileViewModel';
 
 type Nav = NativeStackNavigationProp<ProfileStackParamList>;
 
@@ -50,6 +51,19 @@ function RowDivider() {
 export function SettingsScreen() {
   const navigation = useNavigation<Nav>();
   const [notificationEnabled, setNotificationEnabled] = useState(true);
+  const { state } = useProfileViewModel();
+
+  // TODO: 진행 중인 정산 여부는 별도 API 연동 필요
+  const hasOngoingSettlement = false;
+  const hasAccount = state.status === 'loaded' && state.profile.accounts.length > 0;
+
+  const handleAccountSetupPress = () => {
+    if (hasAccount || hasOngoingSettlement) {
+      navigation.navigate('BankAccountRegister');
+    } else {
+      navigation.navigate('BankAccountSetup');
+    }
+  };
 
   usePopOnTabBlur();
 
@@ -71,7 +85,7 @@ export function SettingsScreen() {
         {/* 계정 */}
         <SectionLabel title="계정" />
         <View style={styles.card}>
-          <SettingsRow label="대표 계좌 설정" onPress={() => navigation.navigate('BankAccountRegister')} />
+          <SettingsRow label="대표 계좌 설정" onPress={handleAccountSetupPress} />
           <RowDivider />
           <SettingsRow label="자동이체 한도 변경" onPress={() => {}} />
         </View>

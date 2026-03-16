@@ -24,7 +24,7 @@ import { BadgePreviewCard } from './components/BadgePreviewCard';
 
 export function ProfileScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<ProfileStackParamList>>();
-  const { state, refresh, deleteAccount } = useProfileViewModel();
+  const { state, refresh } = useProfileViewModel();
 
   if (state.status === 'idle' || state.status === 'loading') {
     return (
@@ -71,7 +71,7 @@ export function ProfileScreen() {
         showsVerticalScrollIndicator={false}
       >
         <ProfileHeader profile={profile} />
-        {representativeAccount && <AccountCard account={representativeAccount} onDelete={deleteAccount} />}
+        {representativeAccount && <AccountCard account={representativeAccount} />}
         <TransferLimitCard transferLimit={profile.transferLimit} />
         <BadgePreviewCard badges={profile.badges} />
       </ScrollView>
