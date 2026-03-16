@@ -44,6 +44,7 @@ public class RoomController {
     }
 
     @PatchMapping("/{roomId}/auto-debit/consents")
+
     @Operation(summary = "ROOM-04 Update auto debit consent")
     public ResponseEntity<ApiResponseDto<UpdateAutoDebitConsentResponse>> updateAutoDebitConsent(
             @PathVariable Long roomId,
@@ -55,3 +56,4 @@ public class RoomController {
         return ResponseEntity.ok(ApiResponseDto.success(response));
     }
 }
+
