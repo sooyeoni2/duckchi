@@ -14,7 +14,6 @@ import com.duckchi.pay.domain.room.entity.Room;
 import com.duckchi.pay.domain.room.entity.RoomParticipant;
 import com.duckchi.pay.domain.room.repository.RoomParticipantRepository;
 import com.duckchi.pay.domain.room.repository.RoomRepository;
-import com.duckchi.pay.domain.room.type.RoomStatus;
 import com.duckchi.pay.global.error.CustomException;
 import com.duckchi.pay.global.error.ErrorCode;
 import org.junit.jupiter.api.Test;
@@ -48,7 +47,7 @@ class RoomServiceImplTest {
                 .name("제주여행")
                 .category("기타")
                 .description("C102뒷풀이")
-                .status(RoomStatus.READY)
+                .isProgress(false)
                 .build();
         ReflectionTestUtils.setField(persisted, "id", 101L);
 

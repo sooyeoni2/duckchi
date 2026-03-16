@@ -17,7 +17,6 @@ import com.duckchi.pay.domain.room.entity.Room;
 import com.duckchi.pay.domain.room.repository.InviteLinkRepository;
 import com.duckchi.pay.domain.room.repository.RoomParticipantRepository;
 import com.duckchi.pay.domain.room.repository.RoomRepository;
-import com.duckchi.pay.domain.room.type.RoomStatus;
 import com.duckchi.pay.global.error.CustomException;
 import com.duckchi.pay.global.error.ErrorCode;
 import java.time.LocalDateTime;
@@ -177,7 +176,7 @@ class InviteLinkServiceImplTest {
                 .name("테스트방")
                 .category("기타")
                 .description("설명")
-                .status(RoomStatus.READY)
+                .isProgress(false)
                 .build();
         ReflectionTestUtils.setField(room, "id", roomId);
         return room;
