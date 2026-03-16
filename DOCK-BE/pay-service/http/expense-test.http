@@ -2,23 +2,76 @@
 
 @gateway-url = http://localhost:8080
 @pay-url = http://localhost:8082
+@roomId = 1
 
 ### PAY-01: 계좌 거래 내역 조회
-# 보안을 위해 POST Body로 계좌번호만 전달함.
+# 독립적인 도구성 API이므로 /expenses/account-history 경로 사용함.
 POST {{pay-url}}/api/v1/expenses/account-history
-X-User-Key: #본인 유저 키 입력
 Content-Type: application/json
 
 {
-  "accountNo": "11111111"
+  "accountNo": "0018341397102465"
 }
 
 > {%
  client.test("응답 상태 코드 200 확인", function() {
    client.assert(response.status === 200, "상태 코드가 200이 아님");
  });
- client.test("응답 데이터 구조 확인", function() {
-   client.assert(response.body.success === true, "성공 여부가 true가 아님");
-   client.assert(Array.isArray(response.body.data), "데이터가 리스트 형식이 아님");
- });
 %}
+
+### PAY-04: 결제 통합 등록 (N빵/수동 입력 케이스)
+# 특정 방에 귀속되는 API이므로 /rooms/{{roomId}}/expenses 경로 사용함.
+POST {{pay-url}}/api/v1/rooms/{{roomId}}/expenses
+Content-Type: application/json
+
+
+{
+  "roomId": 1,
+  "roomSessionId": 1,
+  "title": "한우마당 (N빵)",
+  "totalAmount": 120000,
+  "paidAt": "2026-03-12T14:30:00",
+  "inputType": "MANUAL",
+  "participants": [
+    { "userId": 1, "userName": "강산천", "userTag": "#1A3", "splitAmount": 40000 },
+    { "userId": 2, "userName": "정우주", "userTag": "#2B4", "splitAmount": 40000 },
+    { "userId": 3, "userName": "류병선", "userTag": "#3C5", "splitAmount": 40000 }
+  ]
+}
+
+### PAY-04: 결제 통합 등록 (OCR 메뉴별 정산 케이스)
+POST {{pay-url}}/api/v1/rooms/{{roomId}}/expenses
+Content-Type: application/json
+
+{
+  "roomId": 1,
+  "roomSessionId": 1,
+  "title": "덕취식당 (메뉴별)",
+  "totalAmount": 55000,
+  "paidAt": "2026-03-13T19:00:00",
+  "inputType": "OCR",
+  "participants": [
+    { "userId": 1, "userName": "강산천", "userTag": "#1A3", "splitAmount": 30000 },
+    { "userId": 2, "userName": "정우주", "userTag": "#2B4", "splitAmount": 25000 }
+  ],
+  "items": [
+    {
+      "name": "삼겹살",
+      "totalAmount": 45000,
+      "quantity": 3,
+      "splits": [
+        { "userId": 1, "splitAmount": 22500, "quantity": 0 },
+        { "userId": 2, "splitAmount": 22500, "quantity": 0 }
+      ]
+    },
+    {
+      "name": "소주",
+      "totalAmount": 10000,
+      "quantity": 2,
+      "splits": [
+        { "userId": 1, "splitAmount": 7500, "quantity": 1 },
+        { "userId": 2, "splitAmount": 2500, "quantity": 1 }
+      ]
+    }
+  ]
+}

@@ -28,9 +28,6 @@ public class Expense {
     @Column(nullable = false)
     private Long roomSessionId;      // 모임 회차 식별자임.
 
-    @Column(nullable = false, length = 100)
-    private String roomName;         // 방 이름을 비정규화하여 저장함.
-
     @Column(nullable = false)
     private Long payerUserId;        // 결제 주체인 총무의 ID임.
 
