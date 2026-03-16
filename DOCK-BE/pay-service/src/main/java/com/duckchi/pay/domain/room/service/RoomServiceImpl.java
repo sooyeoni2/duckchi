@@ -27,7 +27,7 @@ public class RoomServiceImpl implements RoomService {
     @Override
     @Transactional
     public CreateRoomResponse createRoom(Long currentUserId, CreateRoomRequest request) {
-        // JWT 미연동 단계에서는 헤더 기반 사용자 식별을 강제해 비회원 방 생성을 막는다.
+        // 컨트롤러에서 JWT 기반으로 해석된 userId가 없으면 비인증 요청으로 차단한다.
         if (currentUserId == null) {
             throw new CustomException(ErrorCode.COMMON_UNAUTHORIZED);
         }
