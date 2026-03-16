@@ -1,5 +1,6 @@
 import { MaterialCommunityIcons as MaterialDesignIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import type { CompositeNavigationProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
 import {
@@ -12,14 +13,17 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import type { ProfileStackParamList } from '../../../core/navigation/types';
+import type { ProfileStackParamList, RootStackParamList } from '../../../core/navigation/types';
 import { AppColorStyles } from '../../../core/theme/colors';
 import { KBODiaGothicTextStyle } from '../../../core/theme/typography';
 import { CustomAppBar } from '../../../shared/components/app_bar/CustomAppBar';
 import { usePopOnTabBlur } from '../../../shared/hooks/usePopOnTabBlur';
 import { useProfileViewModel } from '../viewmodels/useProfileViewModel';
 
-type Nav = NativeStackNavigationProp<ProfileStackParamList>;
+type Nav = CompositeNavigationProp<
+  NativeStackNavigationProp<ProfileStackParamList>,
+  NativeStackNavigationProp<RootStackParamList>
+>;
 
 function SectionLabel({ title }: { title: string }) {
   return <Text style={styles.sectionLabel}>{title}</Text>;
@@ -61,7 +65,7 @@ export function SettingsScreen() {
     if (hasAccount || hasOngoingSettlement) {
       navigation.navigate('BankAccountRegister');
     } else {
-      navigation.navigate('BankAccountSetup');
+      navigation.navigate('BankAccountSetup', { returnTo: 'Settings' });
     }
   };
 

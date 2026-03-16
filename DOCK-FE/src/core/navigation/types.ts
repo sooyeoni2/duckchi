@@ -2,6 +2,13 @@ export type RootStackParamList = {
   Onboarding: undefined;
   Auth: undefined;
   App: undefined;
+  BankAccountSetup: { returnTo: 'App' | 'Settings' };
+  BankAccountVerify: {
+    accountId: number;
+    bankName: string;
+    maskedAccountNo: string;
+    returnTo: 'App' | 'Settings';
+  };
 };
 
 export type ProfileStackParamList = {
@@ -9,12 +16,6 @@ export type ProfileStackParamList = {
   BadgeList: undefined;
   Settings: undefined;
   BankAccountRegister: undefined;
-  BankAccountSetup: undefined;
-  BankAccountVerify: {
-    accountId: number;
-    bankName: string;
-    maskedAccountNo: string;
-  };
 };
 
 export type AuthStackParamList = {

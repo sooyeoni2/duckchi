@@ -5,7 +5,7 @@ import React, { useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import type { ProfileStackParamList } from '../../../core/navigation/types';
+import type { RootStackParamList } from '../../../core/navigation/types';
 import { AppColorStyles } from '../../../core/theme/colors';
 import { KBODiaGothicTextStyle } from '../../../core/theme/typography';
 import { CustomAppBar } from '../../../shared/components/app_bar/CustomAppBar';
@@ -14,13 +14,13 @@ import { CustomTextField } from '../../../shared/components/inputs/CustomTextFie
 import { useBankAccountViewModel } from '../viewmodels/useBankAccountViewModel';
 import { useProfileViewModel } from '../viewmodels/useProfileViewModel';
 
-type Nav = NativeStackNavigationProp<ProfileStackParamList>;
-type Route = RouteProp<ProfileStackParamList, 'BankAccountVerify'>;
+type Nav = NativeStackNavigationProp<RootStackParamList>;
+type Route = RouteProp<RootStackParamList, 'BankAccountVerify'>;
 
 export function BankAccountVerifyScreen() {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
-  const { accountId, bankName, maskedAccountNo } = route.params;
+  const { accountId, bankName, maskedAccountNo, returnTo } = route.params;
 
   const { verify, isVerifying } = useBankAccountViewModel();
   const { refresh } = useProfileViewModel();
@@ -39,19 +39,42 @@ export function BankAccountVerifyScreen() {
 
     if (res.ok) {
       await refresh();
-      navigation.dispatch(
-        CommonActions.reset({
-          index: 2,
-          routes: [{ name: 'ProfileMain' }, { name: 'Settings' }, { name: 'BankAccountRegister' }],
-        }),
-      );
+      if (returnTo === 'Settings') {
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [
+              {
+                name: 'App',
+                state: {
+                  routes: [
+                    {
+                      name: 'Profile',
+                      state: {
+                        routes: [
+                          { name: 'ProfileMain' },
+                          { name: 'Settings' },
+                          { name: 'BankAccountRegister' },
+                        ],
+                        index: 2,
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+          }),
+        );
+      } else {
+        navigation.replace('App');
+      }
     } else if (res.error === 'LOCKED') {
       Alert.alert('잠김', '인증 실패 횟수를 초과했습니다. 잠시 후 다시 시도해주세요.', [
-        { text: '확인', onPress: () => navigation.navigate('Settings') },
+        { text: '확인', onPress: () => navigation.replace('App') },
       ]);
     } else if (res.error === 'ALREADY_VERIFIED') {
       Alert.alert('알림', '이미 인증이 완료된 계좌입니다.', [
-        { text: '확인', onPress: () => navigation.navigate('Settings') },
+        { text: '확인', onPress: () => navigation.replace('App') },
       ]);
     } else if (res.error === 'BAD_CODE') {
       setCodeError('인증코드가 올바르지 않습니다.');

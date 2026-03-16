@@ -8,6 +8,8 @@ import { AppNavigator } from './src/core/navigation/AppNavigator';
 import { RootStackParamList } from './src/core/navigation/types';
 import { AuthScreen } from './src/features/auth/AuthScreen';
 import { OnboardingScreen } from './src/features/onboarding/OnboardingScreen';
+import { BankAccountSetupScreen } from './src/features/profile/views/BankAccountSetupScreen';
+import { BankAccountVerifyScreen } from './src/features/profile/views/BankAccountVerifyScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -45,6 +47,8 @@ function App() {
             )}
           </Stack.Screen>
           <Stack.Screen name="App" component={AppNavigator} />
+          <Stack.Screen name="BankAccountSetup" component={BankAccountSetupScreen} />
+          <Stack.Screen name="BankAccountVerify" component={BankAccountVerifyScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>

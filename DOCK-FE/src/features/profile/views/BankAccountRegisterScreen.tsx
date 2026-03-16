@@ -1,11 +1,12 @@
 import { useNavigation } from '@react-navigation/native';
+import type { CompositeNavigationProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getBankColor } from '../../../core/constants/bankColors';
-import type { ProfileStackParamList } from '../../../core/navigation/types';
+import type { ProfileStackParamList, RootStackParamList } from '../../../core/navigation/types';
 import { AppColorStyles } from '../../../core/theme/colors';
 import { KBODiaGothicTextStyle } from '../../../core/theme/typography';
 import { ConfirmDialog } from '../../../shared/components/dialog/ConfirmDialog';
@@ -13,7 +14,10 @@ import { CustomAppBar } from '../../../shared/components/app_bar/CustomAppBar';
 import { FilledButton } from '../../../shared/components/buttons/FilledButton';
 import { useProfileViewModel } from '../viewmodels/useProfileViewModel';
 
-type Nav = NativeStackNavigationProp<ProfileStackParamList>;
+type Nav = CompositeNavigationProp<
+  NativeStackNavigationProp<ProfileStackParamList>,
+  NativeStackNavigationProp<RootStackParamList>
+>;
 
 export function BankAccountRegisterScreen() {
   const navigation = useNavigation<Nav>();
@@ -92,7 +96,7 @@ export function BankAccountRegisterScreen() {
       <View style={styles.bottomArea}>
         <FilledButton
           text="계좌 등록하기"
-          onPress={canRegister ? () => navigation.navigate('BankAccountSetup') : undefined}
+          onPress={canRegister ? () => navigation.navigate('BankAccountSetup', { returnTo: 'Settings' }) : undefined}
         />
       </View>
     </SafeAreaView>

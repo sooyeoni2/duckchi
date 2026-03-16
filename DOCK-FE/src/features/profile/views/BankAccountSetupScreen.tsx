@@ -1,5 +1,6 @@
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RouteProp } from '@react-navigation/native';
 import React, { useState } from 'react';
 import {
   Alert,
@@ -13,7 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getBankColor } from '../../../core/constants/bankColors';
-import type { ProfileStackParamList } from '../../../core/navigation/types';
+import type { RootStackParamList } from '../../../core/navigation/types';
 import { AppColorStyles } from '../../../core/theme/colors';
 import { KBODiaGothicTextStyle } from '../../../core/theme/typography';
 import { CustomAppBar } from '../../../shared/components/app_bar/CustomAppBar';
@@ -21,7 +22,8 @@ import { FilledButton } from '../../../shared/components/buttons/FilledButton';
 import { CustomTextField } from '../../../shared/components/inputs/CustomTextField';
 import { useBankAccountViewModel } from '../viewmodels/useBankAccountViewModel';
 
-type Nav = NativeStackNavigationProp<ProfileStackParamList>;
+type Nav = NativeStackNavigationProp<RootStackParamList>;
+type Route = RouteProp<RootStackParamList, 'BankAccountSetup'>;
 
 const BANKS = [
   { code: '004', name: '국민은행' },
@@ -46,6 +48,7 @@ const BANKS = [
 
 export function BankAccountSetupScreen() {
   const navigation = useNavigation<Nav>();
+  const { returnTo } = useRoute<Route>().params;
   const { register, isRegistering } = useBankAccountViewModel();
 
   const [selectedBank, setSelectedBank] = useState<(typeof BANKS)[0] | null>(null);
@@ -69,6 +72,7 @@ export function BankAccountSetupScreen() {
         accountId: res.result.accountId,
         bankName: res.result.bankName,
         maskedAccountNo: res.result.maskedAccountNo,
+        returnTo,
       });
     } else if (res.error === 'CONFLICT') {
       Alert.alert('알림', '이미 등록된 계좌입니다.');
