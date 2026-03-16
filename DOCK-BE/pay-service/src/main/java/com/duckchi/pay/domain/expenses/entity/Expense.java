@@ -3,6 +3,8 @@ package com.duckchi.pay.domain.expenses.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 결제 내역 엔티티.
@@ -23,8 +25,11 @@ public class Expense {
     @Column(nullable = false)
     private Long roomId;             // 대상 모임방 식별자임.
 
+    @Column(nullable = false)
+    private Long roomSessionId;      // 모임 회차 식별자임.
+
     @Column(nullable = false, length = 100)
-    private String roomName;         // 방 식별이 용이하도록 방 이름을 비정규화하여 저장함.
+    private String roomName;         // 방 이름을 비정규화하여 저장함.
 
     @Column(nullable = false)
     private Long payerUserId;        // 결제 주체인 총무의 ID임.
@@ -41,8 +46,8 @@ public class Expense {
     @Column(nullable = false)
     private Integer totalAmount;     // 결제 총액임.
 
-    @Column(nullable = false)
-    private LocalDateTime paidAt;    // 실제 돈이 나간 시점임.
+    @Column
+    private LocalDateTime paidAt;    // 실제 결제 일시 (미확정 시 NULL 가능)임.
 
     /**
      * DB의 DEFAULT CURRENT_TIMESTAMP 기능을 사용함.
@@ -50,5 +55,22 @@ public class Expense {
      * 장점: 애플리케이션 로직과 DB 설정의 중복을 방지함.
      */
     @Column(nullable = false, updatable = false, insertable = false)
-    private LocalDateTime createdAt; 
+    private LocalDateTime createdAt;
+
+    /**
+     * 한 결제 건에 속한 참여자 목록임 (1:N).
+     * cascade = ALL: 결제 저장 시 참여자 정보도 함께 저장/삭제함.
+     * orphanRemoval = true: 참여자 리스트에서 제거된 객체는 DB에서도 삭제함.
+     */
+    @Builder.Default
+    @OneToMany(mappedBy = "expense", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ExpenseParticipant> participants = new ArrayList<>();
+
+    /**
+     * 결제 상세 품목 리스트임 (1:N).
+     * OCR 기반 정밀 정산 시 데이터가 생성됨.
+     */
+    @Builder.Default
+    @OneToMany(mappedBy = "expense", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ExpenseItem> items = new ArrayList<>();
 }

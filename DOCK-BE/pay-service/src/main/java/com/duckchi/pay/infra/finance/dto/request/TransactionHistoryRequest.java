@@ -1,11 +1,10 @@
-package com.duckchi.pay.domain.expenses.dto.external;
+package com.duckchi.pay.infra.finance.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
 /**
  * 외부 금융망 거래 내역 조회 요청 전문.
- * 금융 시스템 전문 규격에 맞춰 필드 구성함.
  */
 @Getter
 @Setter
@@ -14,7 +13,8 @@ import lombok.*;
 @AllArgsConstructor
 public class TransactionHistoryRequest {
     @JsonProperty("Header") // JSON 변환 시 대문자 Header 유지를 위해 명시함.
-    private FinanceHeader header;    // 공통 보안 헤더임.
+    private FinanceRequestHeader header; // 요청용 헤더 사용함.
+
     private String accountNo;        // 조회 대상 계좌 번호임.
     private String startDate;        // 조회 시작 범위 (YYYYMMDD)임.
     private String endDate;          // 조회 종료 범위 (YYYYMMDD)임.
