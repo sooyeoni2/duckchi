@@ -3,6 +3,7 @@ package com.duckchi.pay.domain.room.controller;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -76,5 +77,21 @@ class RoomControllerTest {
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.errorCode").value("COMMON-401-1"))
                 .andExpect(jsonPath("$.msg").value("인증이 필요합니다."));
+    }
+
+    @Test
+    void updateRoom_success_returns200() throws Exception {
+        mockMvc.perform(patch("/api/v1/rooms/101")
+                        .header("X-User-Id", "7")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name":"수정된방이름",
+                                  "category":"TRAVEL"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").value("수정이 완료되었습니다."));
     }
 }

@@ -10,6 +10,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -32,5 +34,16 @@ public class RoomController {
     ) {
         CreateRoomResponse response = roomService.createRoom(currentUserId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponseDto.success(response));
+    }
+
+    @PatchMapping("/{roomId}")
+    @Operation(summary = "ROOM-05 모임 정보 수정")
+    public ResponseEntity<ApiResponseDto<String>> updateRoom(
+            @PathVariable Long roomId,
+            @RequestHeader(value = "X-User-Id", required = false) Long currentUserId,
+            @Valid @RequestBody com.duckchi.pay.domain.room.dto.request.UpdateRoomRequest request
+    ) {
+        roomService.updateRoomInfo(roomId, currentUserId, request);
+        return ResponseEntity.ok(ApiResponseDto.success("수정이 완료되었습니다."));
     }
 }

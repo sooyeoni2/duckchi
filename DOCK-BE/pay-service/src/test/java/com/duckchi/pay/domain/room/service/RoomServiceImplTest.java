@@ -77,4 +77,54 @@ class RoomServiceImplTest {
         assertEquals(ErrorCode.COMMON_UNAUTHORIZED, ex.getErrorCode());
         verify(roomRepository, never()).save(any(Room.class));
     }
+
+    @Test
+    void updateRoomInfo_success_updatesNameAndCategory() {
+        com.duckchi.pay.domain.room.dto.request.UpdateRoomRequest request = new com.duckchi.pay.domain.room.dto.request.UpdateRoomRequest();
+        ReflectionTestUtils.setField(request, "name", "새로운이름");
+        ReflectionTestUtils.setField(request, "category", "새로운카테고리");
+
+        Room room = Room.builder()
+                .name("이전이름")
+                .status(RoomStatus.READY)
+                .build();
+        ReflectionTestUtils.setField(room, "id", 101L);
+
+        RoomParticipant owner = RoomParticipant.builder()
+                .room(room)
+                .userId(7L)
+                .isAdmin(true)
+                .build();
+
+        when(roomRepository.findById(101L)).thenReturn(java.util.Optional.of(room));
+        when(roomParticipantRepository.findByRoom_IdAndUserId(101L, 7L)).thenReturn(java.util.Optional.of(owner));
+
+        roomService.updateRoomInfo(101L, 7L, request);
+
+        assertEquals("새로운이름", room.getName());
+        assertEquals("새로운카테고리", room.getCategory());
+    }
+
+    @Test
+    void updateRoomInfo_whenInProgress_throwsCustomException() {
+        com.duckchi.pay.domain.room.dto.request.UpdateRoomRequest request = new com.duckchi.pay.domain.room.dto.request.UpdateRoomRequest();
+        ReflectionTestUtils.setField(request, "name", "새로운이름");
+
+        Room room = Room.builder()
+                .status(RoomStatus.IN_PROGRESS)
+                .build();
+        ReflectionTestUtils.setField(room, "id", 101L);
+
+        RoomParticipant owner = RoomParticipant.builder()
+                .room(room)
+                .userId(7L)
+                .isAdmin(true)
+                .build();
+
+        when(roomRepository.findById(101L)).thenReturn(java.util.Optional.of(room));
+        when(roomParticipantRepository.findByRoom_IdAndUserId(101L, 7L)).thenReturn(java.util.Optional.of(owner));
+
+        CustomException ex = assertThrows(CustomException.class, () -> roomService.updateRoomInfo(101L, 7L, request));
+        assertEquals(ErrorCode.ROOM_CANNOT_UPDATE_STATUS, ex.getErrorCode());
+    }
 }
