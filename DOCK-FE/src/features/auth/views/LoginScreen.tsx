@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, Dimensions } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AppColorStyles } from '@core/theme/colors';
 import { KBODiaGothicTextStyle } from '@core/theme/typography';
@@ -8,18 +8,14 @@ import { useLoginViewModel } from '../viewmodels/useLoginViewModel';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
+const { width: W } = Dimensions.get('window');
+const s = W / 412;
+
 const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const { state, openKakaoLogin, resetError } = useLoginViewModel();
 
   const handleKakaoLogin = () => openKakaoLogin();
-
-  const handleGoogleLogin = () => {
-    Alert.alert('준비 중', '구글 로그인은 준비 중입니다.');
-  };
-
-  const handleTestLogin = () => {
-    // TODO: 테스트 로그인 구현
-  };
+  const handleTestLogin  = () => {};
 
   React.useEffect(() => {
     if (state.status === 'error') {
@@ -30,64 +26,52 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
     }
   }, [state]);
 
-
   return (
     <View style={styles.container}>
 
-      {/* 상단: 타이틀 */}
-      <View style={styles.topSection}>
-        <Text style={styles.title}>로그인</Text>
+      {/* ── 배경 ── */}
+      <View style={styles.archBg} />
+      <View style={styles.yellowBg} />
+
+      {/* ── 타이틀 ── */}
+      <Text style={styles.title}>로그인</Text>
+
+      {/* ── 눈 ── */}
+      <View style={styles.eyeLeft} />
+      <View style={styles.eyeLeftHL} />
+      <View style={styles.eyeRight} />
+      <View style={styles.eyeRightHL} />
+
+      {/* ── 카카오 버튼 ── */}
+      <TouchableOpacity style={styles.kakaoButton} onPress={handleKakaoLogin} activeOpacity={0.85}>
+        <KakaoIcon />
+        <Text style={styles.kakaoText}>카카오 로그인</Text>
+      </TouchableOpacity>
+
+      {/* ── 나비넥타이 (Group 329) ── */}
+      <View style={styles.bowTieRow}>
+        <View style={styles.bowTieLeft} />
+        <View style={styles.bowTieRight} />
       </View>
 
-      {/* 중간: 연노란 아치 + 버튼 */}
-      <View style={styles.middleSection}>
-        <TouchableOpacity style={styles.kakaoButton} onPress={handleKakaoLogin} activeOpacity={0.85}>
-          <KakaoIcon />
-          <Text style={styles.kakaoText}>카카오 로그인</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.googleButton} onPress={handleGoogleLogin} activeOpacity={0.85}>
-          <GoogleIcon />
-          <Text style={styles.googleText}>구글 로그인</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* 하단: 노란 섹션 */}
-      <View style={styles.bottomSection}>
-        <View style={styles.bowTieRow}>
-          <View style={styles.bowTieLeft} />
-          <View style={styles.bowTieRight} />
-        </View>
-
-        <TouchableOpacity style={styles.testButton} onPress={handleTestLogin} activeOpacity={0.85}>
-          <Text style={styles.testText}>테스트 로그인</Text>
-        </TouchableOpacity>
-      </View>
+      {/* ── 테스트 로그인 ── */}
+      <TouchableOpacity style={styles.testButton} onPress={handleTestLogin} activeOpacity={0.85}>
+        <Text style={styles.testText}>테스트 로그인</Text>
+      </TouchableOpacity>
 
     </View>
   );
 };
 
 const KakaoIcon = () => (
-  <View style={icon.kakao}>
+  <View style={icon.bubble}>
     <View style={icon.tail} />
   </View>
 );
 
-const GoogleIcon = () => (
-  <View style={icon.google}>
-    <View style={[icon.block, { backgroundColor: '#EA4335', top: 0, left: 0 }]} />
-    <View style={[icon.block, { backgroundColor: '#FBBC05', bottom: 0, left: 0 }]} />
-    <View style={[icon.block, { backgroundColor: '#34A853', bottom: 0, right: 0 }]} />
-    <View style={[icon.block, { backgroundColor: '#4285F4', top: 0, right: 0 }]} />
-  </View>
-);
-
 const icon = StyleSheet.create({
-  kakao:  { width: 22, height: 20, backgroundColor: 'rgba(0,0,0,0.85)', borderRadius: 10 },
-  tail:   { position: 'absolute', bottom: -4, left: 6, width: 8, height: 6, backgroundColor: 'rgba(0,0,0,0.85)', borderBottomLeftRadius: 4 },
-  google: { width: 20, height: 20 },
-  block:  { position: 'absolute', width: 10, height: 10 },
+  bubble: { width: 22 * s, height: 20 * s, backgroundColor: 'rgba(0,0,0,0.85)', borderRadius: 10 * s },
+  tail:   { position: 'absolute', bottom: -4 * s, left: 6 * s, width: 8 * s, height: 6 * s, backgroundColor: 'rgba(0,0,0,0.85)', borderBottomLeftRadius: 4 * s },
 });
 
 const styles = StyleSheet.create({
@@ -96,33 +80,82 @@ const styles = StyleSheet.create({
     backgroundColor: AppColorStyles.background,
   },
 
-  /* 상단 — 타이틀 영역 (220/917 = 24%) */
-  topSection: {
-    flex: 2.4,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingTop: '10%',
-  },
-  title: {
-    ...KBODiaGothicTextStyle.bold({ fontSize: 40, color: AppColorStyles.black }),
-  },
-
-  /* 중간 — 아치 배경 + 버튼 (384/917 = 42%) */
-  middleSection: {
-    flex: 4.2,
+  /* ── 배경 ── */
+  archBg: {
+    position: 'absolute',
+    width: '100%',
+    height: '69.6%',     // 638 / 917
+    top: '24%',          // 220 / 917
     backgroundColor: '#FFF6C0',
     borderTopLeftRadius: 999,
     borderTopRightRadius: 999,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: '14%',
-    paddingBottom: '5%',
+  },
+  yellowBg: {
+    position: 'absolute',
+    width: '105%',
+    height: '37.5%',     // 344 / 917
+    left: 0,
+    bottom: 0,
+    backgroundColor: '#FEEC7E',
   },
 
+  /* ── 타이틀 ── */
+  title: {
+    position: 'absolute',
+    width: '53.2%',      // 219 / 412
+    left: '23.5%',       // 97 / 412
+    top: '14.6%',        // 134 / 917
+    textAlign: 'center',
+    ...KBODiaGothicTextStyle.bold({ fontSize: 40 * s, color: AppColorStyles.black }),
+  },
+
+  /* ── 눈 — Ellipse 79 / 81 (왼쪽) ── */
+  eyeLeft: {
+    position: 'absolute',
+    width: 22 * s,
+    height: 44 * s,
+    left: '33.7%',       // 139 / 412
+    top: '37.3%',        // 342 / 917
+    backgroundColor: '#000000',
+    borderRadius: 1000,
+  },
+  eyeLeftHL: {
+    position: 'absolute',
+    width: 9 * s,
+    height: 21 * s,
+    left: '34.2%',       // 141 / 412
+    top: '37.9%',        // 348 / 917
+    backgroundColor: '#FFFFFF',
+    borderRadius: 1000,
+  },
+
+  /* ── 눈 — Ellipse 82 / 83 (오른쪽) ── */
+  eyeRight: {
+    position: 'absolute',
+    width: 22 * s,
+    height: 44 * s,
+    left: '61.7%',       // 254 / 412
+    top: '37.3%',
+    backgroundColor: '#000000',
+    borderRadius: 1000,
+  },
+  eyeRightHL: {
+    position: 'absolute',
+    width: 9 * s,
+    height: 21 * s,
+    left: '62.1%',       // 256 / 412
+    top: '37.9%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 1000,
+  },
+
+  /* ── 카카오 버튼 ── */
   kakaoButton: {
-    width: '100%',
+    position: 'absolute',
+    width: '71.8%',      // 296 / 412
     height: 54,
+    left: '14.3%',       // 59 / 412
+    top: '52.9%',        // 485 / 917
     backgroundColor: '#FEE500',
     borderRadius: 8,
     flexDirection: 'row',
@@ -137,57 +170,36 @@ const styles = StyleSheet.create({
   kakaoText: {
     flex: 1,
     textAlign: 'center',
-    ...KBODiaGothicTextStyle.medium({ fontSize: 18, color: AppColorStyles.black }),
+    ...KBODiaGothicTextStyle.medium({ fontSize: 18 * s, color: AppColorStyles.black }),
   },
 
-  googleButton: {
-    width: '100%',
-    height: 54,
-    backgroundColor: AppColorStyles.white,
-    borderRadius: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    elevation: 2,
-    shadowColor: '#676767',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
-  },
-  googleText: {
-    flex: 1,
-    textAlign: 'center',
-    ...KBODiaGothicTextStyle.medium({ fontSize: 18, color: AppColorStyles.black }),
-  },
-
-  /* 하단 — 노란 섹션 (313/917 = 34%) */
-  bottomSection: {
-    flex: 3.4,
-    backgroundColor: '#FEEC7E',
-    justifyContent: 'space-evenly',
-    alignItems: 'center',
-  },
-
+  /* ── 나비넥타이 ── */
   bowTieRow: {
+    position: 'absolute',
     flexDirection: 'row',
-    alignItems: 'center',
+    left: '31.6%',       // 130 / 412
+    top: '67.3%',        // 617 / 917
   },
   bowTieLeft: {
     width: 0, height: 0,
-    borderTopWidth: 38, borderBottomWidth: 38, borderLeftWidth: 62,
+    borderTopWidth: 40 * s, borderBottomWidth: 40 * s, borderLeftWidth: 65 * s,
     borderTopColor: 'transparent', borderBottomColor: 'transparent',
     borderLeftColor: '#FE7D04',
   },
   bowTieRight: {
     width: 0, height: 0,
-    borderTopWidth: 38, borderBottomWidth: 38, borderRightWidth: 62,
+    borderTopWidth: 40 * s, borderBottomWidth: 40 * s, borderRightWidth: 65 * s,
     borderTopColor: 'transparent', borderBottomColor: 'transparent',
     borderRightColor: '#FE7D04',
   },
 
+  /* ── 테스트 로그인 버튼 ── */
   testButton: {
-    width: '80%',
-    height: 54,
+    position: 'absolute',
+    width: '79.6%',      // 328 / 412
+    height: 60,
+    left: '10.2%',       // 42 / 412
+    top: '88.3%',        // 810 / 917
     backgroundColor: AppColorStyles.white,
     borderWidth: 1,
     borderColor: AppColorStyles.black,
@@ -196,7 +208,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   testText: {
-    ...KBODiaGothicTextStyle.bold({ fontSize: 18, color: AppColorStyles.black }),
+    ...KBODiaGothicTextStyle.bold({ fontSize: 18 * s, color: AppColorStyles.black }),
   },
 });
 
