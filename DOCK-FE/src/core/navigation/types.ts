@@ -8,6 +8,12 @@ export type ProfileStackParamList = {
   ProfileMain: undefined;
   BadgeList: undefined;
   Settings: undefined;
+  BankAccountRegister: undefined;
+  BankAccountVerify: {
+    accountId: number;
+    bankName: string;
+    maskedAccountNo: string;
+  };
 };
 
 export type AuthStackParamList = {

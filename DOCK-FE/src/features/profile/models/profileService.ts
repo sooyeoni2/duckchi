@@ -9,8 +9,24 @@ import type {
   Profile,
   ProfileBadge,
   ProfileSummary,
+  RegisterBankAccountResult,
   UpdateProfileParams,
 } from './profileTypes';
+
+const MOCK_BANK_NAMES: Record<string, string> = {
+  '004': 'KB국민은행',
+  '020': '우리은행',
+  '081': '하나은행',
+  '088': '신한은행',
+  '089': '케이뱅크',
+  '090': '카카오뱅크',
+  '092': '토스뱅크',
+  '003': 'IBK기업은행',
+  '011': 'NH농협은행',
+  '023': 'SC제일은행',
+  '032': '부산은행',
+  '039': '경남은행',
+};
 
 // ─────────────────────────────────────────
 // Zod 스키마 (API 응답 검증용)
@@ -125,6 +141,8 @@ const toLockedBadge = (raw: z.infer<typeof lockedBadgeSchema>): LockedBadge => (
 // Mock 데이터
 // ─────────────────────────────────────────
 
+let mockPendingAccount: RegisterBankAccountResult | null = null;
+
 const USE_MOCK = true;
 
 let mockProfile = profileDetailSchema.parse({
@@ -223,6 +241,47 @@ export const deleteAccount = async (accountId: number): Promise<void> => {
     return;
   }
   await axiosClient.post(`/api/v1/auth/bank-accounts/${accountId}/delete`);
+};
+
+export const registerBankAccount = async (
+  bankCode: string,
+  accountNo: string,
+): Promise<RegisterBankAccountResult> => {
+  if (USE_MOCK) {
+    await new Promise<void>(resolve => setTimeout(resolve, 500));
+    const bankName = MOCK_BANK_NAMES[bankCode] ?? '알 수 없는 은행';
+    const maskedAccountNo = accountNo.slice(0, 4) + '************';
+    mockPendingAccount = { accountId: Date.now(), bankCode, bankName, maskedAccountNo };
+    return mockPendingAccount;
+  }
+  const response = await axiosClient.post('/api/v1/auth/bank-accounts', { bankCode, accountNo });
+  return response.data.data as RegisterBankAccountResult;
+};
+
+export const verify1Won = async (accountId: number, verificationCode: string): Promise<void> => {
+  if (USE_MOCK) {
+    await new Promise<void>(resolve => setTimeout(resolve, 500));
+    if (mockPendingAccount && mockPendingAccount.accountId === accountId) {
+      mockProfile = {
+        ...mockProfile,
+        accounts: [
+          ...mockProfile.accounts,
+          {
+            accountId: mockPendingAccount.accountId,
+            bankCode: mockPendingAccount.bankCode,
+            bankName: mockPendingAccount.bankName,
+            accountNumber: mockPendingAccount.maskedAccountNo,
+            registeredAt: new Date().toISOString(),
+          },
+        ],
+      };
+      mockPendingAccount = null;
+    }
+    return;
+  }
+  await axiosClient.post(`/api/v1/auth/bank-accounts/${accountId}/verify-1won`, {
+    verificationCode,
+  });
 };
 
 export const fetchBadges = async (): Promise<BadgeList> => {

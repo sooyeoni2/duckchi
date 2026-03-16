@@ -71,7 +71,7 @@ export function SettingsScreen() {
         {/* 계정 */}
         <SectionLabel title="계정" />
         <View style={styles.card}>
-          <SettingsRow label="대표 계좌 설정" onPress={() => {}} />
+          <SettingsRow label="대표 계좌 설정" onPress={() => navigation.navigate('BankAccountRegister')} />
           <RowDivider />
           <SettingsRow label="자동이체 한도 변경" onPress={() => {}} />
         </View>
@@ -87,6 +87,7 @@ export function SettingsScreen() {
                 onValueChange={setNotificationEnabled}
                 trackColor={{ false: AppColorStyles.gray3, true: AppColorStyles.gray1 }}
                 thumbColor={AppColorStyles.white}
+                style={{ alignSelf: 'center' }}
               />
             }
           />
@@ -144,7 +145,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 2,
     elevation: 2,
-    overflow: 'hidden',
   },
   row: {
     flexDirection: 'row',

@@ -80,7 +80,7 @@ export const CustomAppBar: React.FC<CustomAppBarProps> = ({
         backgroundColor="transparent"
         translucent={Platform.OS === 'android'}
       />
-      <View style={[styles.container, { backgroundColor: effectiveBg }, showDivider && styles.containerDivider, style]}>
+      <View style={[styles.container, { backgroundColor: effectiveBg }, style]}>
         <View style={styles.leadingArea}>{renderLeading()}</View>
 
         <View style={[styles.titleArea, centerTitle && styles.titleCenter]}>
@@ -98,6 +98,11 @@ export const CustomAppBar: React.FC<CustomAppBarProps> = ({
           {actions?.map((action, index) => <View key={index}>{action}</View>)}
         </View>
       </View>
+      {showDivider && (
+        <View style={styles.dividerOuter}>
+          <View style={styles.dividerInner} />
+        </View>
+      )}
     </>
   );
 };
@@ -193,10 +198,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 4,
   },
-  containerDivider: {
-    borderBottomWidth: 1,
-    borderBottomColor: AppColorStyles.gray2,
+  dividerOuter: {
+    height: 1,
+    overflow: 'hidden',
+  },
+  dividerInner: {
+    height: 10,
+    borderWidth: 1,
     borderStyle: 'dashed',
+    borderColor: AppColorStyles.gray2,
   },
   leadingArea: {
     width: 48,

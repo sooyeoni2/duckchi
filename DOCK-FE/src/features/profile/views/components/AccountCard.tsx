@@ -55,8 +55,9 @@ export function AccountCard({ account, onDelete }: AccountCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    paddingVertical: 20,
+    paddingTop: 14,
     paddingBottom: 28,
+    paddingHorizontal: 16,
   },
   labelRow: {
     flexDirection: 'row',

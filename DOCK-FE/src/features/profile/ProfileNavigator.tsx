@@ -4,6 +4,7 @@ import React from 'react';
 import type { ProfileStackParamList } from '../../core/navigation/types';
 import { BadgeListScreen } from './views/BadgeListScreen';
 import { ProfileScreen } from './views/ProfileScreen';
+import { BankAccountRegisterScreen } from './views/BankAccountRegisterScreen';
 import { SettingsScreen } from './views/SettingsScreen';
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
@@ -14,6 +15,7 @@ export function ProfileNavigator() {
       <Stack.Screen name="ProfileMain" component={ProfileScreen} options={{ animation: 'none' }} />
       <Stack.Screen name="BadgeList" component={BadgeListScreen} />
       <Stack.Screen name="Settings" component={SettingsScreen} options={{ animation: 'none' }} />
+      <Stack.Screen name="BankAccountRegister" component={BankAccountRegisterScreen} />
     </Stack.Navigator>
   );
 }
