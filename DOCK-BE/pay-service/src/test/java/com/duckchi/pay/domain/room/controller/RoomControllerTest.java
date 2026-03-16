@@ -13,6 +13,7 @@ import com.duckchi.pay.domain.room.service.RoomService;
 import com.duckchi.pay.global.error.CustomException;
 import com.duckchi.pay.global.error.ErrorCode;
 import com.duckchi.pay.global.error.GlobalExceptionHandler;
+import com.duckchi.pay.infra.security.jwt.JwtUserIdResolver;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,20 +33,24 @@ class RoomControllerTest {
     @MockBean
     private RoomService roomService;
 
+    @MockBean
+    private JwtUserIdResolver jwtUserIdResolver;
+
     @Test
     void createRoom_success_returns201() throws Exception {
         CreateRoomResponse response = CreateRoomResponse.builder()
                 .roomId(101L)
                 .name("제주여행")
                 .category("기타")
-                .isProgress(false)
+                .status("READY")
                 .createdAt(LocalDateTime.of(2026, 3, 12, 10, 0))
                 .build();
 
+        when(jwtUserIdResolver.resolveRequired("Bearer valid-token")).thenReturn(7L);
         when(roomService.createRoom(eq(7L), any())).thenReturn(response);
 
         mockMvc.perform(post("/api/v1/rooms")
-                        .header("X-User-Id", "7")
+                        .header("Authorization", "Bearer valid-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -58,12 +63,12 @@ class RoomControllerTest {
                 .andExpect(jsonPath("$.data.roomId").value(101))
                 .andExpect(jsonPath("$.data.name").value("제주여행"))
                 .andExpect(jsonPath("$.data.category").value("기타"))
-                .andExpect(jsonPath("$.data.isProgress").value(false));
+                .andExpect(jsonPath("$.data.status").value("READY"));
     }
 
     @Test
     void createRoom_unauthorized_returns401() throws Exception {
-        when(roomService.createRoom(eq(null), any()))
+        when(jwtUserIdResolver.resolveRequired(null))
                 .thenThrow(new CustomException(ErrorCode.COMMON_UNAUTHORIZED));
 
         mockMvc.perform(post("/api/v1/rooms")
