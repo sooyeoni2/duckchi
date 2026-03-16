@@ -5,14 +5,14 @@ import React from 'react';
 import { StatusBar } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppNavigator } from './src/core/navigation/AppNavigator';
+import { AuthNavigator } from './src/core/navigation/AuthNavigator';
 import { RootStackParamList } from './src/core/navigation/types';
-import { AuthScreen } from './src/features/auth/AuthScreen';
 import { OnboardingScreen } from './src/features/onboarding/OnboardingScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 function App() {
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     'KBO Dia Gothic Light': require('./src/assets/fonts/KBO Dia Gothic Light.otf'),
     'KBO Dia Gothic Medium': require('./src/assets/fonts/KBO Dia Gothic Medium.otf'),
     'KBO Dia Gothic Bold': require('./src/assets/fonts/KBO Dia Gothic Bold.otf'),
@@ -27,7 +27,7 @@ function App() {
     'Pretendard-Black': require('./src/assets/fonts/Pretendard-Black.ttf'),
   });
 
-  if (!fontsLoaded) return null;
+  if (!fontsLoaded && !fontError) return null;
 
   return (
     <SafeAreaProvider>
@@ -39,11 +39,7 @@ function App() {
               <OnboardingScreen onStart={() => navigation.replace('Auth')} />
             )}
           </Stack.Screen>
-          <Stack.Screen name="Auth">
-            {({ navigation }) => (
-              <AuthScreen onLogin={() => navigation.replace('App')} />
-            )}
-          </Stack.Screen>
+          <Stack.Screen name="Auth" component={AuthNavigator} />
           <Stack.Screen name="App" component={AppNavigator} />
         </Stack.Navigator>
       </NavigationContainer>

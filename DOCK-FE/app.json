@@ -19,6 +19,9 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.ssafy.duckduck"
     },
-    "newArchEnabled": false
+    "newArchEnabled": false,
+    "web": {
+      "bundler": "metro"
+    }
   }
 }
