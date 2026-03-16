@@ -1,7 +1,16 @@
 eureka:
   client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
     service-url:
       defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka}
+
+services:
+  pay-service:
+    url: http://localhost:8082
+  insight-service:
+    url: http://localhost:8083
 
 spring:
   datasource:
@@ -32,3 +41,8 @@ jwt:
 kakao:
   client-id: ${KAKAO_CLIENT_ID}
   redirect-uri: ${KAKAO_REDIRECT_URI}
+
+finance:
+  api:
+    base-url: https://finopenapi.ssafy.io
+    key: ${FINANCE_API_KEY}
