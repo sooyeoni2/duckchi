@@ -1,4 +1,6 @@
-export const API_BASE_URL = 'http://10.0.2.2:8080'; // Android 에뮬레이터 → localhost
+import Constants from 'expo-constants';
+
+export const API_BASE_URL = 'http://192.168.100.126:8081'; // Expo Go 실제 기기 (Wi-Fi IP)
 export const API_TIMEOUT = 10000;
 
 export const ENDPOINTS = {
@@ -9,7 +11,9 @@ export const ENDPOINTS = {
   },
 };
 
-export const KAKAO_CLIENT_ID = 'a481698fa0191feaa7f9baf1fad1d5da';
-export const KAKAO_REDIRECT_URI = 'http://localhost:8081/api/v1/auth/oauth/login';
+const extra = Constants.expoConfig?.extra ?? {};
+const KAKAO_CLIENT_ID: string = extra.kakaoClientId ?? '';
+const KAKAO_REDIRECT_URI: string = extra.kakaoRedirectUri ?? '';
+
 export const KAKAO_AUTH_URL =
   `https://kauth.kakao.com/oauth/authorize?client_id=${KAKAO_CLIENT_ID}&redirect_uri=${encodeURIComponent(KAKAO_REDIRECT_URI)}&response_type=code`;
