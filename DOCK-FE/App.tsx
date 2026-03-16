@@ -8,10 +8,12 @@ import { AppNavigator } from './src/core/navigation/AppNavigator';
 import { AuthNavigator } from './src/core/navigation/AuthNavigator';
 import { RootStackParamList } from './src/core/navigation/types';
 import { OnboardingScreen } from './src/features/onboarding/OnboardingScreen';
+import { useAuthStore } from './src/features/auth/models/authStore';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 function App() {
+  const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
   const [fontsLoaded, fontError] = useFonts({
     'KBO Dia Gothic Light': require('./src/assets/fonts/KBO Dia Gothic Light.otf'),
     'KBO Dia Gothic Medium': require('./src/assets/fonts/KBO Dia Gothic Medium.otf'),
@@ -33,7 +35,7 @@ function App() {
     <SafeAreaProvider>
       <StatusBar barStyle="dark-content" backgroundColor="#F2F3F5" />
       <NavigationContainer>
-        <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Onboarding">
+        <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName={isLoggedIn ? 'App' : 'Onboarding'}>
           <Stack.Screen name="Onboarding">
             {({ navigation }) => (
               <OnboardingScreen onStart={() => navigation.replace('Auth')} />

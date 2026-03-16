@@ -1,16 +1,35 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AppColorStyles } from '@core/theme/colors';
 import { KBODiaGothicTextStyle } from '@core/theme/typography';
 import type { AuthStackParamList } from '@core/navigation/types';
+import { useLoginViewModel } from '../viewmodels/useLoginViewModel';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
-const LoginScreen: React.FC<Props> = ({ navigation: _navigation }) => {
-  const handleKakaoLogin  = () => { /* TODO */ };
-  const handleGoogleLogin = () => { /* TODO */ };
-  const handleTestLogin   = () => { /* TODO */ };
+const LoginScreen: React.FC<Props> = ({ navigation }) => {
+  const { state, openKakaoLogin, resetError } = useLoginViewModel();
+
+  const handleKakaoLogin = () => openKakaoLogin();
+
+  const handleGoogleLogin = () => {
+    Alert.alert('준비 중', '구글 로그인은 준비 중입니다.');
+  };
+
+  const handleTestLogin = () => {
+    // TODO: 테스트 로그인 구현
+  };
+
+  React.useEffect(() => {
+    if (state.status === 'error') {
+      Alert.alert('로그인 실패', state.message, [{ text: '확인', onPress: resetError }]);
+    }
+    if (state.status === 'success') {
+      navigation.getParent()?.navigate('App');
+    }
+  }, [state]);
+
 
   return (
     <View style={styles.container}>
