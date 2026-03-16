@@ -10,6 +10,7 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 public class CoreServiceApplication {
 
 	public static void main(String[] args) {
+
 		SpringApplication.run(CoreServiceApplication.class, args);
 	}
 

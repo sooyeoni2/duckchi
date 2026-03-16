@@ -8,7 +8,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import { AppColorStyles } from '../../../core/theme/colors';
-import { PretendardTextStyle } from '../../../core/theme/typography';
+import { KBODiaGothicTextStyle, PretendardTextStyle } from '../../../core/theme/typography';
 
 /**
  * 덕치 앱의 보조 액션에 사용되는 Outline 버튼
@@ -40,8 +40,8 @@ export const OutlineButton: React.FC<OutlineButtonProps> = ({
   isLoading = false,
   isFullWidth = true,
   width,
-  height = 52,
-  borderRadius = 12,
+  height = 60,
+  borderRadius = 10,
   borderColor,
   textColor,
   prefixIcon,
@@ -51,7 +51,7 @@ export const OutlineButton: React.FC<OutlineButtonProps> = ({
   const disabled = isLoading || !onPress;
   const effectiveBorderColor = disabled
     ? AppColorStyles.gray4
-    : (borderColor ?? AppColorStyles.gray3);
+    : (borderColor ?? AppColorStyles.yellow);
   const effectiveTextColor = disabled
     ? AppColorStyles.textDisabled
     : (textColor ?? AppColorStyles.textPrimary);
@@ -77,7 +77,7 @@ export const OutlineButton: React.FC<OutlineButtonProps> = ({
       ) : (
         <View style={styles.content}>
           {prefixIcon != null && <View style={styles.iconPrefix}>{prefixIcon}</View>}
-          <Text style={PretendardTextStyle.semiBold({ fontSize: 16, color: effectiveTextColor })}>
+          <Text style={KBODiaGothicTextStyle.bold({ fontSize: 20, color: effectiveTextColor })}>
             {text}
           </Text>
           {suffixIcon != null && <View style={styles.iconSuffix}>{suffixIcon}</View>}
@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 24,
     backgroundColor: AppColorStyles.white,
-    borderWidth: 1.5,
+    borderWidth: 2,
   },
   content: {
     flexDirection: 'row',
