@@ -12,29 +12,34 @@ import com.duckchi.core.global.error.CustomException;
 import com.duckchi.core.global.error.ErrorCode;
 import com.duckchi.core.infra.finance.FinanceClient;
 import com.duckchi.core.infra.finance.OneVerifyHeaderFactory;
+import com.duckchi.core.infra.finance.dto.request.CheckAuthCodeRequest;
 import com.duckchi.core.infra.finance.dto.request.OpenAccountAuthRequest;
+import com.duckchi.core.infra.finance.dto.response.CheckAuthCodeResponse;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class AccountServiceImpl implements AccountService {
 
 //    private final UserRepository userRepository;
+    private static final String AUTH_TEXT = "SSAFY";
+    private static final String TEMP_USER_KEY = "06ac95e7-e593-4f3f-8cc6-7f5d4ff47400";
+
     private final UserAccountRepository userAccountRepository;
     private final FinanceClient financeClient;
     private final OneVerifyHeaderFactory oneVerifyHeaderFactory;
+    private final ObjectMapper objectMapper;
 
-    //계좌 등록
     @Override
     public RegisterBankAccountResponse registerBankAccount(Long userId, RegisterBankAccountRequest request) {
-        // 사용자 유효성 검증
-//        if (!userRepository.existsById(userId)) {
-//            throw new CustomException(ErrorCode.AUTH_UNAUTHORIZED);
-//        }
         if (userAccountRepository.existsByUserIdAndStatusAndDeletedAtIsNull(userId, AccountStatus.VERIFIED)) {
             throw new CustomException(ErrorCode.ACCOUNT_ALREADY_REGISTERED);
         }
@@ -67,47 +72,96 @@ public class AccountServiceImpl implements AccountService {
             throw new CustomException(ErrorCode.ACCOUNT_REGISTRATION_FAILED);
         }
     }
-    //(계좌 등록 시 트리거) 1원 송금
+
     @Override
     public void sendOneWon(Long userId, String accountNo) {
-        //TODO: userKey 하드코딩 된 것 인증 기능 추가되면 바꾸기
-        //요청 생성
-        OpenAccountAuthRequest request = new OpenAccountAuthRequest(
-                oneVerifyHeaderFactory.create("openAccountAuth", "06ac95e7-e593-4f3f-8cc6-7f5d4ff47400"),
+        OpenAccountAuthRequest financeRequest = new OpenAccountAuthRequest(
+                oneVerifyHeaderFactory.create("openAccountAuth", TEMP_USER_KEY),
                 accountNo,
-                "SSAFY"
+                AUTH_TEXT
         );
 
-        //1원 송금 API 호출
-        try{
-            financeClient.openAccountAuth(request);
-        } catch(CustomException ex){
+        try {
+            financeClient.openAccountAuth(financeRequest);
+        } catch (CustomException ex) {
             throw ex;
-        } catch(FeignException ex){
-            throw new CustomException(ErrorCode.ACCOUNT_VERIFICATION_FAILED);
-        } catch(Exception ex){
+        } catch (FeignException ex) {
+            throw parseFinanceException(ex);
+        } catch (Exception ex) {
             throw new CustomException(ErrorCode.COMMON_INTERNAL_ERROR);
         }
     }
 
-
-    //1원 인증
     @Override
     public VerifyOneWonResponse verifyOneWon(Long userId, Long accountId, VerifyOneWonRequest request) {
-        throw new UnsupportedOperationException("Implement business logic for AUTH-04 verifyOneWon");
+
+        //이미 인증된 계좌인지 확인
+        if (userAccountRepository.existsByUserIdAndStatusAndDeletedAtIsNull(userId, AccountStatus.VERIFIED)) {
+            throw new CustomException(ErrorCode.ACCOUNT_ALREADY_REGISTERED);
+        }
+        UserAccount userAccount = userAccountRepository.findByIdAndStatusAndDeletedAtIsNull(accountId, AccountStatus.PENDING)
+                .orElseThrow(() -> new CustomException(ErrorCode.ACCOUNT_INVALID));
+
+        CheckAuthCodeRequest financeRequest = new CheckAuthCodeRequest(
+                oneVerifyHeaderFactory.create("checkAuthCode", TEMP_USER_KEY),
+                userAccount.getAccountNumber(),
+                AUTH_TEXT,
+                request.verificationCode()
+        );
+
+        try {
+            CheckAuthCodeResponse financeResponse = financeClient.checkAuthCode(financeRequest);
+
+            if (financeResponse.rec() == null || !"SUCCESS".equalsIgnoreCase(financeResponse.rec().status())) {
+                throw new CustomException(ErrorCode.ACCOUNT_VERIFICATION_FAILED);
+            }
+
+            userAccount.verify();
+            return new VerifyOneWonResponse(userAccount.getId(), true);
+        } catch (CustomException ex) {
+            throw ex;
+        } catch (FeignException ex) {
+            throw parseFinanceException(ex);
+        } catch (Exception ex) {
+            throw new CustomException(ErrorCode.COMMON_INTERNAL_ERROR);
+        }
     }
 
-    //계좌 삭제
     @Override
     public void deleteBankAccount(Long userId, Long accountId) {
-        // 사용자 유효성 검증
-//        if (!userRepository.existsById(userId)) {
-//            throw new CustomException(ErrorCode.AUTH_UNAUTHORIZED);
-//        }
         UserAccount userAccount = userAccountRepository.findByIdAndStatusAndDeletedAtIsNull(accountId, AccountStatus.VERIFIED)
                 .orElseThrow(() -> new CustomException(ErrorCode.ACCOUNT_INVALID));
 
         userAccount.softDelete();
+    }
+
+    private CustomException parseFinanceException(FeignException ex) {
+        String responseBody = ex.contentUTF8();
+        log.warn("Finance API call failed. status={}, body={}", ex.status(), responseBody);
+
+        try {
+            JsonNode root = objectMapper.readTree(responseBody);
+            JsonNode headerNode = root.path("Header");
+            String responseCode = headerNode.path("responseCode").asText();
+            String responseMessage = headerNode.path("responseMessage").asText();
+
+            return switch (responseCode) {
+                case "A1086" -> new CustomException(responseMessage, ErrorCode.ACCOUNT_AUTH_CODE_NOT_ISSUED);
+                case "A1087" -> new CustomException(responseMessage, ErrorCode.ACCOUNT_AUTH_CODE_EXPIRED);
+                case "A1088" -> new CustomException(responseMessage, ErrorCode.ACCOUNT_AUTH_CODE_MISMATCH);
+                case "A1089" -> new CustomException(responseMessage, ErrorCode.ACCOUNT_AUTH_TEXT_INVALID);
+                case "A1090" -> new CustomException(responseMessage, ErrorCode.ACCOUNT_AUTH_CODE_INVALID);
+                default -> new CustomException(
+                        responseMessage == null || responseMessage.isBlank()
+                                ? ErrorCode.ACCOUNT_VERIFICATION_FAILED.getMsg()
+                                : responseMessage,
+                        ErrorCode.ACCOUNT_VERIFICATION_FAILED
+                );
+            };
+        } catch (Exception parseException) {
+            log.warn("Failed to parse finance error response body", parseException);
+            return new CustomException(ErrorCode.ACCOUNT_VERIFICATION_FAILED);
+        }
     }
 
     private String maskAccountNumber(String accountNumber) {

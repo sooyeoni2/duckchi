@@ -25,17 +25,15 @@ public class AccountController {
 
     private final AccountService accountService;
 
-    @Operation(summary = "은행 선택/계좌 등록 API", description = "은행을 선택하고 계좌를 등록합니다. 1원 송금도 진행합니다.")
+    @Operation(summary = "은행 선택/계좌 등록 API", description = "은행을 선택하고 계좌를 등록합니다. 1원 송금도 함께 진행합니다.")
     @PostMapping
     public ResponseEntity<ApiResponseDto<RegisterBankAccountResponse>> registerBankAccount(
             @Valid @RequestBody RegisterBankAccountRequest request
     ) {
-        // TODO: 인증 구현 후 실제 로그인 사용자 정보로 교체
         Long userId = 1L;
         RegisterBankAccountResponse response = accountService.registerBankAccount(userId, request);
-        //1원 송금
-        accountService.sendOneWon(userId,request.accountNo());
-        return ResponseEntity.ok(ApiResponseDto.success(response,"계좌로 1원을 보냈습니다. 1원 인증을 진행해 주세요."));
+        accountService.sendOneWon(userId, request.accountNo());
+        return ResponseEntity.ok(ApiResponseDto.success(response, "계좌로 1원을 보냈습니다. 1원 인증을 진행해 주세요."));
     }
 
     @Operation(summary = "1원 인증 API", description = "등록한 계좌에 대해 1원 인증을 수행합니다.")
@@ -44,16 +42,14 @@ public class AccountController {
             @PathVariable Long accountId,
             @Valid @RequestBody VerifyOneWonRequest request
     ) {
-        // TODO: 인증 구현 후 실제 로그인 사용자 정보로 교체
         Long userId = 1L;
         VerifyOneWonResponse response = accountService.verifyOneWon(userId, accountId, request);
-        return ResponseEntity.ok(ApiResponseDto.success(response));
+        return ResponseEntity.ok(ApiResponseDto.success(response, "1원 인증이 완료되었습니다."));
     }
 
     @Operation(summary = "등록 계좌 삭제 API", description = "사용자가 등록한 계좌를 삭제합니다.")
     @PostMapping("/{accountId}/delete")
     public ResponseEntity<ApiResponseDto<Void>> deleteBankAccount(@PathVariable Long accountId) {
-        // TODO: 인증 구현 후 실제 로그인 사용자 정보로 교체
         Long userId = 1L;
         accountService.deleteBankAccount(userId, accountId);
         return ResponseEntity.ok(ApiResponseDto.successMsg("계좌가 삭제되었습니다."));
