@@ -2,6 +2,7 @@
 
 export interface KakaoLoginRequest {
   authorizationCode: string;
+  redirectUri: string;
   email?: string;
 }
 

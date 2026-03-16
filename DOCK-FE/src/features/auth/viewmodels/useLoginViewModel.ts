@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Linking } from 'react-native';
-import { KAKAO_AUTH_URL } from '@core/constants/apiConstants';
+import { KAKAO_AUTH_URL, KAKAO_REDIRECT_URI } from '@core/constants/apiConstants';
 import { kakaoLogin } from '../models/authService';
 import { useAuthStore } from '../models/authStore';
 import type { KakaoLoginResponse } from '../models/authTypes';
@@ -23,7 +23,7 @@ export const useLoginViewModel = () => {
   const submitKakaoCode = async (authorizationCode: string) => {
     setState({ status: 'loading' });
     try {
-      const result = await kakaoLogin({ authorizationCode });
+      const result = await kakaoLogin({ authorizationCode, redirectUri: KAKAO_REDIRECT_URI });
       setAuth(result.accessToken, result.refreshToken, result.user);
       setState({ status: 'success', result });
       return result;

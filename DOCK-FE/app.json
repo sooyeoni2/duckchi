@@ -20,6 +20,7 @@
       "bundleIdentifier": "com.ssafy.duckduck"
     },
     "newArchEnabled": false,
+    "scheme": "duckduck",
     "web": {
       "bundler": "metro"
     }

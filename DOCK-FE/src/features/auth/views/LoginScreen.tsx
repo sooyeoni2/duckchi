@@ -22,7 +22,11 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
       Alert.alert('로그인 실패', state.message, [{ text: '확인', onPress: resetError }]);
     }
     if (state.status === 'success') {
-      navigation.getParent()?.navigate('App');
+      if (state.result.isNewUser) {
+        navigation.navigate('Terms');
+      } else {
+        navigation.getParent()?.navigate('App');
+      }
     }
   }, [state]);
 
