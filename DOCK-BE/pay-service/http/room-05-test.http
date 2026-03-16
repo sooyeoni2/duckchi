@@ -1,0 +1,44 @@
+### [선행 작업] ROOM-01 모임 방 생성 (테스트용)
+POST http://localhost:8082/api/v1/rooms
+Content-Type: application/json
+X-User-Id: 7
+
+{
+  "name": "수정 테스트용 모임방",
+  "category": "기타",
+  "description": "ROOM-05 테스트를 위해 생성된 방입니다."
+}
+
+> {%
+    client.global.set("roomId", response.body.data.roomId);
+%}
+
+### ROOM-05 모임 정보 수정 (성공 - 방장 & isProgress: false)
+PATCH http://localhost:8082/api/v1/rooms/{{roomId}}
+Content-Type: application/json
+X-User-Id: 7
+
+{
+  "name": "수정 테스트용 모임방 (전체 수정됨)",
+  "category": "TRAVEL"
+}
+
+### ROOM-05 모임 정보 수정 (성공 - 이름만 부분 수정)
+PATCH http://localhost:8082/api/v1/rooms/{{roomId}}
+Content-Type: application/json
+X-User-Id: 7
+
+{
+  "name": "수정 테스트용 모임방 (이름만 부분 수정됨)"
+}
+
+### ROOM-05 모임 정보 수정 (실패 - isProgress: true 상태일 때)
+# 409 Conflict를 확인하려면 ROOM-17(정산 시작) API를 이용해 {{roomId}} 방을 진행 중(isProgress=true)으로 만든 후 아래를 실행하세요.
+PATCH http://localhost:8082/api/v1/rooms/{{roomId}}
+Content-Type: application/json
+X-User-Id: 7
+
+{
+  "name": "수정 시도(실패해야 함)",
+  "category": "DATE"
+}

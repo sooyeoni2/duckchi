@@ -6,7 +6,7 @@ import com.duckchi.pay.domain.room.entity.Room;
 import com.duckchi.pay.domain.room.entity.RoomParticipant;
 import com.duckchi.pay.domain.room.repository.RoomParticipantRepository;
 import com.duckchi.pay.domain.room.repository.RoomRepository;
-import com.duckchi.pay.domain.room.type.RoomStatus;
+
 import com.duckchi.pay.global.error.CustomException;
 import com.duckchi.pay.global.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -35,7 +35,7 @@ public class RoomServiceImpl implements RoomService {
                 .name(request.getName().trim())
                 .category(normalizeCategory(request.getCategory()))
                 .description(request.getDescription())
-                .status(RoomStatus.READY)
+                .isProgress(false)
                 .build();
 
         Room savedRoom = roomRepository.save(room);
@@ -72,13 +72,13 @@ public class RoomServiceImpl implements RoomService {
                 .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
 
         RoomParticipant participant = roomParticipantRepository.findByRoom_IdAndUserId(roomId, currentUserId)
-                .orElseThrow(() -> new CustomException(ErrorCode.COMMON_UNAUTHORIZED)); 
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_MEMBER_ONLY)); 
 
         if (!participant.isAdmin()) {
             throw new CustomException(ErrorCode.ROOM_NOT_ADMIN); // 별도의 커스텀 에러 혹은 403 반환
         }
 
-        if (room.getStatus() == RoomStatus.IN_PROGRESS) {
+        if (room.isProgress()) {
             throw new CustomException(ErrorCode.ROOM_CANNOT_UPDATE_STATUS); // 정산중일 때 수정 불가 에러
         }
 

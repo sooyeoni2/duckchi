@@ -1,6 +1,6 @@
 package com.duckchi.pay.domain.room.entity;
 
-import com.duckchi.pay.domain.room.type.RoomStatus;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -35,19 +35,18 @@ public class Room {
     @Column(name = "description", length = 255)
     private String description;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, length = 20)
-    private RoomStatus status;
+    @Column(name = "is_progress", nullable = false)
+    private boolean isProgress;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
     @Builder
-    private Room(String name, String category, String description, RoomStatus status) {
+    private Room(String name, String category, String description, boolean isProgress) {
         this.name = name;
         this.category = category;
         this.description = description;
-        this.status = status;
+        this.isProgress = isProgress;
     }
 
     @PrePersist
@@ -59,8 +58,9 @@ public class Room {
         if (category == null || category.isBlank()) {
             category = "기타";
         }
-        if (status == null) {
-            status = RoomStatus.READY;
+        // 기본값: 모임 대기 상태 (진행 중 아님)
+        if (!isProgress) {
+            isProgress = false;
         }
     }
 

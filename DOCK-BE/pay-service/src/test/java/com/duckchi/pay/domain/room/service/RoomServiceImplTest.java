@@ -14,7 +14,7 @@ import com.duckchi.pay.domain.room.entity.Room;
 import com.duckchi.pay.domain.room.entity.RoomParticipant;
 import com.duckchi.pay.domain.room.repository.RoomParticipantRepository;
 import com.duckchi.pay.domain.room.repository.RoomRepository;
-import com.duckchi.pay.domain.room.type.RoomStatus;
+
 import com.duckchi.pay.global.error.CustomException;
 import com.duckchi.pay.global.error.ErrorCode;
 import org.junit.jupiter.api.Test;
@@ -48,7 +48,7 @@ class RoomServiceImplTest {
                 .name("제주여행")
                 .category("기타")
                 .description("C102뒷풀이")
-                .status(RoomStatus.READY)
+                .isProgress(false)
                 .build();
         ReflectionTestUtils.setField(persisted, "id", 101L);
 
@@ -59,7 +59,7 @@ class RoomServiceImplTest {
         assertEquals(101L, result.getRoomId());
         assertEquals("제주여행", result.getName());
         assertEquals("기타", result.getCategory());
-        assertEquals("READY", result.getStatus());
+        assertEquals(false, result.isProgress());
 
         ArgumentCaptor<RoomParticipant> participantCaptor = ArgumentCaptor.forClass(RoomParticipant.class);
         verify(roomParticipantRepository).save(participantCaptor.capture());
@@ -86,7 +86,7 @@ class RoomServiceImplTest {
 
         Room room = Room.builder()
                 .name("이전이름")
-                .status(RoomStatus.READY)
+                .isProgress(false)
                 .build();
         ReflectionTestUtils.setField(room, "id", 101L);
 
@@ -111,7 +111,7 @@ class RoomServiceImplTest {
         ReflectionTestUtils.setField(request, "name", "새로운이름");
 
         Room room = Room.builder()
-                .status(RoomStatus.IN_PROGRESS)
+                .isProgress(true)
                 .build();
         ReflectionTestUtils.setField(room, "id", 101L);
 
@@ -126,5 +126,57 @@ class RoomServiceImplTest {
 
         CustomException ex = assertThrows(CustomException.class, () -> roomService.updateRoomInfo(101L, 7L, request));
         assertEquals(ErrorCode.ROOM_CANNOT_UPDATE_STATUS, ex.getErrorCode());
+    }
+
+    @Test
+    void updateRoomInfo_notAdmin_throwsCustomException() {
+        com.duckchi.pay.domain.room.dto.request.UpdateRoomRequest request = new com.duckchi.pay.domain.room.dto.request.UpdateRoomRequest();
+        ReflectionTestUtils.setField(request, "name", "새로운이름");
+
+        Room room = Room.builder()
+                .isProgress(false)
+                .build();
+        ReflectionTestUtils.setField(room, "id", 101L);
+
+        RoomParticipant member = RoomParticipant.builder()
+                .room(room)
+                .userId(7L)
+                .isAdmin(false) // <-- Not an admin
+                .build();
+
+        when(roomRepository.findById(101L)).thenReturn(java.util.Optional.of(room));
+        when(roomParticipantRepository.findByRoom_IdAndUserId(101L, 7L)).thenReturn(java.util.Optional.of(member));
+
+        CustomException ex = assertThrows(CustomException.class, () -> roomService.updateRoomInfo(101L, 7L, request));
+        assertEquals(ErrorCode.ROOM_NOT_ADMIN, ex.getErrorCode());
+    }
+
+    @Test
+    void updateRoomInfo_partialUpdateOnlyNameNullCategory_success() {
+        com.duckchi.pay.domain.room.dto.request.UpdateRoomRequest request = new com.duckchi.pay.domain.room.dto.request.UpdateRoomRequest();
+        ReflectionTestUtils.setField(request, "name", "이름만수정");
+        ReflectionTestUtils.setField(request, "category", null);
+
+        Room room = Room.builder()
+                .name("이전이름")
+                .category("이전카테고리")
+                .isProgress(false)
+                .build();
+        ReflectionTestUtils.setField(room, "id", 101L);
+
+        RoomParticipant owner = RoomParticipant.builder()
+                .room(room)
+                .userId(7L)
+                .isAdmin(true)
+                .build();
+
+        when(roomRepository.findById(101L)).thenReturn(java.util.Optional.of(room));
+        when(roomParticipantRepository.findByRoom_IdAndUserId(101L, 7L)).thenReturn(java.util.Optional.of(owner));
+
+        roomService.updateRoomInfo(101L, 7L, request);
+
+        // Name is updated, category remains unchanged (due to how entity updateRoomInfo handles null)
+        assertEquals("이름만수정", room.getName());
+        assertEquals("이전카테고리", room.getCategory());
     }
 }
