@@ -37,7 +37,7 @@ public class AuthService {
     public LoginResponse login(KakaoLoginRequest request) {
         try {
             // 1. 카카오 액세스 토큰 획득
-            String kakaoAccessToken = kakaoClient.getAccessToken(request.getAuthorizationCode());
+            String kakaoAccessToken = kakaoClient.getAccessToken(request.getAuthorizationCode(), request.getRedirectUri());
 
             // 2. 카카오 유저 정보 획득
             Map<String, Object> userInfo = kakaoClient.getUserInfo(kakaoAccessToken);
