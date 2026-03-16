@@ -16,6 +16,7 @@ export type ProfileStackParamList = {
   BadgeList: undefined;
   Settings: undefined;
   BankAccountRegister: undefined;
+  TransferLimit: undefined;
 };
 
 export type AuthStackParamList = {

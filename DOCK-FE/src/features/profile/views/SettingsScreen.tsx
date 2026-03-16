@@ -91,7 +91,7 @@ export function SettingsScreen() {
         <View style={styles.card}>
           <SettingsRow label="대표 계좌 설정" onPress={handleAccountSetupPress} />
           <RowDivider />
-          <SettingsRow label="자동이체 한도 변경" onPress={() => {}} />
+          <SettingsRow label="자동이체 한도 변경" onPress={() => navigation.navigate('TransferLimit')} />
         </View>
 
         {/* 알림 */}
