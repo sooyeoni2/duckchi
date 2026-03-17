@@ -45,7 +45,7 @@ public class ApiResponseDto<T> {
                         ? ex.getMessage()
                         : errorCode.getMsg();
 
-        return new ApiResponseDto<>(false,null,message,errorCode.getCode());
+        return new ApiResponseDto<>(false,(T) ex.getData(),message,errorCode.getCode());
     }
 
     //일반 ErrorCode 전용 응답
