@@ -34,7 +34,7 @@ public class InviteLinkServiceImpl implements InviteLinkService {
     @Override
     @Transactional
     public CreateInviteLinkResponse createInviteLink(Long roomId, Long currentUserId) {
-        // JWT 미연동 상태에서는 목업 헤더가 유일한 인증 수단이므로 누락 요청을 차단한다.
+        // 컨트롤러에서 전달한 인증 userId가 없으면 비인증 요청으로 차단한다.
         if (currentUserId == null) {
             throw new CustomException(ErrorCode.COMMON_UNAUTHORIZED);
         }

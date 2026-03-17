@@ -24,17 +24,6 @@ spring:
       hibernate:
         format_sql: true
 
-# [External API] 외부 금융망 연동 설정
 finance:
   api:
-    base-url: https://finopenapi.ssafy.io
-    key: ${FINANCE_API_KEY}
-
-# [Internal Service] 타 서비스 연동 (Hybrid FeignClient 대비)
-services:
-  core-service:
-    url: http://localhost:8081 # 로컬 개발 시 직접 호출 주소임.
-  pay-service:
-    url: http://localhost:8082
-  insight-service:
-    url: http://localhost:8083
+    base-url: ${FINANCE_API_URL:https://shbhack.shinhan.com}

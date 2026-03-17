@@ -1,9 +1,10 @@
 package com.duckchi.pay.infra.config;
 
-
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.security.SecurityRequirement;
+import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -23,12 +24,17 @@ public class SwaggerConfig {
     @Primary
     public OpenAPI openAPI() {
         return new OpenAPI()
-                .components(new Components())
+                .components(new Components()
+                        .addSecuritySchemes("userIdHeader", new SecurityScheme()
+                                .name("X-User-Id")
+                                .type(SecurityScheme.Type.APIKEY)
+                                .in(SecurityScheme.In.HEADER)
+                                .description("Gateway injects this header after JWT validation.")))
+                .addSecurityItem(new SecurityRequirement().addList("userIdHeader"))
                 .info(new Info()
                         .title("Duckchi swagger : " + serviceName)
                         .description("Duckchi REST API")
                         .version("1.0.0"))
-                .addServersItem(new Server().url("http://localhost:"+port).description("Duckchi Local Server"));
+                .addServersItem(new Server().url("http://localhost:" + port).description("Duckchi Local Server"));
     }
-
 }
