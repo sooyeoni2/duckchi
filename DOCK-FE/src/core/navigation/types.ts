@@ -6,6 +6,9 @@ export type RootStackParamList = {
 
 export type AuthStackParamList = {
   Login: undefined;
+  KakaoLogin: undefined;
+  Terms: undefined;
+  ProfileSetup: undefined;
   Registration: undefined;
 };
 

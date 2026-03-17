@@ -3,12 +3,14 @@ package com.duckchi.pay.domain.room.controller;
 import com.duckchi.pay.domain.room.dto.response.CreateInviteLinkResponse;
 import com.duckchi.pay.domain.room.dto.response.ValidateInviteLinkResponse;
 import com.duckchi.pay.domain.room.service.InviteLinkService;
+import com.duckchi.pay.global.error.CustomException;
+import com.duckchi.pay.global.error.ErrorCode;
 import com.duckchi.pay.global.response.ApiResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,16 +24,17 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "InviteLink", description = "ROOM invite API")
 public class InviteLinkController {
 
+    private static final String USER_ID_HEADER = "X-User-Id";
+
     private final InviteLinkService inviteLinkService;
-    private final JwtUserIdResolver jwtUserIdResolver;
 
     @PostMapping("/{roomId}/link")
     @Operation(summary = "ROOM-02 Create invite link")
     public ResponseEntity<ApiResponseDto<CreateInviteLinkResponse>> createInviteLink(
             @PathVariable Long roomId,
-            @Parameter(hidden = true) @RequestHeader(value = "Authorization", required = false) String authorization
+            @RequestHeader(value = USER_ID_HEADER, required = false) String userIdHeader
     ) {
-        Long currentUserId = jwtUserIdResolver.resolveRequired(authorization);
+        Long currentUserId = resolveRequiredUserId(userIdHeader);
         CreateInviteLinkResponse response = inviteLinkService.createInviteLink(roomId, currentUserId);
         return ResponseEntity.ok(ApiResponseDto.success(response));
     }
@@ -40,11 +43,33 @@ public class InviteLinkController {
     @Operation(summary = "ROOM-03 Validate invite link")
     public ResponseEntity<ApiResponseDto<ValidateInviteLinkResponse>> validateInviteLink(
             @PathVariable String inviteToken,
-            @Parameter(hidden = true) @RequestHeader(value = "Authorization", required = false) String authorization
+            @RequestHeader(value = USER_ID_HEADER, required = false) String userIdHeader
     ) {
-        // ROOM-03 keeps anonymous preview behavior when auth header is absent.
-        Long currentUserId = jwtUserIdResolver.resolveOrNull(authorization);
+        // ROOM-03 is allowed to preview invite metadata without authentication.
+        Long currentUserId = resolveOptionalUserId(userIdHeader);
         ValidateInviteLinkResponse response = inviteLinkService.validateInviteLink(inviteToken, currentUserId);
         return ResponseEntity.ok(ApiResponseDto.success(response));
+    }
+
+    private Long resolveRequiredUserId(String userIdHeader) {
+        if (!StringUtils.hasText(userIdHeader)) {
+            throw new CustomException(ErrorCode.COMMON_UNAUTHORIZED);
+        }
+        try {
+            return Long.parseLong(userIdHeader);
+        } catch (NumberFormatException ex) {
+            throw new CustomException(ErrorCode.COMMON_INVALID_INPUT);
+        }
+    }
+
+    private Long resolveOptionalUserId(String userIdHeader) {
+        if (!StringUtils.hasText(userIdHeader)) {
+            return null;
+        }
+        try {
+            return Long.parseLong(userIdHeader);
+        } catch (NumberFormatException ex) {
+            throw new CustomException(ErrorCode.COMMON_INVALID_INPUT);
+        }
     }
 }
