@@ -25,7 +25,10 @@ public enum ErrorCode {
     ROOM_INVALID_INVITE_LINK("ROOM-400-3", HttpStatus.BAD_REQUEST, "초대 링크가 유효하지 않거나 만료되었습니다."),
     ROOM_ALREADY_PARTICIPANT("ROOM-409-1", HttpStatus.CONFLICT, "이미 해당 모임에 참여 중입니다."),
     ROOM_NOT_ADMIN("ROOM-403-4", HttpStatus.FORBIDDEN, "모임 정보 수정 권한이 없습니다."),
-    ROOM_CANNOT_UPDATE_STATUS("ROOM-409-4", HttpStatus.CONFLICT, "정산이 진행 중이거나 완료된 모임은 정보를 수정할 수 없습니다.");
+    ROOM_CANNOT_UPDATE_STATUS("ROOM-409-4", HttpStatus.CONFLICT, "정산이 진행 중 인 모임은 정보를 수정할 수 없습니다."),
+    ROOM_ADMIN_DELEGATION_REQUIRED("ROOM-409-5", HttpStatus.CONFLICT, "방장은 방장 권한을 위임한 후 모임을 나갈 수 있습니다."),
+    ROOM_CANNOT_LEAVE_PROGRESS("ROOM-409-6", HttpStatus.CONFLICT, "정산이 진행 중인 모임은 나갈 수 없습니다."),
+    ROOM_CANNOT_DELETE_PROGRESS("ROOM-409-7", HttpStatus.CONFLICT, "정산이 진행 중인 모임은 삭제할 수 없습니다.");
 
     private final String code; //에러코드
     private final HttpStatus httpStatus; //http상태코드

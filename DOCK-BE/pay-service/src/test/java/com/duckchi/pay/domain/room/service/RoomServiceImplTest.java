@@ -179,4 +179,43 @@ class RoomServiceImplTest {
         assertEquals("이름만수정", room.getName());
         assertEquals("이전카테고리", room.getCategory());
     }
+
+    @Test
+    void leaveRoom_success() {
+        Room room = Room.builder().isProgress(false).build();
+        ReflectionTestUtils.setField(room, "id", 101L);
+
+        RoomParticipant member = RoomParticipant.builder()
+                .room(room)
+                .userId(7L)
+                .isAdmin(false)
+                .build();
+
+        when(roomRepository.findById(101L)).thenReturn(java.util.Optional.of(room));
+        when(roomParticipantRepository.findByRoom_IdAndUserId(101L, 7L)).thenReturn(java.util.Optional.of(member));
+
+        roomService.leaveRoom(101L, 7L);
+
+        verify(roomParticipantRepository).delete(member);
+    }
+
+    @Test
+    void deleteRoom_success_softDeletesRoom() {
+        Room room = Room.builder().isProgress(false).build();
+        ReflectionTestUtils.setField(room, "id", 101L);
+
+        RoomParticipant admin = RoomParticipant.builder()
+                .room(room)
+                .userId(7L)
+                .isAdmin(true)
+                .build();
+
+        when(roomRepository.findById(101L)).thenReturn(java.util.Optional.of(room));
+        when(roomParticipantRepository.findByRoom_IdAndUserId(101L, 7L)).thenReturn(java.util.Optional.of(admin));
+
+        roomService.deleteRoom(101L, 7L);
+
+        // verify deletedAt is set
+        assertTrue(room.getDeletedAt() != null);
+    }
 }

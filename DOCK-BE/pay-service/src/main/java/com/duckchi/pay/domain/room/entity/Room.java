@@ -39,6 +39,9 @@ public class Room {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
     @Builder
     private Room(String name, String category, String description, boolean isProgress) {
         this.name = name;
@@ -83,5 +86,9 @@ public class Room {
         if (category != null) {
             this.category = category.isBlank() ? "기타" : category.trim();
         }
+    }
+
+    public void deleteRoom() {
+        this.deletedAt = LocalDateTime.now();
     }
 }

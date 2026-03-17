@@ -16,4 +16,8 @@ public interface RoomService {
     );
 
     void updateRoomInfo(Long roomId, Long currentUserId, com.duckchi.pay.domain.room.dto.request.UpdateRoomRequest request);
+
+    void leaveRoom(Long roomId, Long currentUserId);
+
+    void deleteRoom(Long roomId, Long currentUserId);
 }

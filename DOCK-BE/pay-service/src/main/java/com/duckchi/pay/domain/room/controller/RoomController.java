@@ -60,11 +60,34 @@ public class RoomController {
     @Operation(summary = "ROOM-05 모임 정보 수정")
     public ResponseEntity<ApiResponseDto<String>> updateRoom(
             @PathVariable Long roomId,
-            @RequestHeader(value = "X-User-Id", required = false) Long currentUserId,
+            @Parameter(hidden = true) @RequestHeader(value = "Authorization", required = false) String authorization,
             @Valid @RequestBody com.duckchi.pay.domain.room.dto.request.UpdateRoomRequest request
     ) {
+        Long currentUserId = jwtUserIdResolver.resolveRequired(authorization);
         roomService.updateRoomInfo(roomId, currentUserId, request);
         return ResponseEntity.ok(ApiResponseDto.success("수정이 완료되었습니다."));
+    }
+
+    @org.springframework.web.bind.annotation.DeleteMapping("/{roomId}/members/left")
+    @Operation(summary = "ROOM-06 모임 방 나가기")
+    public ResponseEntity<ApiResponseDto<String>> leaveRoom(
+            @PathVariable Long roomId,
+            @Parameter(hidden = true) @RequestHeader(value = "Authorization", required = false) String authorization
+    ) {
+        Long currentUserId = jwtUserIdResolver.resolveRequired(authorization);
+        roomService.leaveRoom(roomId, currentUserId);
+        return ResponseEntity.ok(ApiResponseDto.success("모임 방을 성공적으로 나갔습니다."));
+    }
+
+    @org.springframework.web.bind.annotation.DeleteMapping("/{roomId}/delete")
+    @Operation(summary = "ROOM-07 모임 방 삭제")
+    public ResponseEntity<ApiResponseDto<String>> deleteRoom(
+            @PathVariable Long roomId,
+            @Parameter(hidden = true) @RequestHeader(value = "Authorization", required = false) String authorization
+    ) {
+        Long currentUserId = jwtUserIdResolver.resolveRequired(authorization);
+        roomService.deleteRoom(roomId, currentUserId);
+        return ResponseEntity.ok(ApiResponseDto.success("모임 방이 성공적으로 삭제되었습니다."));
     }
 }
 

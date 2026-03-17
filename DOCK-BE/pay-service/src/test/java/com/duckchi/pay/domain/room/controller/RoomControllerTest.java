@@ -42,7 +42,7 @@ class RoomControllerTest {
                 .roomId(101L)
                 .name("제주여행")
                 .category("기타")
-                .status("READY")
+                .isProgress(false)
                 .createdAt(LocalDateTime.of(2026, 3, 12, 10, 0))
                 .build();
 
@@ -63,7 +63,7 @@ class RoomControllerTest {
                 .andExpect(jsonPath("$.data.roomId").value(101))
                 .andExpect(jsonPath("$.data.name").value("제주여행"))
                 .andExpect(jsonPath("$.data.category").value("기타"))
-                .andExpect(jsonPath("$.data.status").value("READY"));
+                .andExpect(jsonPath("$.data.isProgress").value("false"));
     }
 
     @Test
@@ -87,7 +87,7 @@ class RoomControllerTest {
     @Test
     void updateRoom_success_returns200() throws Exception {
         mockMvc.perform(patch("/api/v1/rooms/101")
-                        .header("X-User-Id", "7")
+                        .header("Authorization", "Bearer valid-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {

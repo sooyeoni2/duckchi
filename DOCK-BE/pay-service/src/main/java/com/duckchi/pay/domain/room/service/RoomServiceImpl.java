@@ -103,6 +103,10 @@ public class RoomServiceImpl implements RoomService {
         Room room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
 
+        if (room.getDeletedAt() != null) {
+            throw new CustomException(ErrorCode.ROOM_NOT_FOUND);
+        }
+
         RoomParticipant participant = roomParticipantRepository.findByRoom_IdAndUserId(roomId, currentUserId)
                 .orElseThrow(() -> new CustomException(ErrorCode.ROOM_MEMBER_ONLY));
 
@@ -115,5 +119,61 @@ public class RoomServiceImpl implements RoomService {
         }
 
         room.updateRoomInfo(request.getName(), request.getCategory());
+    }
+
+    @Override
+    @Transactional
+    public void leaveRoom(Long roomId, Long currentUserId) {
+        if (currentUserId == null) {
+            throw new CustomException(ErrorCode.COMMON_UNAUTHORIZED);
+        }
+
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
+
+        if (room.getDeletedAt() != null) {
+            throw new CustomException(ErrorCode.ROOM_NOT_FOUND);
+        }
+
+        if (room.isProgress()) {
+            throw new CustomException(ErrorCode.ROOM_CANNOT_LEAVE_PROGRESS);
+        }
+
+        RoomParticipant participant = roomParticipantRepository.findByRoom_IdAndUserId(roomId, currentUserId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_MEMBER_ONLY));
+
+        if (participant.isAdmin()) {
+            throw new CustomException(ErrorCode.ROOM_ADMIN_DELEGATION_REQUIRED);
+        }
+
+        roomParticipantRepository.delete(participant);
+    }
+
+    @Override
+    @Transactional
+    public void deleteRoom(Long roomId, Long currentUserId) {
+        if (currentUserId == null) {
+            throw new CustomException(ErrorCode.COMMON_UNAUTHORIZED);
+        }
+
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
+
+        if (room.getDeletedAt() != null) {
+            throw new CustomException(ErrorCode.ROOM_NOT_FOUND);
+        }
+
+        if (room.isProgress()) {
+            throw new CustomException(ErrorCode.ROOM_CANNOT_DELETE_PROGRESS);
+        }
+
+        RoomParticipant participant = roomParticipantRepository.findByRoom_IdAndUserId(roomId, currentUserId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_MEMBER_ONLY));
+
+        if (!participant.isAdmin()) {
+            throw new CustomException(ErrorCode.ROOM_NOT_ADMIN);
+        }
+
+        room.deleteRoom();
     }
 }
