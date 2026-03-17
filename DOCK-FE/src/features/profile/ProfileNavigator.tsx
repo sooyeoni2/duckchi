@@ -12,7 +12,7 @@ const Stack = createNativeStackNavigator<ProfileStackParamList>();
 
 export function ProfileNavigator() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator screenOptions={{ headerShown: false, animation: 'none' }}>
       <Stack.Screen name="ProfileMain" component={ProfileScreen} options={{ animation: 'none' }} />
       <Stack.Screen name="BadgeList" component={BadgeListScreen} />
       <Stack.Screen name="Settings" component={SettingsScreen} options={{ animation: 'none' }} />

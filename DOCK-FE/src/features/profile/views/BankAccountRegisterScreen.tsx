@@ -27,10 +27,10 @@ export function BankAccountRegisterScreen() {
   const accounts = state.status === 'loaded' ? state.profile.accounts : [];
   const currentAccount = accounts[0] ?? null;
 
-  // TODO: 진행 중인 정산 여부는 별도 API 연동 필요
-  const hasOngoingSettlement = false;
+  // TODO: 비밀번호 3회 실패 여부 API 연동 필요
+  const isPasswordLocked = false;
 
-  const canRegister = currentAccount === null && !hasOngoingSettlement;
+  const canRegister = currentAccount === null;
 
   const bankColor = currentAccount ? getBankColor(currentAccount.bankCode) : null;
 
@@ -69,8 +69,8 @@ export function BankAccountRegisterScreen() {
               </TouchableOpacity>
             </View>
             <View style={styles.accountRow}>
-              <View style={[styles.bankCircle, { backgroundColor: bankColor.bg }]}>
-                <Text style={[styles.bankCircleText, { color: bankColor.text }]}>
+              <View style={[styles.bankIconCircle, { backgroundColor: bankColor.bg }]}>
+                <Text style={[styles.bankIconText, { color: bankColor.text }]}>
                   {currentAccount.bankName.charAt(0)}
                 </Text>
               </View>
@@ -82,14 +82,16 @@ export function BankAccountRegisterScreen() {
           </View>
         )}
 
-        {/* 안내 카드 */}
-        <View style={styles.noticeCard}>
-          <Text style={styles.noticeText}>
-            {currentAccount === null
-              ? '계좌를 등록해 주세요'
-              : '진행 중인 정산이 없을 때만 변경 가능해요\n변경 후 1원 인증이 필요해요'}
-          </Text>
-        </View>
+        {/* 안내 카드: 계좌 없을 때 또는 비밀번호 3회 실패 시 */}
+        {(currentAccount === null || isPasswordLocked) && (
+          <View style={styles.noticeCard}>
+            <Text style={styles.noticeText}>
+              {isPasswordLocked
+                ? '비밀번호를 3회 틀리셨습니다.\n계좌를 삭제 후 다시 등록해 주세요.'
+                : '계좌를 등록해 주세요'}
+            </Text>
+          </View>
+        )}
       </View>
 
       {/* 하단 버튼 */}
@@ -117,8 +119,9 @@ const styles = StyleSheet.create({
   accountCard: {
     backgroundColor: AppColorStyles.surface,
     borderRadius: 10,
+    paddingTop: 14,
+    paddingBottom: 28,
     paddingHorizontal: 16,
-    paddingVertical: 16,
     shadowColor: AppColorStyles.gray2,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
@@ -129,10 +132,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   accountLabel: {
-    ...KBODiaGothicTextStyle.medium({ fontSize: 16, color: AppColorStyles.textDisabled }),
+    ...KBODiaGothicTextStyle.medium({ fontSize: 14, color: AppColorStyles.textHint }),
   },
   deleteButton: {
     width: 60,
@@ -152,21 +155,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
-  bankCircle: {
-    width: 35,
-    height: 35,
-    borderRadius: 18,
+  bankIconCircle: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  bankCircleText: {
-    ...KBODiaGothicTextStyle.bold({ fontSize: 15, color: AppColorStyles.black }),
+  bankIconText: {
+    ...KBODiaGothicTextStyle.bold({ fontSize: 17, color: AppColorStyles.black }),
   },
   accountInfo: {
-    gap: 4,
+    gap: 8,
   },
   bankName: {
-    ...KBODiaGothicTextStyle.bold({ fontSize: 20, color: AppColorStyles.black }),
+    ...KBODiaGothicTextStyle.bold({ fontSize: 22, color: AppColorStyles.black }),
   },
   accountNumber: {
     ...KBODiaGothicTextStyle.medium({ fontSize: 13, color: AppColorStyles.textDisabled }),

@@ -1,7 +1,7 @@
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Alert,
   FlatList,
@@ -51,6 +51,7 @@ export function BankAccountSetupScreen() {
   const { returnTo } = useRoute<Route>().params;
   const { register, isRegistering } = useBankAccountViewModel();
 
+  const scrollViewRef = useRef<ScrollView>(null);
   const [selectedBank, setSelectedBank] = useState<(typeof BANKS)[0] | null>(null);
   const [accountNo, setAccountNo] = useState('');
   const [accountNoError, setAccountNoError] = useState('');
@@ -94,10 +95,11 @@ export function BankAccountSetupScreen() {
       />
 
       <ScrollView
+        ref={scrollViewRef}
         style={styles.scroll}
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
+        keyboardDismissMode="none"
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.title}>계좌를 연결해요</Text>
@@ -139,21 +141,22 @@ export function BankAccountSetupScreen() {
               setAccountNo(text.replace(/[^0-9]/g, ''));
               if (accountNoError) setAccountNoError('');
             }}
+            onFocus={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
             keyboardType="numeric"
             returnKeyType="done"
             errorText={accountNoError}
             maxLength={16}
           />
         </View>
-      </ScrollView>
 
-      <View style={styles.bottomArea}>
-        <FilledButton
-          text="1원 인증하기"
-          onPress={canSubmit ? handleSubmit : undefined}
-          isLoading={isRegistering}
-        />
-      </View>
+        <View style={styles.buttonArea}>
+          <FilledButton
+            text="1원 인증하기"
+            onPress={canSubmit ? handleSubmit : undefined}
+            isLoading={isRegistering}
+          />
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -211,9 +214,8 @@ const styles = StyleSheet.create({
   inputArea: {
     marginTop: 24,
   },
-  bottomArea: {
-    paddingHorizontal: 24,
+  buttonArea: {
+    marginTop: 32,
     paddingBottom: 24,
-    paddingTop: 8,
   },
 });
