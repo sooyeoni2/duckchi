@@ -56,6 +56,17 @@ public class RoomController {
         return ResponseEntity.ok(ApiResponseDto.success(response));
     }
 
+    @PatchMapping("/{roomId}/my-transfer-agree")
+    @Operation(summary = "ROOM-14 모임방 자동이체 동의 여부 수정")
+    public ResponseEntity<ApiResponseDto<UpdateAutoDebitConsentResponse>> toggleAutoDebitConsent(
+            @PathVariable("roomId") Long roomId,
+            @Parameter(hidden = true) @RequestHeader(value = "Authorization", required = false) String authorization
+    ) {
+        Long currentUserId = jwtUserIdResolver.resolveRequired(authorization);
+        UpdateAutoDebitConsentResponse response = roomService.toggleAutoDebitConsent(roomId, currentUserId);
+        return ResponseEntity.ok(ApiResponseDto.success(response));
+    }
+
     @PatchMapping("/{roomId}")
     @Operation(summary = "ROOM-05 모임 정보 수정")
     public ResponseEntity<ApiResponseDto<String>> updateRoom(

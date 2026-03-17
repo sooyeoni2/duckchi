@@ -85,6 +85,39 @@ public class RoomServiceImpl implements RoomService {
                 .build();
     }
 
+    @Override
+    @Transactional
+    public UpdateAutoDebitConsentResponse toggleAutoDebitConsent(
+            Long roomId,
+            Long currentUserId
+    ) {
+        if (currentUserId == null) {
+            throw new CustomException(ErrorCode.COMMON_UNAUTHORIZED);
+        }
+
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
+
+        if (room.getDeletedAt() != null) {
+            throw new CustomException(ErrorCode.ROOM_NOT_FOUND);
+        }
+
+        RoomParticipant participant = roomParticipantRepository.findByRoom_IdAndUserId(roomId, currentUserId)
+                .orElseThrow(() -> new CustomException(
+                        "해당 모임의 멤버만 자동이체 동의 여부를 변경할 수 있습니다.",
+                        ErrorCode.ROOM_MEMBER_ONLY
+                ));
+
+        participant.updateAgreement(!participant.isAgreed());
+
+        return UpdateAutoDebitConsentResponse.builder()
+                .roomId(roomId)
+                .userId(currentUserId)
+                .role(participant.isAdmin() ? "ADMIN" : "MEMBER")
+                .isAgreed(participant.isAgreed())
+                .build();
+    }
+
     private String normalizeCategory(String category) {
         // DDL 기본값("기타")과 서비스 동작을 맞춰 DB 기본값 의존 없이 동일 결과를 보장한다.
         if (category == null || category.isBlank()) {
