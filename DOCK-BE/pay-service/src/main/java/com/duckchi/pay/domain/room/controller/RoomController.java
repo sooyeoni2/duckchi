@@ -6,7 +6,6 @@ import com.duckchi.pay.domain.room.dto.response.UpdateAutoDebitConsentResponse;
 import com.duckchi.pay.domain.room.service.RoomService;
 import com.duckchi.pay.domain.room.type.AutoDebitConsentStatus;
 import com.duckchi.pay.global.response.ApiResponseDto;
-import com.duckchi.pay.infra.security.jwt.JwtUserIdResolver;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;

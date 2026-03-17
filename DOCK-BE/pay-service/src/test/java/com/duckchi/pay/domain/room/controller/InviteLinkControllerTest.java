@@ -13,7 +13,7 @@ import com.duckchi.pay.domain.room.service.InviteLinkService;
 import com.duckchi.pay.global.error.CustomException;
 import com.duckchi.pay.global.error.ErrorCode;
 import com.duckchi.pay.global.error.GlobalExceptionHandler;
-import com.duckchi.pay.infra.security.jwt.JwtUserIdResolver;
+
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
