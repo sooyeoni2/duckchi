@@ -13,7 +13,7 @@ import com.duckchi.pay.domain.room.service.RoomService;
 import com.duckchi.pay.global.error.CustomException;
 import com.duckchi.pay.global.error.ErrorCode;
 import com.duckchi.pay.global.error.GlobalExceptionHandler;
-import com.duckchi.pay.infra.security.jwt.JwtUserIdResolver;
+
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,7 +63,7 @@ class RoomControllerTest {
                 .andExpect(jsonPath("$.data.roomId").value(101))
                 .andExpect(jsonPath("$.data.name").value("제주여행"))
                 .andExpect(jsonPath("$.data.category").value("기타"))
-                .andExpect(jsonPath("$.data.isProgress").value("false"));
+                .andExpect(jsonPath("$.data.isProgress").value(false));
     }
 
     @Test
