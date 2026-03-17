@@ -4,7 +4,6 @@ import com.duckchi.pay.domain.room.dto.response.CreateInviteLinkResponse;
 import com.duckchi.pay.domain.room.dto.response.ValidateInviteLinkResponse;
 import com.duckchi.pay.domain.room.service.InviteLinkService;
 import com.duckchi.pay.global.response.ApiResponseDto;
-import com.duckchi.pay.infra.security.jwt.JwtUserIdResolver;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
