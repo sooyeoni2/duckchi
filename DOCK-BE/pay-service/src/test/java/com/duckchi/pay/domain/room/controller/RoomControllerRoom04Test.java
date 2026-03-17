@@ -7,11 +7,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.duckchi.pay.domain.room.dto.response.UpdateAutoDebitConsentResponse;
 import com.duckchi.pay.domain.room.service.RoomService;
-import com.duckchi.pay.domain.room.type.AutoDebitConsentStatus;
 import com.duckchi.pay.global.error.CustomException;
 import com.duckchi.pay.global.error.ErrorCode;
 import com.duckchi.pay.global.error.GlobalExceptionHandler;
-import com.duckchi.pay.infra.security.jwt.JwtUserIdResolver;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -29,9 +27,6 @@ class RoomControllerRoom04Test {
     @MockBean
     private RoomService roomService;
 
-    @MockBean
-    private JwtUserIdResolver jwtUserIdResolver;
-
     @Test
     void updateAutoDebitConsent_success_returns200() throws Exception {
         UpdateAutoDebitConsentResponse response = UpdateAutoDebitConsentResponse.builder()
@@ -41,12 +36,12 @@ class RoomControllerRoom04Test {
                 .isAgreed(true)
                 .build();
 
-        when(jwtUserIdResolver.resolveRequired("Bearer valid-token")).thenReturn(7L);
-        when(roomService.updateAutoDebitConsent(101L, 7L, AutoDebitConsentStatus.AGREED)).thenReturn(response);
+        when(roomService.updateAutoDebitConsent(101L, 7L, com.duckchi.pay.domain.room.type.AutoDebitConsentStatus.AGREED))
+                .thenReturn(response);
 
         mockMvc.perform(patch("/api/v1/rooms/101/auto-debit/consents")
                         .queryParam("status", "AGREED")
-                        .header("Authorization", "Bearer valid-token"))
+                        .header("X-User-Id", "7"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.roomId").value(101))
@@ -57,9 +52,6 @@ class RoomControllerRoom04Test {
 
     @Test
     void updateAutoDebitConsent_withoutHeader_returns401() throws Exception {
-        when(jwtUserIdResolver.resolveRequired(null))
-                .thenThrow(new CustomException(ErrorCode.COMMON_UNAUTHORIZED));
-
         mockMvc.perform(patch("/api/v1/rooms/101/auto-debit/consents")
                         .queryParam("status", "AGREED"))
                 .andExpect(status().isUnauthorized())
@@ -69,8 +61,7 @@ class RoomControllerRoom04Test {
 
     @Test
     void updateAutoDebitConsent_nonParticipant_returns403WithRoom04Message() throws Exception {
-        when(jwtUserIdResolver.resolveRequired("Bearer valid-token")).thenReturn(7L);
-        when(roomService.updateAutoDebitConsent(101L, 7L, AutoDebitConsentStatus.AGREED))
+        when(roomService.updateAutoDebitConsent(101L, 7L, com.duckchi.pay.domain.room.type.AutoDebitConsentStatus.AGREED))
                 .thenThrow(new CustomException(
                         "해당 모임의 멤버만 자동이체 동의/거절을 변경할 수 있습니다.",
                         ErrorCode.ROOM_MEMBER_ONLY
@@ -78,7 +69,7 @@ class RoomControllerRoom04Test {
 
         mockMvc.perform(patch("/api/v1/rooms/101/auto-debit/consents")
                         .queryParam("status", "AGREED")
-                        .header("Authorization", "Bearer valid-token"))
+                        .header("X-User-Id", "7"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.errorCode").value("ROOM-403-1"))
@@ -89,7 +80,7 @@ class RoomControllerRoom04Test {
     void updateAutoDebitConsent_invalidStatus_returns400() throws Exception {
         mockMvc.perform(patch("/api/v1/rooms/101/auto-debit/consents")
                         .queryParam("status", "WRONG")
-                        .header("Authorization", "Bearer valid-token"))
+                        .header("X-User-Id", "7"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.errorCode").value("COMMON-400-1"));
