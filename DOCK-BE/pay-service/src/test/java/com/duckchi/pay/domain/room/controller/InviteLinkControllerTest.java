@@ -32,9 +32,6 @@ class InviteLinkControllerTest {
     @MockBean
     private InviteLinkService inviteLinkService;
 
-    @MockBean
-    private JwtUserIdResolver jwtUserIdResolver;
-
     @Test
     void createInviteLink_success_returns200() throws Exception {
         CreateInviteLinkResponse response = CreateInviteLinkResponse.builder()
@@ -46,11 +43,10 @@ class InviteLinkControllerTest {
                 .regenerated(false)
                 .build();
 
-        when(jwtUserIdResolver.resolveRequired("Bearer valid-token")).thenReturn(7L);
         when(inviteLinkService.createInviteLink(eq(101L), eq(7L))).thenReturn(response);
 
         mockMvc.perform(post("/api/v1/rooms/invites/101/link")
-                        .header("Authorization", "Bearer valid-token"))
+                        .header("X-User-Id", "7"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.roomId").value(101))
@@ -61,9 +57,6 @@ class InviteLinkControllerTest {
 
     @Test
     void createInviteLink_withoutHeader_returns401() throws Exception {
-        when(jwtUserIdResolver.resolveRequired(null))
-                .thenThrow(new CustomException(ErrorCode.COMMON_UNAUTHORIZED));
-
         mockMvc.perform(post("/api/v1/rooms/invites/101/link"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.success").value(false))
@@ -72,12 +65,11 @@ class InviteLinkControllerTest {
 
     @Test
     void createInviteLink_nonParticipant_returns403() throws Exception {
-        when(jwtUserIdResolver.resolveRequired("Bearer valid-token")).thenReturn(7L);
         when(inviteLinkService.createInviteLink(eq(101L), eq(7L)))
                 .thenThrow(new CustomException(ErrorCode.ROOM_MEMBER_ONLY));
 
         mockMvc.perform(post("/api/v1/rooms/invites/101/link")
-                        .header("Authorization", "Bearer valid-token"))
+                        .header("X-User-Id", "7"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.errorCode").value("ROOM-403-1"));
@@ -85,7 +77,6 @@ class InviteLinkControllerTest {
 
     @Test
     void validateInviteLink_success_returns200() throws Exception {
-        when(jwtUserIdResolver.resolveOrNull(null)).thenReturn(null);
         when(inviteLinkService.validateInviteLink(eq("valid-token"), eq(null)))
                 .thenReturn(ValidateInviteLinkResponse.of(true));
 
@@ -97,7 +88,6 @@ class InviteLinkControllerTest {
 
     @Test
     void validateInviteLink_invalidToken_returns400() throws Exception {
-        when(jwtUserIdResolver.resolveOrNull(null)).thenReturn(null);
         when(inviteLinkService.validateInviteLink(eq("invalid-token"), eq(null)))
                 .thenThrow(new CustomException(ErrorCode.ROOM_INVALID_INVITE_LINK));
 
@@ -109,26 +99,22 @@ class InviteLinkControllerTest {
 
     @Test
     void validateInviteLink_alreadyParticipant_returns409() throws Exception {
-        when(jwtUserIdResolver.resolveOrNull("Bearer valid-token")).thenReturn(7L);
         when(inviteLinkService.validateInviteLink(eq("valid-token"), eq(7L)))
                 .thenThrow(new CustomException(ErrorCode.ROOM_ALREADY_PARTICIPANT));
 
         mockMvc.perform(get("/api/v1/rooms/invites/valid-token")
-                        .header("Authorization", "Bearer valid-token"))
+                        .header("X-User-Id", "7"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.errorCode").value("ROOM-409-1"));
     }
 
     @Test
-    void validateInviteLink_invalidAuthorization_returns401() throws Exception {
-        when(jwtUserIdResolver.resolveOrNull("Token invalid"))
-                .thenThrow(new CustomException(ErrorCode.COMMON_UNAUTHORIZED));
-
+    void validateInviteLink_invalidUserIdHeader_returns400() throws Exception {
         mockMvc.perform(get("/api/v1/rooms/invites/valid-token")
-                        .header("Authorization", "Token invalid"))
-                .andExpect(status().isUnauthorized())
+                        .header("X-User-Id", "abc"))
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.errorCode").value("COMMON-401-1"));
+                .andExpect(jsonPath("$.errorCode").value("COMMON-400-1"));
     }
 }

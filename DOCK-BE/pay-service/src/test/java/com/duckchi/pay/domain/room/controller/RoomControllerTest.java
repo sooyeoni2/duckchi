@@ -10,10 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.duckchi.pay.domain.room.dto.response.CreateRoomResponse;
 import com.duckchi.pay.domain.room.service.RoomService;
-import com.duckchi.pay.global.error.CustomException;
-import com.duckchi.pay.global.error.ErrorCode;
 import com.duckchi.pay.global.error.GlobalExceptionHandler;
-
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,9 +30,6 @@ class RoomControllerTest {
     @MockBean
     private RoomService roomService;
 
-    @MockBean
-    private JwtUserIdResolver jwtUserIdResolver;
-
     @Test
     void createRoom_success_returns201() throws Exception {
         CreateRoomResponse response = CreateRoomResponse.builder()
@@ -46,11 +40,10 @@ class RoomControllerTest {
                 .createdAt(LocalDateTime.of(2026, 3, 12, 10, 0))
                 .build();
 
-        when(jwtUserIdResolver.resolveRequired("Bearer valid-token")).thenReturn(7L);
         when(roomService.createRoom(eq(7L), any())).thenReturn(response);
 
         mockMvc.perform(post("/api/v1/rooms")
-                        .header("Authorization", "Bearer valid-token")
+                        .header("X-User-Id", "7")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -68,9 +61,6 @@ class RoomControllerTest {
 
     @Test
     void createRoom_unauthorized_returns401() throws Exception {
-        when(jwtUserIdResolver.resolveRequired(null))
-                .thenThrow(new CustomException(ErrorCode.COMMON_UNAUTHORIZED));
-
         mockMvc.perform(post("/api/v1/rooms")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -87,7 +77,7 @@ class RoomControllerTest {
     @Test
     void updateRoom_success_returns200() throws Exception {
         mockMvc.perform(patch("/api/v1/rooms/101")
-                        .header("Authorization", "Bearer valid-token")
+                        .header("X-User-Id", "7")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
