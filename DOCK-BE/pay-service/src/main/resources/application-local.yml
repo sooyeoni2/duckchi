@@ -1,8 +1,7 @@
 eureka:
   client:
-    enabled: false # 로컬 개발 시 Eureka 서버 없이 독립 실행 가능하게 함.
-    register-with-eureka: false
-    fetch-registry: false
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka}
 
 spring:
   datasource:
