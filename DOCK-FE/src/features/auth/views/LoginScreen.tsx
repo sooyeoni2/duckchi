@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
   bowTieRow: {
     position: 'absolute',
     flexDirection: 'row',
-    left: '31.6%',
+    left: '34.2%',
     top: '67.3%',
   },
   bowTieLeft: {
