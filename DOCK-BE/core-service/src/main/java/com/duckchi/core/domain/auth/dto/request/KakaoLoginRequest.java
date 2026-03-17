@@ -8,9 +8,12 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class KakaoLoginRequest {
-    @NotBlank(message = "인가 코드는 필수입니다.")
+
+    @NotBlank(message = "Authorization code is required.")
     private String authorizationCode;
     
-    // 이메일은 선택 사항일 수 있으나 명세상 RequestBody에 포함되어 있음
+    @NotBlank(message = "리다이렉트 URI는 필수입니다.")
+    private String redirectUri;
+    
     private String email;
 }
