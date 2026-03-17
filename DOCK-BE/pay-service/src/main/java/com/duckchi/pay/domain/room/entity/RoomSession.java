@@ -1,4 +1,4 @@
-package com.duckchi.pay.domain.rooms.entity;
+package com.duckchi.pay.domain.room.entity;
 
 import jakarta.persistence.*;
 import lombok.*;

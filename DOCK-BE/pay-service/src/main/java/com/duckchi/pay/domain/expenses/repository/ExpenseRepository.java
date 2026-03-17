@@ -9,5 +9,8 @@ import java.util.List;
  * JPA 기반의 데이터 액세스 계층임.
  */
 public interface ExpenseRepository extends JpaRepository<Expense, Long> {
-    List<Expense> findAllByRoomId(Long roomId); // 특정 방의 모든 결제 내역 조회함.
+    /**
+     * 특정 모임방의 모든 결제 내역을 최신 등록순으로 조회함.
+     */
+    List<Expense> findAllByRoomIdOrderByCreatedAtDesc(Long roomId);
 }

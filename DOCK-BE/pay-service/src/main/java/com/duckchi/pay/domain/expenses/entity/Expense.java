@@ -37,6 +37,13 @@ public class Expense {
     @Column(nullable = false, length = 20)
     private String inputType;        // 결제 수단 (MANUAL, ACCOUNT_HISTORY, OCR) 구분용임.
 
+    @Column(nullable = false, length = 20)
+    @Builder.Default
+    private String status = "PENDING"; // 결제안 상태 (PENDING, REQUESTED, SETTLED)임.
+
+    @Column(length = 512)
+    private String receiptImageUrl;  // OCR 영수증 원본 이미지 URL임.
+
     @Column(nullable = false, length = 200)
     private String title;            // 지출 항목명(예: OO식당)임.
 
@@ -70,4 +77,14 @@ public class Expense {
     @Builder.Default
     @OneToMany(mappedBy = "expense", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ExpenseItem> items = new ArrayList<>();
+
+    /**
+     * 결제 원장의 기본 정보를 업데이트함.
+     */
+    public void updateBasicInfo(String title, Integer totalAmount, LocalDateTime paidAt, String receiptImageUrl) {
+        this.title = title;
+        this.totalAmount = totalAmount;
+        this.paidAt = paidAt;
+        this.receiptImageUrl = receiptImageUrl;
+    }
 }
