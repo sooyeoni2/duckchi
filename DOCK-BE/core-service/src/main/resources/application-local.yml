@@ -6,12 +6,6 @@ eureka:
     prefer-ip-address: true
     instance-id: ${spring.application.name}:${server.port}
 
-services:
-  pay-service:
-    url: http://localhost:8082
-  insight-service:
-    url: http://localhost:8083
-
 spring:
   datasource:
     url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:duckchi_core}?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
@@ -28,7 +22,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
         format_sql: true
