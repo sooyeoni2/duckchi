@@ -1,6 +1,5 @@
 package com.duckchi.pay.domain.room.entity;
 
-import com.duckchi.pay.domain.room.type.RoomStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -48,12 +47,6 @@ public class Room {
         this.category = category;
         this.description = description;
         this.isProgress = isProgress;
-        this.isProgress = isProgress;
-    }
-
-    public RoomStatus getStatus() {
-        // Persist as boolean in DB, expose enum status for API contract.
-        return isProgress ? RoomStatus.IN_PROGRESS : RoomStatus.READY;
     }
 
     public void markInProgress() {
