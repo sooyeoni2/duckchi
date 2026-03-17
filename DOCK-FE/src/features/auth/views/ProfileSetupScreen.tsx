@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { KBODiaGothicTextStyle } from '@core/theme/typography';
 import type { AuthStackParamList } from '@core/navigation/types';
 import { useAuthStore } from '../models/authStore';
+import { useProfileSetupViewModel } from '../viewmodels/useProfileSetupViewModel';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'ProfileSetup'>;
 
@@ -22,12 +23,13 @@ const s = W / 412;
 
 const ProfileSetupScreen: React.FC<Props> = ({ navigation }) => {
   const user = useAuthStore((s) => s.user);
+  const { submitting, submit } = useProfileSetupViewModel(navigation);
   const name = user?.name ?? '';
-  const canConfirm = name.trim().length > 0;
+  const canConfirm = name.trim().length > 0 && !submitting;
 
   const handleConfirm = () => {
     if (!canConfirm) return;
-    navigation.getParent()?.navigate('App');
+    submit('profiles/default/default-profile.jpg');
   };
 
   return (
@@ -40,7 +42,9 @@ const ProfileSetupScreen: React.FC<Props> = ({ navigation }) => {
 
         {/* 프로필 이미지 */}
         <View style={styles.profileSection}>
-          <View style={styles.profileCircle} />
+          <View style={styles.profileCircle}>
+            <Ionicons name="person" size={60 * s} color="#CCCCCC" />
+          </View>
           <TouchableOpacity style={styles.cameraBtn} activeOpacity={0.8}>
             <Ionicons name="camera" size={16 * s} color="#727272" />
           </TouchableOpacity>
@@ -100,6 +104,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   cameraBtn: {
     position: 'absolute',

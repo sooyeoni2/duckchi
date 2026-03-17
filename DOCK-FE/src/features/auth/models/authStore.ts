@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { AuthUser } from './authTypes';
+import { setAccessToken } from '@core/network/tokenManager';
 
 interface AuthState {
   accessToken: string | null;
@@ -15,8 +16,12 @@ export const useAuthStore = create<AuthState>((set) => ({
   refreshToken: null,
   user: null,
   isLoggedIn: false,
-  setAuth: (accessToken, refreshToken, user) =>
-    set({ accessToken, refreshToken, user, isLoggedIn: true }),
-  clear: () =>
-    set({ accessToken: null, refreshToken: null, user: null, isLoggedIn: false }),
+  setAuth: (accessToken, refreshToken, user) => {
+    setAccessToken(accessToken);
+    set({ accessToken, refreshToken, user, isLoggedIn: true });
+  },
+  clear: () => {
+    setAccessToken(null);
+    set({ accessToken: null, refreshToken: null, user: null, isLoggedIn: false });
+  },
 }));
