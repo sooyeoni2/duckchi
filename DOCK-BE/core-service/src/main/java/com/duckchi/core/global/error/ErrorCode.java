@@ -11,7 +11,7 @@ public enum ErrorCode {
     //COMMON
     COMMON_INTERNAL_ERROR("COMMON-500-1", HttpStatus.INTERNAL_SERVER_ERROR, "예상치 못한 서버 오류가 발생하였습니다."),
     COMMON_INVALID_INPUT("COMMON-400-1", HttpStatus.BAD_REQUEST, "입력값이 올바르지 않습니다."),
-
+    COMMON_MISSING_REQUEST_HEADER("COMMON-400-2",HttpStatus.BAD_REQUEST,"필수 요청 헤더가 누락되었습니다."),
     // AUTH
     AUTH_INVALID_LOGIN_REQUEST("AUTH-400-1", HttpStatus.BAD_REQUEST, "로그인 요청 값이 올바르지 않습니다."),
     AUTH_LOGIN_FAILED("AUTH-401-1", HttpStatus.UNAUTHORIZED, "로그인에 실패했습니다. 다시 시도해 주세요."),
