@@ -12,6 +12,7 @@ public enum ErrorCode {
     COMMON_UNAUTHORIZED("COMMON-401-1", HttpStatus.UNAUTHORIZED, "인증이 필요합니다."),
     COMMON_INTERNAL_ERROR("COMMON-500-1", HttpStatus.INTERNAL_SERVER_ERROR, "예상치 못한 서버 오류가 발생하였습니다."),
     COMMON_INVALID_INPUT("COMMON-400-1", HttpStatus.BAD_REQUEST, "입력값이 올바르지 않습니다."),
+    COMMON_MISSING_REQUEST_HEADER("COMMON-400-2",HttpStatus.BAD_REQUEST,"필수 요청 헤더가 누락되었습니다."),
 
     // FINANCE (Pay Service)
     FINANCE_API_ERROR("FINANCE-502-1", HttpStatus.BAD_GATEWAY, "외부 금융 시스템과의 통신 중 오류가 발생하였습니다."),
