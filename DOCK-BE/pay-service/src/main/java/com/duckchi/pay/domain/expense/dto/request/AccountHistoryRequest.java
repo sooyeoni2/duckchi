@@ -1,4 +1,4 @@
-package com.duckchi.pay.domain.expenses.dto.request;
+package com.duckchi.pay.domain.expense.dto.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;

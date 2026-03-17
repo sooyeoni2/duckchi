@@ -1,11 +1,11 @@
-package com.duckchi.pay.domain.expenses.controller;
+package com.duckchi.pay.domain.expense.controller;
 
-import com.duckchi.pay.domain.expenses.dto.request.AccountHistoryRequest;
-import com.duckchi.pay.domain.expenses.dto.request.ExpenseRegistrationRequest;
-import com.duckchi.pay.domain.expenses.dto.response.AccountHistoryResponse;
-import com.duckchi.pay.domain.expenses.dto.response.ExpenseDetailResponse;
-import com.duckchi.pay.domain.expenses.dto.response.ExpenseResponse;
-import com.duckchi.pay.domain.expenses.service.ExpenseService;
+import com.duckchi.pay.domain.expense.dto.request.AccountHistoryRequest;
+import com.duckchi.pay.domain.expense.dto.request.ExpenseRegistrationRequest;
+import com.duckchi.pay.domain.expense.dto.response.AccountHistoryResponse;
+import com.duckchi.pay.domain.expense.dto.response.ExpenseDetailResponse;
+import com.duckchi.pay.domain.expense.dto.response.ExpenseResponse;
+import com.duckchi.pay.domain.expense.service.ExpenseService;
 import com.duckchi.pay.global.response.ApiResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -53,9 +53,9 @@ public class ExpenseController {
     }
 
     /**
-     * 모임방 결제 목록 조회 API (PAY-05).
+     * 모임방 결제안 목록 조회 API (PAY-05).
      */
-    @Operation(summary = "모임방 결제 목록 조회", description = "특정 모임방에 등록된 모든 결제 내역을 최신순으로 가져옴.")
+    @Operation(summary = "모임방 결제안 목록 조회", description = "특정 모임방에 등록된 모든 결제안을 최신순으로 가져옴.")
     @GetMapping("/rooms/{roomId}/expenses")
     public ApiResponseDto<List<ExpenseResponse>> getExpenses(
             @PathVariable Long roomId
@@ -65,9 +65,9 @@ public class ExpenseController {
     }
 
     /**
-     * 결제 상세 조회 API (PAY-05-Detail).
+     * 결제안 상세 조회 API (PAY-05-Detail).
      */
-    @Operation(summary = "결제 상세 조회", description = "특정 결제 건의 상세 내역(품목, 참여자별 금액)을 조회함.")
+    @Operation(summary = "결제안 상세 조회", description = "특정 결제 건의 상세 내역(품목, 참여자별 금액)을 조회함.")
     @GetMapping("/rooms/{roomId}/expenses/{expenseId}")
     public ApiResponseDto<ExpenseDetailResponse> getExpenseDetail(
             @PathVariable Long roomId,
@@ -78,38 +78,38 @@ public class ExpenseController {
     }
 
     /**
-     * 결제 내역 삭제 API (PAY-06).
+     * 결제안 삭제 API (PAY-06).
      * 
      * @param roomId 모임방 식별자임.
      * @param expenseId 삭제할 결제 식별자임.
      * @return 삭제 성공 여부 응답임.
      */
-    @Operation(summary = "결제 내역 삭제", description = "특정 결제 건을 삭제함. (연관된 정산이 없을 때 권장)")
+    @Operation(summary = "결제안 삭제", description = "특정 결제안을 삭제함. (연관된 정산이 없을 때 권장)")
     @DeleteMapping("/rooms/{roomId}/expenses/{expenseId}")
-    public ApiResponseDto<Void> deleteExpense(
+    public ApiResponseDto<String> deleteExpense(
             @PathVariable Long roomId,
             @PathVariable Long expenseId
     ) {
         expenseService.deleteExpense(roomId, expenseId);
-        return ApiResponseDto.success(null);
+        return ApiResponseDto.success("결제안이 성공적으로 삭제되었습니다.");
     }
 
     /**
-     * 결제 내역 수정 API (전체 덮어쓰기).
+     * 결제안 수정 API (전체 덮어쓰기).
      * 
      * @param roomId 모임방 식별자임.
      * @param expenseId 수정할 결제 식별자임.
      * @param request 수정된 결제 정보임.
      * @return 성공 여부 응답임.
      */
-    @Operation(summary = "결제 내역 수정", description = "기존 결제 내역과 참여자 정보를 전체 덮어쓰기 방식으로 수정함.")
+    @Operation(summary = "결제안 수정", description = "기존 결제안과 참여자 정보를 전체 덮어쓰기 방식으로 수정함.")
     @PutMapping("/rooms/{roomId}/expenses/{expenseId}")
-    public ApiResponseDto<Void> updateExpense(
+    public ApiResponseDto<String> updateExpense(
             @PathVariable Long roomId,
             @PathVariable Long expenseId,
             @RequestBody @Valid ExpenseRegistrationRequest request
     ) {
         expenseService.updateExpense(roomId, expenseId, request);
-        return ApiResponseDto.success(null);
+        return ApiResponseDto.success("결제안이 성공적으로 수정되었습니다.");
     }
 }

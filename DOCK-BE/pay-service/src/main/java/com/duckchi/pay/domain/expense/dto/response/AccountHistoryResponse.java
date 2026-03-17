@@ -1,4 +1,4 @@
-package com.duckchi.pay.domain.expenses.dto.response;
+package com.duckchi.pay.domain.expense.dto.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;

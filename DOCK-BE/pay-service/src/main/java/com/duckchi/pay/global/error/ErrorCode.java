@@ -17,7 +17,7 @@ public enum ErrorCode {
     FINANCE_API_ERROR("FINANCE-502-1", HttpStatus.BAD_GATEWAY, "외부 금융 시스템과의 통신 중 오류가 발생하였습니다."),
     FINANCE_INVALID_ACCOUNT("FINANCE-400-1", HttpStatus.BAD_REQUEST, "유효하지 않은 계좌 정보입니다."),
     EXPENSE_AMOUNT_MISMATCH("EXPENSE-400-1", HttpStatus.BAD_REQUEST, "결제 총액과 참여자별 분담 금액의 합계가 일치하지 않습니다."),
-    EXPENSE_CANNOT_MODIFY("EXPENSE-403-1", HttpStatus.FORBIDDEN, "이미 정산 요청된 결제 내역은 수정하거나 삭제할 수 없습니다."),
+    EXPENSE_CANNOT_MODIFY("EXPENSE-403-1", HttpStatus.FORBIDDEN, "이미 정산 요청된 결제안은 수정하거나 삭제할 수 없습니다."),
 
     //ROOM
     ROOM_SESSION_MISMATCH("ROOM-400-4", HttpStatus.BAD_REQUEST, "해당 회차는 요청된 모임방에 속해있지 않습니다."),

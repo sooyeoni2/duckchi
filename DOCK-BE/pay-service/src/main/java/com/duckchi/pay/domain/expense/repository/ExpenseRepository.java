@@ -1,6 +1,6 @@
-package com.duckchi.pay.domain.expenses.repository;
+package com.duckchi.pay.domain.expense.repository;
 
-import com.duckchi.pay.domain.expenses.entity.Expense;
+import com.duckchi.pay.domain.expense.entity.Expense;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 

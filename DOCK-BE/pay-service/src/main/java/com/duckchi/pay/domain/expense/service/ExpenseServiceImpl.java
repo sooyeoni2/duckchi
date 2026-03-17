@@ -1,15 +1,15 @@
-package com.duckchi.pay.domain.expenses.service;
+package com.duckchi.pay.domain.expense.service;
 
-import com.duckchi.pay.domain.expenses.dto.request.AccountHistoryRequest;
-import com.duckchi.pay.domain.expenses.dto.request.ExpenseRegistrationRequest;
-import com.duckchi.pay.domain.expenses.dto.response.AccountHistoryResponse;
-import com.duckchi.pay.domain.expenses.dto.response.ExpenseDetailResponse;
-import com.duckchi.pay.domain.expenses.dto.response.ExpenseResponse;
-import com.duckchi.pay.domain.expenses.entity.Expense;
-import com.duckchi.pay.domain.expenses.entity.ExpenseItem;
-import com.duckchi.pay.domain.expenses.entity.ExpenseItemParticipant;
-import com.duckchi.pay.domain.expenses.entity.ExpenseParticipant;
-import com.duckchi.pay.domain.expenses.repository.ExpenseRepository;
+import com.duckchi.pay.domain.expense.dto.request.AccountHistoryRequest;
+import com.duckchi.pay.domain.expense.dto.request.ExpenseRegistrationRequest;
+import com.duckchi.pay.domain.expense.dto.response.AccountHistoryResponse;
+import com.duckchi.pay.domain.expense.dto.response.ExpenseDetailResponse;
+import com.duckchi.pay.domain.expense.dto.response.ExpenseResponse;
+import com.duckchi.pay.domain.expense.entity.Expense;
+import com.duckchi.pay.domain.expense.entity.ExpenseItem;
+import com.duckchi.pay.domain.expense.entity.ExpenseItemParticipant;
+import com.duckchi.pay.domain.expense.entity.ExpenseParticipant;
+import com.duckchi.pay.domain.expense.repository.ExpenseRepository;
 import com.duckchi.pay.domain.room.entity.RoomSession;
 import com.duckchi.pay.domain.room.repository.RoomParticipantRepository;
 import com.duckchi.pay.domain.room.repository.RoomSessionRepository;
@@ -110,7 +110,6 @@ public class ExpenseServiceImpl implements ExpenseService {
                 .inputType(request.getInputType())
                 .title(request.getTitle())
                 .totalAmount(request.getTotalAmount())
-                .paidAt(request.getPaidAt())
                 .receiptImageUrl(request.getReceiptImageUrl())
                 .build();
 
@@ -133,7 +132,6 @@ public class ExpenseServiceImpl implements ExpenseService {
                         .payerUserName(e.getPayerUserName())
                         .inputType(e.getInputType())
                         .status(e.getStatus())
-                        .paidAt(e.getPaidAt())
                         .createdAt(e.getCreatedAt())
                         .build())
                 .toList();
@@ -147,7 +145,6 @@ public class ExpenseServiceImpl implements ExpenseService {
                 .expenseId(expense.getId())
                 .title(expense.getTitle())
                 .totalAmount(expense.getTotalAmount())
-                .paidAt(expense.getPaidAt())
                 .payerUserName(expense.getPayerUserName())
                 .payerUserId(expense.getPayerUserId())
                 .inputType(expense.getInputType())
@@ -202,7 +199,7 @@ public class ExpenseServiceImpl implements ExpenseService {
         validateRegistration(request);
 
         // [2] 원장 업데이트함.
-        expense.updateBasicInfo(request.getTitle(), request.getTotalAmount(), request.getPaidAt(), request.getReceiptImageUrl());
+        expense.updateBasicInfo(request.getTitle(), request.getTotalAmount(), request.getReceiptImageUrl());
 
         // [3] 자식 데이터 갱신함.
         expense.getParticipants().clear();

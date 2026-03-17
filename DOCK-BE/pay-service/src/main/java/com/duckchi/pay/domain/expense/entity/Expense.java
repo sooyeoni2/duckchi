@@ -1,14 +1,16 @@
-package com.duckchi.pay.domain.expenses.entity;
+package com.duckchi.pay.domain.expense.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 결제 내역 엔티티.
- * JPA가 아닌 DB DDL의 설정을 최우선으로 신뢰함.
+ * 결제안 엔티티.
  */
 @Entity
 @Table(name = "expenses")
@@ -16,6 +18,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
+@EntityListeners(AuditingEntityListener.class)
 public class Expense {
 
     @Id
@@ -50,15 +53,11 @@ public class Expense {
     @Column(nullable = false)
     private Integer totalAmount;     // 결제 총액임.
 
-    @Column
-    private LocalDateTime paidAt;    // 실제 결제 일시 (미확정 시 NULL 가능)임.
-
     /**
-     * DB의 DEFAULT CURRENT_TIMESTAMP 기능을 사용함.
-     * insertable = false: JPA가 insert SQL 생성 시 이 필드를 제외하여 DB가 직접 시간을 채우게 유도함.
-     * 장점: 애플리케이션 로직과 DB 설정의 중복을 방지함.
+     * JPA Auditing을 사용하여 생성 시간을 자동으로 관리함.
      */
-    @Column(nullable = false, updatable = false, insertable = false)
+    @CreatedDate
+    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     /**
@@ -81,10 +80,9 @@ public class Expense {
     /**
      * 결제 원장의 기본 정보를 업데이트함.
      */
-    public void updateBasicInfo(String title, Integer totalAmount, LocalDateTime paidAt, String receiptImageUrl) {
+    public void updateBasicInfo(String title, Integer totalAmount, String receiptImageUrl) {
         this.title = title;
         this.totalAmount = totalAmount;
-        this.paidAt = paidAt;
         this.receiptImageUrl = receiptImageUrl;
     }
 }

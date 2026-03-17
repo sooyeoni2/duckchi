@@ -1,4 +1,4 @@
-package com.duckchi.pay.domain.expenses.dto.request;
+package com.duckchi.pay.domain.expense.dto.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
@@ -6,7 +6,6 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -38,9 +37,6 @@ public class ExpenseRegistrationRequest {
     @NotNull(message = "결제 총액은 필수임.")
     @Schema(description = "영수증 상의 전체 결제 금액", example = "50000")
     private Integer totalAmount;
-
-    @Schema(description = "실제 결제가 이루어진 일시 (미확정 시 null 가능)")
-    private LocalDateTime paidAt;
 
     @Schema(description = "영수증 이미지의 클라우드 스토리지 URL (OCR 기반 등록 시 필수)", example = "https://cdn.example.com/receipts/1.jpg")
     private String receiptImageUrl;

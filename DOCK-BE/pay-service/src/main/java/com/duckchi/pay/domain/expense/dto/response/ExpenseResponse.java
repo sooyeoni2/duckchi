@@ -1,4 +1,4 @@
-package com.duckchi.pay.domain.expenses.dto.response;
+package com.duckchi.pay.domain.expense.dto.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
@@ -35,9 +35,6 @@ public class ExpenseResponse {
 
     @Schema(description = "결제안 상태 (PENDING, REQUESTED, SETTLED)", example = "PENDING")
     private String status;
-
-    @Schema(description = "실제 결제 일시", example = "2026-03-12T14:30:00")
-    private LocalDateTime paidAt;
 
     @Schema(description = "결제안 등록 일시", example = "2026-03-13T10:00:00")
     private LocalDateTime createdAt;
