@@ -50,6 +50,9 @@ public class UserAccount {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
+    @Column(name="auth_requested_at",nullable=false)
+    private LocalDateTime authRequestedAt;
+
     public void expire() {
         this.status = AccountStatus.EXPIRED;
     }
@@ -57,6 +60,10 @@ public class UserAccount {
     public void verify() {
         this.status = AccountStatus.VERIFIED;
         this.registeredAt = LocalDateTime.now();
+    }
+
+    public void lock(){
+        this.status = AccountStatus.LOCKED;
     }
 
     public void softDelete() {

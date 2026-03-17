@@ -32,7 +32,6 @@ public class AccountController {
     ) {
         Long userId = 1L;
         RegisterBankAccountResponse response = accountService.registerBankAccount(userId, request);
-        accountService.sendOneWon(userId, request.accountNo());
         return ResponseEntity.ok(ApiResponseDto.success(response, "계좌로 1원을 보냈습니다. 1원 인증을 진행해 주세요."));
     }
 
