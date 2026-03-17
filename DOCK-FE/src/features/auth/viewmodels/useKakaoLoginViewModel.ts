@@ -8,7 +8,6 @@ import {
 } from '@core/constants/apiConstants';
 import { kakaoLogin } from '../models/authService';
 import { useAuthStore } from '../models/authStore';
-import { isTermsAgreed } from '@core/utils/termsStorage';
 import type { AuthStackParamList } from '@core/navigation/types';
 
 type Navigation = NativeStackNavigationProp<AuthStackParamList, 'KakaoLogin'>;
@@ -54,8 +53,7 @@ export const useKakaoLoginViewModel = (navigation: Navigation) => {
           redirectUri: KAKAO_WEB_REDIRECT_URI,
         });
         setAuth(result.accessToken, result.refreshToken, result.user);
-        const agreed = await isTermsAgreed(result.user.userId);
-        if (result.isNewUser || !agreed) {
+        if (result.isNewUser) {
           navigation.replace('Terms');
         } else {
           navigation.getParent()?.navigate('App');

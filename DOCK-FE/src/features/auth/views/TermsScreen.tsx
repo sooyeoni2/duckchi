@@ -3,8 +3,6 @@ import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-nati
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { KBODiaGothicTextStyle } from '@core/theme/typography';
 import type { AuthStackParamList } from '@core/navigation/types';
-import { useAuthStore } from '../models/authStore';
-import { setTermsAgreed } from '@core/utils/termsStorage';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Terms'>;
 
@@ -32,7 +30,6 @@ const cb = StyleSheet.create({
 });
 
 const TermsScreen: React.FC<Props> = ({ navigation }) => {
-  const user = useAuthStore((st) => st.user);
   const [all, setAll] = useState(false);
   const [t1, setT1] = useState(false);
   const [t2, setT2] = useState(false);
@@ -86,11 +83,8 @@ const TermsScreen: React.FC<Props> = ({ navigation }) => {
       <View style={styles.bottomSection}>
         <TouchableOpacity
           style={[styles.confirmBtn, !canConfirm && { opacity: 0.4 }]}
-          onPress={async () => {
+          onPress={() => {
             if (!canConfirm) return;
-            try {
-              if (user) await setTermsAgreed(user.userId);
-            } catch {}
             navigation.navigate('ProfileSetup');
           }}
           activeOpacity={0.85}
