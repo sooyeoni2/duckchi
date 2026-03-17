@@ -1,6 +1,7 @@
 {
   "expo": {
     "name": "덕치",
+    "owner": "byeongsun",
     "slug": "duckduck",
     "version": "1.0.0",
     "orientation": "portrait",

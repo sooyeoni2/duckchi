@@ -1,6 +1,7 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 import LoginScreen from '@features/auth/views/LoginScreen';
+import KakaoLoginWebViewScreen from '@features/auth/views/KakaoLoginWebViewScreen';
 import TermsScreen from '@features/auth/views/TermsScreen';
 import type { AuthStackParamList } from './types';
 
@@ -10,6 +11,7 @@ export function AuthNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="KakaoLogin" component={KakaoLoginWebViewScreen} />
       <Stack.Screen name="Terms" component={TermsScreen} />
     </Stack.Navigator>
   );

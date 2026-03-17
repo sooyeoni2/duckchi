@@ -8,6 +8,7 @@ export type AuthStackParamList = {
   Login: undefined;
   Terms: undefined;
   Registration: undefined;
+  KakaoLogin: undefined;
 };
 
 export type AppTabParamList = {
