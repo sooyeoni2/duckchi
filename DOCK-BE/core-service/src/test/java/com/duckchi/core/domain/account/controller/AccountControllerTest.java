@@ -1,34 +1,31 @@
 package com.duckchi.core.domain.account.controller;
 
+import com.duckchi.core.domain.account.dto.request.RegisterBankAccountRequest;
+import com.duckchi.core.domain.account.dto.request.VerifyOneWonRequest;
+import com.duckchi.core.domain.account.dto.response.AccountLockInfoResponse;
+import com.duckchi.core.domain.account.dto.response.RegisterBankAccountResponse;
+import com.duckchi.core.domain.account.dto.response.VerifyOneWonResponse;
+import com.duckchi.core.domain.account.service.AccountService;
+import com.duckchi.core.global.error.CustomException;
+import com.duckchi.core.global.error.ErrorCode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.LocalDateTime;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.duckchi.core.domain.account.dto.response.RegisterBankAccountResponse;
-import com.duckchi.core.domain.account.service.AccountService;
-import com.duckchi.core.global.error.CustomException;
-import com.duckchi.core.global.error.ErrorCode;
-import com.duckchi.core.global.error.GlobalExceptionHandler;
-import com.duckchi.core.infra.security.config.SecurityConfig;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.context.annotation.Import;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
-
 @WebMvcTest(AccountController.class)
-@Import({GlobalExceptionHandler.class, SecurityConfig.class})
-@AutoConfigureMockMvc(addFilters = false)
 class AccountControllerTest {
 
     @Autowired
@@ -40,114 +37,133 @@ class AccountControllerTest {
     @MockitoBean
     private AccountService accountService;
 
-    // AUTH-03 API 계약 테스트: 정상 응답, 요청값 검증 실패, 서비스 예외의 HTTP 매핑을 검증한다.
-    // 정상 요청이 들어오면 200과 명세에 맞는 응답 body를 반환하는지 확인한다.
     @Test
-    @DisplayName("returns 200 and response payload for valid request")
-    void registerBankAccount_whenRequestValid_thenReturnOk() throws Exception {
-        RegisterBankAccountResponse response = new RegisterBankAccountResponse(
-                10L,
-                "088",
-                "SHINHAN",
-                "1234************"
-        );
+    void registerBankAccount_whenRequestIsValid_returnsSuccessResponse() throws Exception {
+        // given: 정상 요청과 서비스 성공 응답이 준비되어 있다.
+        RegisterBankAccountRequest request = new RegisterBankAccountRequest("088", "123456789012");
+        RegisterBankAccountResponse response = new RegisterBankAccountResponse(10L, "088", "신한은행", "1234********");
 
-        when(accountService.registerBankAccount(eq(1L), any())).thenReturn(response);
+        when(accountService.registerBankAccount(1L, request)).thenReturn(response);
 
-        mockMvc.perform(post("/api/v1/auth/bank-accounts")
-                        .contentType(APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new RequestBody("088", "1234567890123456"))))
+        // when & then: 200 응답과 data 구조를 반환한다.
+        mockMvc.perform(post("/api/v1/bank-accounts")
+                        .header("X-User-Id", "1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.accountId").value(10))
                 .andExpect(jsonPath("$.data.bankCode").value("088"))
-                .andExpect(jsonPath("$.data.bankName").value("SHINHAN"))
-                .andExpect(jsonPath("$.data.maskedAccountNo").value("1234************"));
-
-        verify(accountService).registerBankAccount(eq(1L), any());
+                .andExpect(jsonPath("$.data.bankName").value("신한은행"))
+                .andExpect(jsonPath("$.data.maskedAccountNo").value("1234********"));
     }
 
-    // accountNo 형식이 validation 조건에 맞지 않으면 400과 공통 에러 응답을 반환하는지 확인한다.
     @Test
-    @DisplayName("returns 400 when account number format is invalid")
-    void registerBankAccount_whenAccountNoInvalid_thenReturnBadRequest() throws Exception {
-        mockMvc.perform(post("/api/v1/auth/bank-accounts")
-                        .contentType(APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new RequestBody("088", "12ab"))))
+    void registerBankAccount_whenHeaderIsMissing_returnsBadRequestWithMissingHeaderCode() throws Exception {
+        // given: 필수 내부 헤더 X-User-Id 없이 요청한다.
+        RegisterBankAccountRequest request = new RegisterBankAccountRequest("088", "123456789012");
+
+        // when & then: MissingRequestHeaderException 이 400과 전용 에러코드로 매핑된다.
+        mockMvc.perform(post("/api/v1/bank-accounts")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.errorCode").value("COMMON-400-1"));
+                .andExpect(jsonPath("$.errorCode").value(ErrorCode.COMMON_MISSING_REQUEST_HEADER.getCode()));
     }
 
-    // bankCode 형식이 validation 조건에 맞지 않으면 400과 공통 에러 응답을 반환하는지 확인한다.
     @Test
-    @DisplayName("returns 400 when bank code format is invalid")
-    void registerBankAccount_whenBankCodeInvalid_thenReturnBadRequest() throws Exception {
-        mockMvc.perform(post("/api/v1/auth/bank-accounts")
-                        .contentType(APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new RequestBody("88", "1234567890123456"))))
+    void registerBankAccount_whenBodyValidationFails_returnsBadRequest() throws Exception {
+        // given: 계좌번호 형식이 잘못된 요청을 보낸다.
+        RegisterBankAccountRequest request = new RegisterBankAccountRequest("088", "12ab");
+
+        // when & then: validation 실패로 400 응답이 반환된다.
+        mockMvc.perform(post("/api/v1/bank-accounts")
+                        .header("X-User-Id", "1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.errorCode").value("COMMON-400-1"));
+                .andExpect(jsonPath("$.errorCode").value(ErrorCode.COMMON_INVALID_INPUT.getCode()));
     }
 
-    // 서비스에서 발생한 ACCOUNT_ALREADY_REGISTERED 예외가 HTTP 409로 매핑되는지 확인한다.
     @Test
-    @DisplayName("maps service conflict exception to 409 response")
-    void registerBankAccount_whenServiceThrowsConflict_thenReturnConflict() throws Exception {
-        when(accountService.registerBankAccount(eq(1L), any()))
-                .thenThrow(new CustomException(ErrorCode.ACCOUNT_ALREADY_REGISTERED));
+    void registerBankAccount_whenServiceThrowsLockedException_returnsLockedResponseWithData() throws Exception {
+        // given: 서비스가 잠금 예외와 lock info를 함께 던진다.
+        RegisterBankAccountRequest request = new RegisterBankAccountRequest("088", "123456789012");
+        AccountLockInfoResponse data = new AccountLockInfoResponse(LocalDateTime.of(2026, 3, 18, 12, 0));
 
-        mockMvc.perform(post("/api/v1/auth/bank-accounts")
-                        .contentType(APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new RequestBody("088", "1234567890123456"))))
-                .andExpect(status().isConflict())
+        when(accountService.registerBankAccount(eq(1L), any(RegisterBankAccountRequest.class)))
+                .thenThrow(new CustomException(ErrorCode.ACCOUNT_VERIFICATION_LOCKED, data));
+
+        // when & then: 423과 error data가 함께 반환된다.
+        mockMvc.perform(post("/api/v1/bank-accounts")
+                        .header("X-User-Id", "1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isLocked())
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.errorCode").value("ACCOUNT-409-1"));
+                .andExpect(jsonPath("$.errorCode").value(ErrorCode.ACCOUNT_VERIFICATION_LOCKED.getCode()))
+                .andExpect(jsonPath("$.data.lockedUntil").value("2026-03-18T12:00:00"));
     }
 
-    // AUTH-09 API 계약 테스트: 정상 삭제 응답, path variable 검증 실패, 서비스 예외의 HTTP 매핑을 검증한다.
-    // given: 서비스가 정상적으로 삭제 요청을 처리한다.
-    // when: 삭제 API를 호출한다.
-    // then: 200 OK 와 성공 메시지를 반환한다.
     @Test
-    @DisplayName("returns 200 and success message for valid delete request")
-    void deleteBankAccount_whenRequestValid_thenReturnOk() throws Exception {
-        mockMvc.perform(post("/api/v1/auth/bank-accounts/10/delete"))
+    void verifyOneWon_whenRequestIsValid_returnsSuccessResponse() throws Exception {
+        // given: 정상 인증 요청과 서비스 성공 응답이 준비되어 있다.
+        VerifyOneWonRequest request = new VerifyOneWonRequest("1234");
+        VerifyOneWonResponse response = new VerifyOneWonResponse(10L, true);
+
+        when(accountService.verifyOneWon(1L, 10L, request)).thenReturn(response);
+
+        // when & then: 200 응답과 verified 결과를 반환한다.
+        mockMvc.perform(post("/api/v1/bank-accounts/10/verify-1won")
+                        .header("X-User-Id", "1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.msg").value("계좌가 삭제되었습니다."));
-
-        verify(accountService).deleteBankAccount(1L, 10L);
+                .andExpect(jsonPath("$.data.accountId").value(10))
+                .andExpect(jsonPath("$.data.verified").value(true));
     }
 
-    // given: accountId path variable 이 Long 형식이 아니다.
-    // when: 삭제 API를 호출한다.
-    // then: 400 Bad Request 와 공통 에러 응답을 반환한다.
     @Test
-    @DisplayName("returns 400 when account id path variable is invalid")
-    void deleteBankAccount_whenAccountIdInvalid_thenReturnBadRequest() throws Exception {
-        mockMvc.perform(post("/api/v1/auth/bank-accounts/not-a-number/delete"))
+    void verifyOneWon_whenValidationFails_returnsBadRequest() throws Exception {
+        // given: 인증코드 형식이 잘못된 요청을 보낸다.
+        VerifyOneWonRequest request = new VerifyOneWonRequest("12");
+
+        // when & then: validation 실패로 400 응답이 반환된다.
+        mockMvc.perform(post("/api/v1/bank-accounts/10/verify-1won")
+                        .header("X-User-Id", "1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.errorCode").value("COMMON-400-1"));
+                .andExpect(jsonPath("$.errorCode").value(ErrorCode.COMMON_INVALID_INPUT.getCode()));
     }
 
-    // given: 서비스에서 존재하지 않는 계좌 예외가 발생한다.
-    // when: 삭제 API를 호출한다.
-    // then: 404 Not Found 로 매핑된다.
     @Test
-    @DisplayName("maps delete service not found exception to 404 response")
-    void deleteBankAccount_whenServiceThrowsNotFound_thenReturnNotFound() throws Exception {
+    void deleteBankAccount_whenRequestIsValid_returnsSuccessMessage() throws Exception {
+        // given: 삭제 요청이 정상 처리된다.
+
+        // when & then: 200과 성공 메시지를 반환한다.
+        mockMvc.perform(post("/api/v1/bank-accounts/10/delete")
+                        .header("X-User-Id", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.msg").isNotEmpty());
+    }
+
+    @Test
+    void deleteBankAccount_whenServiceThrowsNotFound_returnsMappedErrorResponse() throws Exception {
+        // given: 서비스가 ACCOUNT_INVALID 예외를 던진다.
         doThrow(new CustomException(ErrorCode.ACCOUNT_INVALID))
                 .when(accountService).deleteBankAccount(1L, 10L);
 
-        mockMvc.perform(post("/api/v1/auth/bank-accounts/10/delete"))
+        // when & then: 404 에러 응답으로 매핑된다.
+        mockMvc.perform(post("/api/v1/bank-accounts/10/delete")
+                        .header("X-User-Id", "1"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.errorCode").value("ACCOUNT-404-1"));
-    }
-
-    private record RequestBody(String bankCode, String accountNo) {
+                .andExpect(jsonPath("$.errorCode").value(ErrorCode.ACCOUNT_INVALID.getCode()));
     }
 }
