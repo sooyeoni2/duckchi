@@ -87,9 +87,11 @@ const TermsScreen: React.FC<Props> = ({ navigation }) => {
         <TouchableOpacity
           style={[styles.confirmBtn, !canConfirm && { opacity: 0.4 }]}
           onPress={async () => {
-            if (!canConfirm || !user) return;
-            await setTermsAgreed(user.userId);
-            navigation.getParent()?.navigate('App');
+            if (!canConfirm) return;
+            try {
+              if (user) await setTermsAgreed(user.userId);
+            } catch {}
+            navigation.navigate('ProfileSetup');
           }}
           activeOpacity={0.85}
         >
@@ -110,7 +112,7 @@ const styles = StyleSheet.create({
   topSection: {
     height: H * 0.22,
     justifyContent: 'flex-end',
-    paddingBottom: H * 0.01,
+    paddingBottom: H * 0.04,
     alignItems: 'center',
   },
   title: {
