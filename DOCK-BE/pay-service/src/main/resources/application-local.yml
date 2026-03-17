@@ -1,5 +1,8 @@
 eureka:
   client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
     service-url:
       defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka}
 
@@ -23,3 +26,7 @@ spring:
     properties:
       hibernate:
         format_sql: true
+
+finance:
+  api:
+    base-url: ${FINANCE_API_URL:https://shbhack.shinhan.com}

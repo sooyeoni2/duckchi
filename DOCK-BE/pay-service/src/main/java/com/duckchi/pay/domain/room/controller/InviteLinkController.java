@@ -4,7 +4,9 @@ import com.duckchi.pay.domain.room.dto.response.CreateInviteLinkResponse;
 import com.duckchi.pay.domain.room.dto.response.ValidateInviteLinkResponse;
 import com.duckchi.pay.domain.room.service.InviteLinkService;
 import com.duckchi.pay.global.response.ApiResponseDto;
+import com.duckchi.pay.infra.security.jwt.JwtUserIdResolver;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -22,23 +24,27 @@ import org.springframework.web.bind.annotation.RestController;
 public class InviteLinkController {
 
     private final InviteLinkService inviteLinkService;
+    private final JwtUserIdResolver jwtUserIdResolver;
 
     @PostMapping("/{roomId}/link")
-    @Operation(summary = "ROOM-02 초대 링크 생성/공유")
+    @Operation(summary = "ROOM-02 Create invite link")
     public ResponseEntity<ApiResponseDto<CreateInviteLinkResponse>> createInviteLink(
             @PathVariable Long roomId,
-            @RequestHeader(value = "X-User-Id", required = false) Long currentUserId
+            @Parameter(hidden = true) @RequestHeader(value = "Authorization", required = false) String authorization
     ) {
+        Long currentUserId = jwtUserIdResolver.resolveRequired(authorization);
         CreateInviteLinkResponse response = inviteLinkService.createInviteLink(roomId, currentUserId);
         return ResponseEntity.ok(ApiResponseDto.success(response));
     }
 
     @GetMapping("/{inviteToken}")
-    @Operation(summary = "ROOM-03 초대 링크 검증 및 프리뷰")
+    @Operation(summary = "ROOM-03 Validate invite link")
     public ResponseEntity<ApiResponseDto<ValidateInviteLinkResponse>> validateInviteLink(
             @PathVariable String inviteToken,
-            @RequestHeader(value = "X-User-Id", required = false) Long currentUserId
+            @Parameter(hidden = true) @RequestHeader(value = "Authorization", required = false) String authorization
     ) {
+        // ROOM-03 keeps anonymous preview behavior when auth header is absent.
+        Long currentUserId = jwtUserIdResolver.resolveOrNull(authorization);
         ValidateInviteLinkResponse response = inviteLinkService.validateInviteLink(inviteToken, currentUserId);
         return ResponseEntity.ok(ApiResponseDto.success(response));
     }
