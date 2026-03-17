@@ -11,15 +11,11 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/auth/bank-accounts")
+@RequestMapping("/api/v1/bank-accounts")
 @Tag(name = "Account", description = "사용자 계좌 관리 API")
 public class AccountController {
 
@@ -28,9 +24,9 @@ public class AccountController {
     @Operation(summary = "은행 선택/계좌 등록 API", description = "은행을 선택하고 계좌를 등록합니다. 1원 송금도 함께 진행합니다.")
     @PostMapping
     public ResponseEntity<ApiResponseDto<RegisterBankAccountResponse>> registerBankAccount(
+            @RequestHeader("X-User-Id") Long userId,
             @Valid @RequestBody RegisterBankAccountRequest request
     ) {
-        Long userId = 1L;
         RegisterBankAccountResponse response = accountService.registerBankAccount(userId, request);
         return ResponseEntity.ok(ApiResponseDto.success(response, "계좌로 1원을 보냈습니다. 1원 인증을 진행해 주세요."));
     }
@@ -38,18 +34,20 @@ public class AccountController {
     @Operation(summary = "1원 인증 API", description = "등록한 계좌에 대해 1원 인증을 수행합니다.")
     @PostMapping("/{accountId}/verify-1won")
     public ResponseEntity<ApiResponseDto<VerifyOneWonResponse>> verifyOneWon(
+            @RequestHeader("X-User-Id") Long userId,
             @PathVariable Long accountId,
             @Valid @RequestBody VerifyOneWonRequest request
     ) {
-        Long userId = 1L;
         VerifyOneWonResponse response = accountService.verifyOneWon(userId, accountId, request);
         return ResponseEntity.ok(ApiResponseDto.success(response, "1원 인증이 완료되었습니다."));
     }
 
     @Operation(summary = "등록 계좌 삭제 API", description = "사용자가 등록한 계좌를 삭제합니다.")
     @PostMapping("/{accountId}/delete")
-    public ResponseEntity<ApiResponseDto<Void>> deleteBankAccount(@PathVariable Long accountId) {
-        Long userId = 1L;
+    public ResponseEntity<ApiResponseDto<Void>> deleteBankAccount(
+            @RequestHeader("X-User-Id") Long userId,
+            @PathVariable Long accountId
+    ) {
         accountService.deleteBankAccount(userId, accountId);
         return ResponseEntity.ok(ApiResponseDto.successMsg("계좌가 삭제되었습니다."));
     }
