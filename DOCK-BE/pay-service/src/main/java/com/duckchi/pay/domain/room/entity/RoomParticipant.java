@@ -48,4 +48,8 @@ public class RoomParticipant {
         this.isAdmin = isAdmin;
         this.isAgreed = isAgreed;
     }
+
+    public void updateAgreement(boolean agreed) {
+        this.isAgreed = agreed;
+    }
 }

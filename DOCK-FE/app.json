@@ -1,6 +1,7 @@
 {
   "expo": {
     "name": "덕치",
+    "owner": "byeongsun",
     "slug": "duckduck",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -19,6 +20,10 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.ssafy.duckduck"
     },
-    "newArchEnabled": false
+    "newArchEnabled": false,
+    "scheme": "duckduck",
+    "web": {
+      "bundler": "metro"
+    }
   }
 }

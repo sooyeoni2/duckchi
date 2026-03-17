@@ -5,16 +5,18 @@ import React from 'react';
 import { StatusBar } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppNavigator } from './src/core/navigation/AppNavigator';
+import { AuthNavigator } from './src/core/navigation/AuthNavigator';
 import { RootStackParamList } from './src/core/navigation/types';
-import { AuthScreen } from './src/features/auth/AuthScreen';
 import { OnboardingScreen } from './src/features/onboarding/OnboardingScreen';
+import { useAuthStore } from './src/features/auth/models/authStore';
 import { BankAccountSetupScreen } from './src/features/profile/views/BankAccountSetupScreen';
 import { BankAccountVerifyScreen } from './src/features/profile/views/BankAccountVerifyScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 function App() {
-  const [fontsLoaded] = useFonts({
+  const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
+  const [fontsLoaded, fontError] = useFonts({
     'KBO Dia Gothic Light': require('./src/assets/fonts/KBO Dia Gothic Light.otf'),
     'KBO Dia Gothic Medium': require('./src/assets/fonts/KBO Dia Gothic Medium.otf'),
     'KBO Dia Gothic Bold': require('./src/assets/fonts/KBO Dia Gothic Bold.otf'),
@@ -29,23 +31,19 @@ function App() {
     'Pretendard-Black': require('./src/assets/fonts/Pretendard-Black.ttf'),
   });
 
-  if (!fontsLoaded) return null;
+  if (!fontsLoaded && !fontError) return null;
 
   return (
     <SafeAreaProvider>
       <StatusBar barStyle="dark-content" backgroundColor="#F2F3F5" />
       <NavigationContainer>
-        <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Onboarding">
+        <Stack.Navigator screenOptions={{ headerShown: false, animation: 'none' }} initialRouteName={isLoggedIn ? 'App' : 'Onboarding'}>
           <Stack.Screen name="Onboarding">
             {({ navigation }) => (
               <OnboardingScreen onStart={() => navigation.replace('Auth')} />
             )}
           </Stack.Screen>
-          <Stack.Screen name="Auth">
-            {({ navigation }) => (
-              <AuthScreen onLogin={() => navigation.replace('App')} />
-            )}
-          </Stack.Screen>
+          <Stack.Screen name="Auth" component={AuthNavigator} />
           <Stack.Screen name="App" component={AppNavigator} />
           <Stack.Screen name="BankAccountSetup" component={BankAccountSetupScreen} />
           <Stack.Screen name="BankAccountVerify" component={BankAccountVerifyScreen} />
