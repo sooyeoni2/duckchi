@@ -1,0 +1,13 @@
+spring:
+  cloud:
+    gateway:
+      routes: []
+
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
+
+jwt:
+  secret: test-secret-key-at-least-32-characters-long

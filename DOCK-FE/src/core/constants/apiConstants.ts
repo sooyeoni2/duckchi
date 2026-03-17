@@ -3,7 +3,7 @@ export const API_TIMEOUT = 10000;
 
 export const ENDPOINTS = {
   auth: {
-    login: '/api/auth/login',
+    login: '/api/v1/auth/oauth/login',
     logout: '/api/auth/logout',
     refresh: '/api/auth/refresh',
   },

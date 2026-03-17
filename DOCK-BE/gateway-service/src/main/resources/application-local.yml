@@ -15,9 +15,12 @@ spring:
         - id: pay-service
           uri: lb://pay-service
           predicates:
-            - Path=/api/v1/rooms/**, /api/v1/payments/**, /api/v1/settlements/**
+            - Path=/api/v1/rooms/**, /api/v1/payments/**, /api/v1/settlements/**, /api/v1/expenses/**
 
         - id: insight-service
           uri: lb://insight-service
           predicates:
             - Path=/api/v1/analytics/**, /api/v1/games/**
+
+jwt:
+  secret: ${JWT_SECRET}
