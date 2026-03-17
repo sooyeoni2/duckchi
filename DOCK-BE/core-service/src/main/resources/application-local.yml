@@ -1,10 +1,10 @@
 eureka:
   client:
-    enabled: false
-    register-with-eureka: false
-    fetch-registry: false
     service-url:
       defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka}
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}
 
 services:
   pay-service:
