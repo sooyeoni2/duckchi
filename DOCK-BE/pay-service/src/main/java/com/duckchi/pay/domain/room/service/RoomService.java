@@ -1,9 +1,12 @@
 package com.duckchi.pay.domain.room.service;
 
 import com.duckchi.pay.domain.room.dto.request.CreateRoomRequest;
+import com.duckchi.pay.domain.room.dto.request.UpdateRoomRequest;
 import com.duckchi.pay.domain.room.dto.response.CreateRoomResponse;
+import com.duckchi.pay.domain.room.dto.response.RoomListResponse;
 import com.duckchi.pay.domain.room.dto.response.UpdateAutoDebitConsentResponse;
 import com.duckchi.pay.domain.room.type.AutoDebitConsentStatus;
+import java.util.List;
 
 public interface RoomService {
 
@@ -21,6 +24,9 @@ public interface RoomService {
     );
 
     void updateRoomInfo(Long roomId, Long currentUserId, com.duckchi.pay.domain.room.dto.request.UpdateRoomRequest request);
+    List<RoomListResponse> getRoomLists(Long currentUserId, Boolean isProgress);
+
+    void updateRoomInfo(Long roomId, Long currentUserId, UpdateRoomRequest request);
 
     void leaveRoom(Long roomId, Long currentUserId);
 

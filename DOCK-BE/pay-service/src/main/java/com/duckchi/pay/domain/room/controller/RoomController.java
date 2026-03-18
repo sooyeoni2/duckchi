@@ -3,6 +3,7 @@ package com.duckchi.pay.domain.room.controller;
 import com.duckchi.pay.domain.room.dto.request.CreateRoomRequest;
 import com.duckchi.pay.domain.room.dto.request.UpdateRoomRequest;
 import com.duckchi.pay.domain.room.dto.response.CreateRoomResponse;
+import com.duckchi.pay.domain.room.dto.response.RoomListResponse;
 import com.duckchi.pay.domain.room.dto.response.UpdateAutoDebitConsentResponse;
 import com.duckchi.pay.domain.room.service.RoomService;
 import com.duckchi.pay.domain.room.type.AutoDebitConsentStatus;
@@ -12,10 +13,12 @@ import com.duckchi.pay.global.response.ApiResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -55,6 +58,17 @@ public class RoomController {
     ) {
         Long currentUserId = resolveRequiredUserId(userIdHeader);
         UpdateAutoDebitConsentResponse response = roomService.updateAutoDebitConsent(roomId, currentUserId, status);
+        return ResponseEntity.ok(ApiResponseDto.success(response));
+    }
+
+    @GetMapping("/room-lists")
+    @Operation(summary = "ROOM-08 Get room lists")
+    public ResponseEntity<ApiResponseDto<List<RoomListResponse>>> getRoomLists(
+            @RequestHeader(value = USER_ID_HEADER, required = false) String userIdHeader,
+            @RequestParam(value = "isProgress", required = false) Boolean isProgress
+    ) {
+        Long currentUserId = resolveRequiredUserId(userIdHeader);
+        List<RoomListResponse> response = roomService.getRoomLists(currentUserId, isProgress);
         return ResponseEntity.ok(ApiResponseDto.success(response));
     }
 
