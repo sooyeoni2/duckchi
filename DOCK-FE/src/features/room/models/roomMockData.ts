@@ -76,9 +76,9 @@ export const meetingRoomMockData: MeetingRoom[] = [
 ];
 
 export const createMeetingRoomDraftMock: MeetingRoomDraft = {
-  roomName: 'C102 회식',
+  roomName: '',
   category: '회식',
-  description: 'C102 뒷풀이',
+  description: '',
 };
 
 export const getMeetingRoomRestartDraft = (roomId: number): MeetingRoomDraft => {

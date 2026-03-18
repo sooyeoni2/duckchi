@@ -58,6 +58,7 @@ export function MeetingRoomEditor({
           <Text style={styles.sectionTitle}>모임 이름 (최대 20자)</Text>
           <CustomTextField
             value={roomName}
+            hint="모임 이름"
             onChangeText={(text) => onRoomNameChange(text.slice(0, 20))}
             borderRadius={12}
             style={styles.input}
@@ -95,6 +96,7 @@ export function MeetingRoomEditor({
           <Text style={styles.sectionTitle}>세부 내용</Text>
           <CustomTextField
             value={detail}
+            hint="세부 내용"
             onChangeText={onDetailChange}
             borderRadius={12}
             style={styles.input}
