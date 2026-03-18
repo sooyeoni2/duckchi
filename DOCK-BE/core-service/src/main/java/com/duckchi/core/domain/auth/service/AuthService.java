@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.Map;
 import java.util.Random;
@@ -34,35 +35,30 @@ public class AuthService {
     @Value("${finance.api.key}")
     private String financeApiKey;
 
+    @Value("${kakao.redirect-uri}")
+    private String configuredRedirectUri;
+
     public LoginResponse login(KakaoLoginRequest request) {
         try {
             // 1. 카카오 액세스 토큰 획득
-            String kakaoAccessToken = kakaoClient.getAccessToken(
-                    request.getAuthorizationCode(),
-                    request.getRedirectUri()
-            );
+            String kakaoAccessToken = kakaoClient.getAccessToken(request.getAuthorizationCode(), request.getRedirectUri());
 
-            // 2. 카카오 유저 정보 획득
             Map<String, Object> userInfo = kakaoClient.getUserInfo(kakaoAccessToken);
             String socialId = String.valueOf(userInfo.get("id"));
 
-            // 카카오 API 응답에서 닉네임 추출 (비즈앱 권한 부재로 실명 대신 닉네임 사용)
             Map<String, Object> properties = (Map<String, Object>) userInfo.get("properties");
-            String nickname = (properties != null) ? (String) properties.get("nickname") : "NoName";
+            String nickname = properties != null ? (String) properties.get("nickname") : "NoName";
 
             Map<String, Object> kakaoAccount = (Map<String, Object>) userInfo.get("kakao_account");
-            String email = (kakaoAccount != null) ? (String) kakaoAccount.get("email") : request.getEmail();
+            String email = kakaoAccount != null ? (String) kakaoAccount.get("email") : request.getEmail();
 
-            // 3. 회원 여부 확인
             User user = userRepository.findBySocialId(socialId).orElse(null);
-            boolean isNewUser = (user == null);
+            boolean isNewUser = user == null;
 
             if (isNewUser) {
-                // 4. 신규 유저 등록 (닉네임을 실명 필드에 저장)
                 user = registerUser(socialId, email, nickname);
             }
 
-            // 5. 서비스 자체 JWT 발급
             String accessToken = jwtProvider.createAccessToken(user.getId());
             String refreshToken = jwtProvider.createRefreshToken(user.getId());
 
@@ -77,17 +73,27 @@ public class AuthService {
                             .build())
                     .build();
         } catch (Exception e) {
-            log.error("Kakao login error: ", e);
+            log.error("Kakao login error", e);
             throw new CustomException(ErrorCode.AUTH_LOGIN_FAILED);
         }
     }
 
-    private User registerUser(String socialId, String email, String name) {
-        // 랜덤 태그 생성 (예: #1A3)
-        String tag = generateRandomTag();
-        String userEmail = (email != null) ? email : socialId + "@kakao.com";
+    private String resolveRedirectUri(KakaoLoginRequest request) {
+        if (!StringUtils.hasText(request.getRedirectUri())) {
+            return configuredRedirectUri;
+        }
 
-        // 금융망 API 연동하여 실제 유저 키 발급
+        if (!configuredRedirectUri.equals(request.getRedirectUri())) {
+            log.warn("Ignoring mismatched Kakao redirect URI. request={}, configured={}",
+                    request.getRedirectUri(), configuredRedirectUri);
+        }
+
+        return configuredRedirectUri;
+    }
+
+    private User registerUser(String socialId, String email, String name) {
+        String tag = generateRandomTag();
+        String userEmail = email != null ? email : socialId + "@kakao.com";
         String ssafyUserKey = getOrCreateUserKey(userEmail);
 
         User newUser = User.builder()
@@ -105,28 +111,26 @@ public class AuthService {
     private String getOrCreateUserKey(String email) {
         MemberRequest request = new MemberRequest(financeApiKey, email);
         try {
-            // 1. 유저 조회 시도
             MemberResponse response = memberClient.searchMember(request);
             if (response != null && response.userKey() != null) {
                 return response.userKey();
             }
         } catch (Exception e) {
-            log.info("금융망 유저 조회 실패, 신규 생성을 시도합니다: {}", email);
+            log.info("Finance member lookup failed. Falling back to create member for {}", email);
         }
 
         try {
-            // 2. 유저 생성 시도
             MemberResponse response = memberClient.createMember(request);
             if (response != null && response.userKey() != null) {
                 return response.userKey();
             }
         } catch (Exception e) {
-            log.error("금융망 유저 키 발급 최종 실패: {}", email);
-            throw new RuntimeException("금융망 연동에 실패했습니다.");
+            log.error("Finance member provisioning failed for {}", email, e);
+            throw new RuntimeException("Finance member provisioning failed.");
         }
-        throw new RuntimeException("금융망 연동 결과가 올바르지 않습니다.");
-    }
 
+        throw new RuntimeException("Finance member provisioning returned an empty user key.");
+    }
 
     private String generateRandomTag() {
         Random random = new Random();
