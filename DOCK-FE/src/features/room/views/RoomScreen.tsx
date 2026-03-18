@@ -1,5 +1,7 @@
 import { MaterialCommunityIcons as MaterialDesignIcons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import type { RouteProp } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
@@ -12,11 +14,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import type { RoomStackParamList } from '@core/navigation/types';
 import { AppColorStyles } from '@core/theme/colors';
 import { KBODiaGothicTextStyle } from '@core/theme/typography';
 import { CustomAppBar } from '@shared/components/app_bar/CustomAppBar';
 import { FilledButton } from '@shared/components/buttons/FilledButton';
 
+import { meetingRoomMockData } from '../models/roomMockData';
 import { useSettlementViewModel } from '../viewmodels/useSettlementViewModel';
 import { SettlementCard } from './components/SettlementCard';
 import { SettlementTabHeader } from './components/SettlementTabHeader';
@@ -47,10 +51,15 @@ const settlementRequests: SettlementRow[] = [
 ];
 
 const toWon = (value: number) => `${value.toLocaleString('ko-KR')}원`;
+type Nav = NativeStackNavigationProp<RoomStackParamList, 'RoomDetail'>;
+type Route = RouteProp<RoomStackParamList, 'RoomDetail'>;
 
 export function RoomScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<Nav>();
+  const route = useRoute<Route>();
   const [viewMode, setViewMode] = useState<RoomViewMode>('SUMMARY');
+  const room = meetingRoomMockData.find((item) => item.roomId === route.params.roomId) ?? meetingRoomMockData[0];
+  const expectedAmount = room != null ? Math.round(room.totalPay / Math.max(room.memberCount, 1)) : 0;
 
   const handleBack = () => {
     if (navigation.canGoBack()) {
@@ -65,7 +74,7 @@ export function RoomScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <CustomAppBar
-        titleWidget={<Text style={styles.summaryRoomTitle}>C102 회식</Text>}
+        titleWidget={<Text style={styles.summaryRoomTitle}>{room?.roomName ?? '모임 상세'}</Text>}
         centerTitle={false}
         showDivider
         backgroundColor={AppColorStyles.background}
@@ -100,7 +109,7 @@ export function RoomScreen() {
       >
         <TouchableOpacity style={styles.expectedCard} activeOpacity={0.85} onPress={() => setViewMode('TRANSFER')}>
           <Text style={styles.expectedLabel}>내 예상 금액</Text>
-          <Text style={styles.expectedAmount}>30,000원</Text>
+          <Text style={styles.expectedAmount}>{toWon(expectedAmount)}</Text>
           <View style={styles.expectedBottomRow}>
             <Text style={styles.expectedHint}>금액이 변동될 수 있어요</Text>
             <Text style={styles.expectedAction}>탭하여 정산하기 →</Text>
@@ -123,7 +132,7 @@ export function RoomScreen() {
 
         <View style={styles.totalCard}>
           <Text style={styles.totalLabel}>모임 전체 합계</Text>
-          <Text style={styles.totalAmount}>{toWon(180000)}</Text>
+          <Text style={styles.totalAmount}>{toWon(room?.totalPay ?? 0)}</Text>
         </View>
       </ScrollView>
     </SafeAreaView>

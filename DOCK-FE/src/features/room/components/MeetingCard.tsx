@@ -10,10 +10,11 @@ const currency = new Intl.NumberFormat('ko-KR');
 
 interface MeetingCardProps {
   meeting?: MeetingRoom;
+  onPress?: (meeting: MeetingRoom) => void;
   onActionPress: (meeting: MeetingRoom) => void;
 }
 
-export function MeetingCard({ meeting, onActionPress }: MeetingCardProps) {
+export function MeetingCard({ meeting, onPress, onActionPress }: MeetingCardProps) {
   if (meeting == null) {
     return null;
   }
@@ -21,7 +22,7 @@ export function MeetingCard({ meeting, onActionPress }: MeetingCardProps) {
   const highlightedButton = meeting.status === 'ENDED';
 
   return (
-    <View style={styles.cardShell}>
+    <Pressable style={styles.cardShell} onPress={() => onPress?.(meeting)}>
       <Text style={styles.shellCategory}>{meeting.category}</Text>
 
       <View style={styles.card}>
@@ -57,7 +58,10 @@ export function MeetingCard({ meeting, onActionPress }: MeetingCardProps) {
         />
 
         <Pressable
-          onPress={() => onActionPress(meeting)}
+          onPress={(event) => {
+            event.stopPropagation();
+            onActionPress(meeting);
+          }}
           style={[
             styles.actionButton,
             highlightedButton ? styles.actionButtonHighlighted : styles.actionButtonMuted,
@@ -66,7 +70,7 @@ export function MeetingCard({ meeting, onActionPress }: MeetingCardProps) {
           <Text style={styles.actionButtonText}>{meeting.actionLabel}</Text>
         </Pressable>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
