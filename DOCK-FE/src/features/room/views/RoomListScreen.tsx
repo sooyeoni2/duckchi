@@ -82,15 +82,14 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   createButton: {
-    minWidth: 74,
-    height: 26,
+    height: 24,
     borderRadius: 6,
-    paddingHorizontal: 8,
+    paddingHorizontal: 16,
     backgroundColor: AppColorStyles.yellow,
     alignItems: 'center',
     justifyContent: 'center',
   },
   createButtonText: {
-    ...KBODiaGothicTextStyle.medium({ fontSize: 11, color: AppColorStyles.black }),
+    ...KBODiaGothicTextStyle.medium({ fontSize: 13, color: AppColorStyles.black, letterSpacing: 0.5 }),
   },
 });

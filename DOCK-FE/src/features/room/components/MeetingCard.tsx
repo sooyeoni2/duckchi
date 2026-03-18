@@ -77,7 +77,7 @@ export function MeetingCard({ meeting, onPress, onActionPress }: MeetingCardProp
 const styles = StyleSheet.create({
   cardShell: {
     width: '100%',
-    height: 291,
+    height: 265,
     borderRadius: 10,
     backgroundColor: AppColorStyles.surface,
     shadowColor: '#676767',
@@ -85,7 +85,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 2,
     elevation: 2,
-    paddingTop: 24,
+    paddingTop: 15,
   },
   shellCategory: {
     ...KBODiaGothicTextStyle.medium({
@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
   card: {
     width: 339,
     height: 181,
-    marginTop: 7,
+    marginTop: 22,
     marginLeft: 14,
     position: 'relative',
     borderRadius: 10,
@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
   subtitle: {
     ...KBODiaGothicTextStyle.light({
       fontSize: 10,
-      color: '#CECECE',
+      color: '#C2C2C2',
       lineHeight: 10,
     }),
     paddingBottom: 4,
