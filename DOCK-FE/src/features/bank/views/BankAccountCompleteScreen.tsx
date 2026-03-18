@@ -40,8 +40,7 @@ export function BankAccountCompleteScreen() {
   const handleNext = () => {
     // TODO: 한도 저장 API 연동
     if (returnTo === 'NewUser') {
-      // TODO: 비밀번호 설정 화면 구현 후 교체
-      navigation.replace('App');
+      navigation.replace('PayPasswordSetup');
     } else {
       navigation.replace('App');
     }

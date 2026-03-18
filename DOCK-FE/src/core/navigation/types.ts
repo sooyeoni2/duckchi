@@ -15,6 +15,7 @@ export type RootStackParamList = {
     maskedAccountNo: string;
     returnTo: 'App' | 'Settings' | 'NewUser';
   };
+  PayPasswordSetup: undefined;
 };
 
 export type ProfileStackParamList = {
