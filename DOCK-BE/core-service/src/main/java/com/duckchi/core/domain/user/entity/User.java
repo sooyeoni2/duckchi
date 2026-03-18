@@ -52,4 +52,27 @@ public class User {
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
+
+    @Column(name = "pay_password_fail_cnt",nullable = false)
+    @Builder.Default
+    private Integer payPasswordFailCnt = 0;
+
+    //결제 비밀번호 설정
+    public void updatePayPassword(String payPassword) {
+        this.payPassword = payPassword;
+    }
+    //결제 비밀번호 설정되었는지 확인
+    public boolean hasPayPassword() {
+        return this.payPassword != null && !this.payPassword.isBlank();
+    }
+
+    //결제 비밀번호 실패 횟수 증가
+    public void increasePayPasswordFailCnt(){
+        this.payPasswordFailCnt++;
+    }
+    //결제 비밀번호 실패 횟수 초기화
+    public void resetPayPasswordFailCnt(){
+        this.payPasswordFailCnt = 0;
+    }
+
 }
