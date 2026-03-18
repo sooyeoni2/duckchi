@@ -13,11 +13,13 @@ type ProfileState =
 interface ProfileStore {
   state: ProfileState;
   setState: (state: ProfileState) => void;
+  reset: () => void;
 }
 
 const useProfileStore = create<ProfileStore>(set => ({
   state: { status: 'idle' },
   setState: state => set({ state }),
+  reset: () => set({ state: { status: 'idle' } }),
 }));
 
 export const useProfileViewModel = () => {
@@ -56,5 +58,7 @@ export const useProfileViewModel = () => {
     }
   }, [loadProfile]);
 
-  return { state, refresh, deleteAccount, updateTransferLimit };
+  const reset = useProfileStore(s => s.reset);
+
+  return { state, refresh, reset, deleteAccount, updateTransferLimit };
 };

@@ -179,9 +179,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   confirmText: {
-    fontSize: 20 * s,
-    fontWeight: '700',
-    color: '#000000',
+    ...KBODiaGothicTextStyle.bold({ fontSize: 20 * s, color: '#000000' }),
   },
 });
 

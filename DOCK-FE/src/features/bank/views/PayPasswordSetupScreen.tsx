@@ -3,6 +3,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import React, { useState } from 'react';
 import {
+  Dimensions,
   Keyboard,
   StyleSheet,
   Text,
@@ -18,6 +19,8 @@ import { CustomAppBar } from '../../../shared/components/app_bar/CustomAppBar';
 import { FilledButton } from '../../../shared/components/buttons/FilledButton';
 import { PasswordDotsInput } from '../components/PasswordDotsInput';
 
+const { height: H } = Dimensions.get('window');
+
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'PayPasswordSetup'>;
 
@@ -31,6 +34,11 @@ export function PayPasswordSetupScreen() {
   const returnTo = params?.returnTo ?? 'NewUser';
   const [password, setPassword] = useState('');
 
+  const handleChangeText = (text: string) => {
+    setPassword(text);
+    if (text.length === PASSWORD_LENGTH) Keyboard.dismiss();
+  };
+
   const handleConfirm = () => {
     if (password.length !== PASSWORD_LENGTH) return;
     navigation.replace('PayPasswordConfirm', { firstPassword: password, bankName, maskedAccountNo, returnTo });
@@ -38,29 +46,31 @@ export function PayPasswordSetupScreen() {
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-        <CustomAppBar
-          title="결제 비밀번호 설정"
-          centerTitle={false}
-          showBackButton={!!bankName}
-          backgroundColor={AppColorStyles.background}
-          onBackPress={bankName && maskedAccountNo
-            ? () => navigation.replace('BankAccountComplete', { bankName, maskedAccountNo, returnTo })
-            : undefined}
-        />
-
-        <View style={styles.content}>
-          <Text style={styles.title}>결제 비밀번호를{'\n'}설정해주세요!</Text>
-          <PasswordDotsInput password={password} onChangeText={setPassword} />
-        </View>
-
-        <View style={styles.bottomArea}>
-          <FilledButton
-            text="확인"
-            onPress={password.length === PASSWORD_LENGTH ? handleConfirm : undefined}
+      <View style={{ height: H }}>
+        <SafeAreaView style={styles.safeArea} edges={['top']}>
+          <CustomAppBar
+            title="결제 비밀번호 설정"
+            centerTitle={false}
+            showBackButton={!!bankName}
+            backgroundColor={AppColorStyles.background}
+            onBackPress={bankName && maskedAccountNo
+              ? () => navigation.replace('BankAccountComplete', { bankName, maskedAccountNo, returnTo })
+              : undefined}
           />
-        </View>
-      </SafeAreaView>
+
+          <View style={styles.content}>
+            <Text style={styles.title}>결제 비밀번호를{'\n'}설정해주세요!</Text>
+            <PasswordDotsInput password={password} onChangeText={handleChangeText} />
+          </View>
+
+          <View style={styles.bottomArea}>
+            <FilledButton
+              text="확인"
+              onPress={password.length === PASSWORD_LENGTH ? handleConfirm : undefined}
+            />
+          </View>
+        </SafeAreaView>
+      </View>
     </TouchableWithoutFeedback>
   );
 }
@@ -82,10 +92,10 @@ const styles = StyleSheet.create({
   },
   bottomArea: {
     paddingHorizontal: 24,
-    paddingBottom: 24,
+    paddingBottom: H * 0.05,
     paddingTop: 8,
     position: 'absolute',
-    bottom: 60,
+    bottom: 0,
     left: 0,
     right: 0,
   },

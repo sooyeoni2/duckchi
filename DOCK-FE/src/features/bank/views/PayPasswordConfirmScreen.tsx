@@ -1,8 +1,9 @@
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, CommonActions } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import React, { useState } from 'react';
 import {
+  Dimensions,
   Keyboard,
   StyleSheet,
   Text,
@@ -19,6 +20,9 @@ import { FilledButton } from '../../../shared/components/buttons/FilledButton';
 import { PasswordDotsInput } from '../components/PasswordDotsInput';
 import { useAuthStore } from '../../auth/models/authStore';
 import { usePayPasswordViewModel } from '../viewmodels/usePayPasswordViewModel';
+import { useProfileViewModel } from '../../profile/viewmodels/useProfileViewModel';
+
+const { height: H } = Dimensions.get('window');
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'PayPasswordConfirm'>;
@@ -30,12 +34,14 @@ export function PayPasswordConfirmScreen() {
   const { firstPassword, bankName, maskedAccountNo, returnTo } = useRoute<Route>().params;
   const { setup, isSettingUp } = usePayPasswordViewModel();
   const setHasPayPassword = useAuthStore(s => s.setHasPayPassword);
+  const { refresh: refreshProfile } = useProfileViewModel();
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
   const handleChangeText = (text: string) => {
     setPassword(text);
     if (error) setError('');
+    if (text.length === PASSWORD_LENGTH) Keyboard.dismiss();
   };
 
   const handleStart = async () => {
@@ -46,11 +52,27 @@ export function PayPasswordConfirmScreen() {
       return;
     }
     const res = await setup(password);
+    const goToProfile = () => {
+      refreshProfile();
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{
+            name: 'App',
+            state: { index: 3, routes: [{ name: 'Home' }, { name: 'Room' }, { name: 'Report' }, { name: 'Profile' }] },
+          }],
+        })
+      );
+    };
+    const goToHome = () => {
+      refreshProfile();
+      navigation.replace('App');
+    };
     if (res.ok) {
       setHasPayPassword();
-      navigation.replace('App');
+      returnTo === 'Settings' ? goToProfile() : goToHome();
     } else if (res.error === 'ALREADY_SET') {
-      navigation.replace('App');
+      returnTo === 'Settings' ? goToProfile() : goToHome();
     } else {
       setError('비밀번호 설정에 실패했습니다. 다시 시도해주세요.');
       setPassword('');
@@ -59,29 +81,31 @@ export function PayPasswordConfirmScreen() {
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-        <CustomAppBar
-          title="결제 비밀번호 설정"
-          centerTitle={false}
-          showBackButton
-          backgroundColor={AppColorStyles.background}
-          onBackPress={() => navigation.replace('PayPasswordSetup', { bankName, maskedAccountNo, returnTo })}
-        />
-
-        <View style={styles.content}>
-          <Text style={styles.title}>결제 비밀번호를{'\n'}다시 한번 입력해 주세요</Text>
-          <PasswordDotsInput password={password} onChangeText={handleChangeText} />
-          {error ? <Text style={styles.errorText}>{error}</Text> : null}
-        </View>
-
-        <View style={styles.bottomArea}>
-          <FilledButton
-            text="시작하기"
-            onPress={password.length === PASSWORD_LENGTH && !isSettingUp ? handleStart : undefined}
-            isLoading={isSettingUp}
+      <View style={{ height: H }}>
+        <SafeAreaView style={styles.safeArea} edges={['top']}>
+          <CustomAppBar
+            title="결제 비밀번호 설정"
+            centerTitle={false}
+            showBackButton
+            backgroundColor={AppColorStyles.background}
+            onBackPress={() => navigation.replace('PayPasswordSetup', { bankName, maskedAccountNo, returnTo })}
           />
-        </View>
-      </SafeAreaView>
+
+          <View style={styles.content}>
+            <Text style={styles.title}>결제 비밀번호를{'\n'}다시 한번 입력해 주세요</Text>
+            <PasswordDotsInput password={password} onChangeText={handleChangeText} />
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          </View>
+
+          <View style={styles.bottomArea}>
+            <FilledButton
+              text="시작하기"
+              onPress={password.length === PASSWORD_LENGTH && !isSettingUp ? handleStart : undefined}
+              isLoading={isSettingUp}
+            />
+          </View>
+        </SafeAreaView>
+      </View>
     </TouchableWithoutFeedback>
   );
 }
@@ -103,10 +127,10 @@ const styles = StyleSheet.create({
   },
   bottomArea: {
     paddingHorizontal: 24,
-    paddingBottom: 24,
+    paddingBottom: H * 0.05,
     paddingTop: 8,
     position: 'absolute',
-    bottom: 60,
+    bottom: 0,
     left: 0,
     right: 0,
   },
