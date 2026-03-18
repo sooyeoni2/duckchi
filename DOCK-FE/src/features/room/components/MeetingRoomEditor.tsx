@@ -1,6 +1,6 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AppColorStyles } from '@core/theme/colors';
 import { KBODiaGothicTextStyle } from '@core/theme/typography';
@@ -49,8 +49,8 @@ export function MeetingRoomEditor({
 
   return (
     <View style={styles.body}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
       <ScrollView
-        style={styles.scroll}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
@@ -115,6 +115,7 @@ export function MeetingRoomEditor({
           </View>
         ) : null}
       </ScrollView>
+      </KeyboardAvoidingView>
 
       <View style={styles.footer}>
         <FilledButton
@@ -144,7 +145,7 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 48,
     paddingTop: 24,
-    paddingBottom: 24,
+    paddingBottom: 100,
     gap: 28,
   },
   section: {
