@@ -9,13 +9,13 @@ import { AppColorStyles } from '../../../core/theme/colors';
 import { KBODiaGothicTextStyle } from '../../../core/theme/typography';
 import { CustomAppBar } from '../../../shared/components/app_bar/CustomAppBar';
 import { FilledButton } from '../../../shared/components/buttons/FilledButton';
+import { useProfileViewModel } from '../viewmodels/useProfileViewModel';
 
 type Nav = NativeStackNavigationProp<ProfileStackParamList>;
 
 const { width: W } = Dimensions.get('window');
 const s = W / 412;
 
-const CURRENT_LIMIT = 30000; // TODO: API 연동
 const MIN_AMOUNT = 10000;
 const MAX_AMOUNT = 100000;
 
@@ -25,6 +25,8 @@ function formatAmount(value: number) {
 
 export function TransferLimitScreen() {
   const navigation = useNavigation<Nav>();
+  const { state, updateTransferLimit } = useProfileViewModel();
+  const currentLimit = state.status === 'loaded' ? state.profile.transferLimit : 0;
   const inputRef = useRef<TextInput>(null);
 
   const [rawValue, setRawValue] = useState('');
@@ -104,7 +106,7 @@ export function TransferLimitScreen() {
 
           {/* 현재 한도 */}
           <Text style={styles.currentLimit}>
-            현재 한도 : {formatAmount(CURRENT_LIMIT)}원
+            현재 한도 : {formatAmount(currentLimit)}원
           </Text>
 
           {/* 유효성 안내 */}
@@ -119,7 +121,7 @@ export function TransferLimitScreen() {
       <View style={styles.bottomArea}>
         <FilledButton
           text="변경하기"
-          onPress={isValid ? () => navigation.goBack() : undefined}
+          onPress={isValid ? async () => { await updateTransferLimit(numericValue); navigation.goBack(); } : undefined}
         />
       </View>
     </SafeAreaView>
