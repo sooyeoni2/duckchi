@@ -24,6 +24,11 @@ public enum ErrorCode {
     // AUTH
     AUTH_UNAUTHORIZED("AUTH-401-1", HttpStatus.UNAUTHORIZED, "인증이 필요합니다."),
 
+    //PAY PASSWORD
+    PAY_PASSWORD_ALREADY_SET("PAYPASS-409-1",HttpStatus.CONFLICT,"이미 결제 비밀번호가 설정되었습니다."),
+    PAY_PASSWORD_NOT_FOUND("PAYPASS-404-1",HttpStatus.NOT_FOUND,"결제 비밀번호가 설정되어있지 않습니다."),
+    PAY_PASSWORD_MISMATCH("PAYPASS-400-1",HttpStatus.BAD_REQUEST,"결제 비밀번호가 틀립니다."),
+    PAY_PASSWORD_RESET("PAYPASS-400-2",HttpStatus.BAD_REQUEST,"결제 비밀번호가 3회 틀렸습니다. 다시 계좌를 등록해주세요."),
     // ACCOUNT
     ACCOUNT_INVALID_INPUT("ACCOUNT-400-1", HttpStatus.BAD_REQUEST, "요청 값이 올바르지 않습니다."),
     ACCOUNT_AUTH_CODE_EXPIRED("ACCOUNT-400-6", HttpStatus.BAD_REQUEST, "인증시간이 만료되었습니다."),
