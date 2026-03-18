@@ -3,12 +3,15 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppColorStyles } from '@core/theme/colors';
 import { AntDesign } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 
 import { useRoomMoreOptionsViewModel } from '../../viewmodels/useRoomMoreOptionsViewModel';
 import { RoomMenuItem } from '../components/RoomMenuItem';
 import { InviteLinkBottomSheet } from '../components/InviteLinkBottomSheet';
 
 const RoomMoreOptionsScreen: React.FC = () => {
+  const navigation = useNavigation<any>();
+  
   // ViewModel 훅을 통해 상태와 로직(핸들러)을 가져옴
   const { state, openInviteModal, closeInviteModal } = useRoomMoreOptionsViewModel();
   const { roomInfo, isInviteModalVisible } = state;
@@ -39,10 +42,11 @@ const RoomMoreOptionsScreen: React.FC = () => {
             title="초대링크 공유" 
             onPress={openInviteModal}
           />
-          <RoomMenuItem title="중간 정산 요청" />
           <RoomMenuItem title="N빵 룰렛" />
-          <RoomMenuItem title="총무 뽑기" />
-          <RoomMenuItem title="자동이체 동의" />
+          <RoomMenuItem 
+            title="자동이체 동의" 
+            onPress={() => navigation.navigate('AutoTransferAgree')}
+          />
           <RoomMenuItem title="방장 위임" />
           <RoomMenuItem title="모임방 수정" />
           <RoomMenuItem 
