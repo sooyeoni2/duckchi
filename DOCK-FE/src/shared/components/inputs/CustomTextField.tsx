@@ -48,6 +48,7 @@ interface CustomTextFieldProps {
   borderRadius?: number;
   style?: ViewStyle;
   inputRef?: React.RefObject<TextInput>;
+  onFocus?: () => void;
 }
 
 export const CustomTextField: React.FC<CustomTextFieldProps> = ({
@@ -72,6 +73,7 @@ export const CustomTextField: React.FC<CustomTextFieldProps> = ({
   borderRadius = 12,
   style,
   inputRef,
+  onFocus,
 }) => {
   const [isFocused, setIsFocused] = useState(false);
   const hasError = errorText != null && errorText.length > 0;
@@ -129,7 +131,7 @@ export const CustomTextField: React.FC<CustomTextFieldProps> = ({
           multiline={maxLines != null && maxLines > 1}
           placeholder={hint}
           placeholderTextColor={AppColorStyles.textHint}
-          onFocus={() => setIsFocused(true)}
+          onFocus={() => { setIsFocused(true); onFocus?.(); }}
           onBlur={() => setIsFocused(false)}
           style={[
             styles.input,
