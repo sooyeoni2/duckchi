@@ -14,6 +14,12 @@ public interface RoomParticipantRepository extends JpaRepository<RoomParticipant
 
     Optional<RoomParticipant> findByRoom_IdAndUserId(Long roomId, Long userId);
 
+    /**
+     * 특정 방의 참여 유저 ID 리스트를 조회함 (멤버 대량 검증용).
+     */
+    @Query("SELECT rp.userId FROM RoomParticipant rp WHERE rp.room.id = :roomId")
+    List<Long> findUserIdsByRoomId(@Param("roomId") Long roomId);
+
     @Query("""
             select rp.room.id as roomId, rp.userId as userId
             from RoomParticipant rp

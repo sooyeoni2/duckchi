@@ -1,6 +1,6 @@
 package com.duckchi.pay.domain.room.service;
 
-import com.duckchi.pay.domain.expenses.repository.ExpenseRepository;
+import com.duckchi.pay.domain.expense.repository.ExpenseRepository;
 import com.duckchi.pay.domain.room.dto.request.CreateRoomRequest;
 import com.duckchi.pay.domain.room.dto.request.UpdateRoomRequest;
 import com.duckchi.pay.domain.room.dto.response.CreateRoomResponse;
@@ -38,7 +38,6 @@ public class RoomServiceImpl implements RoomService {
     @Override
     @Transactional
     public CreateRoomResponse createRoom(Long currentUserId, CreateRoomRequest request) {
-        // 컨트롤러에서 JWT 기반으로 해석된 userId가 없으면 비인증 요청으로 차단한다.
         if (currentUserId == null) {
             throw new CustomException(ErrorCode.COMMON_UNAUTHORIZED);
         }
@@ -55,13 +54,11 @@ public class RoomServiceImpl implements RoomService {
         RoomParticipant owner = RoomParticipant.builder()
                 .room(savedRoom)
                 .userId(currentUserId)
-                // 방 생성자는 이후 ROOM-02/04 흐름의 기준 주체이므로 생성 시점에 관리자/동의 상태로 저장한다.
                 .isAdmin(true)
                 .isAgreed(true)
                 .build();
 
         roomParticipantRepository.save(owner);
-
         return CreateRoomResponse.from(savedRoom);
     }
 
@@ -80,7 +77,6 @@ public class RoomServiceImpl implements RoomService {
                 .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
 
         RoomParticipant participant = roomParticipantRepository.findByRoom_IdAndUserId(roomId, currentUserId)
-                // ROOM-02와 같은 에러코드를 재사용하되 ROOM-04 명세 문구를 맞추기 위해 메시지를 오버라이드한다.
                 .orElseThrow(() -> new CustomException(
                         "해당 모임의 멤버만 자동이체 동의/거절을 변경할 수 있습니다.",
                         ErrorCode.ROOM_MEMBER_ONLY
@@ -109,7 +105,6 @@ public class RoomServiceImpl implements RoomService {
 
         List<Long> roomIds = rooms.stream().map(Room::getId).toList();
 
-        // roomId 단위 배치 조회로 참여자/결제/정산 집계를 한 번에 가져와 N+1을 방지한다.
         Map<Long, List<Long>> participantsByRoomId = roomParticipantRepository.findParticipantUserMappingsByRoomIds(roomIds)
                 .stream()
                 .collect(Collectors.groupingBy(
@@ -168,7 +163,6 @@ public class RoomServiceImpl implements RoomService {
     }
 
     private int calculatePercent(long completedCount, long targetCount) {
-        // 정산 대상이 없으면 0%로 고정해 division-by-zero와 의미 불명 케이스를 함께 차단한다.
         if (targetCount <= 0) {
             return 0;
         }
@@ -186,7 +180,6 @@ public class RoomServiceImpl implements RoomService {
     }
 
     private String normalizeCategory(String category) {
-        // DDL 기본값("기타")과 서비스 동작을 맞춰 DB 기본값 의존 없이 동일 결과를 보장한다.
         if (category == null || category.isBlank()) {
             return DEFAULT_CATEGORY;
         }
