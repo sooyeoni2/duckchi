@@ -17,6 +17,7 @@ import { KBODiaGothicTextStyle } from '../../../core/theme/typography';
 import { CustomAppBar } from '../../../shared/components/app_bar/CustomAppBar';
 import { FilledButton } from '../../../shared/components/buttons/FilledButton';
 import { PasswordDotsInput } from '../components/PasswordDotsInput';
+import { usePayPasswordViewModel } from '../viewmodels/usePayPasswordViewModel';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'PayPasswordConfirm'>;
@@ -26,6 +27,7 @@ const PASSWORD_LENGTH = 6;
 export function PayPasswordConfirmScreen() {
   const navigation = useNavigation<Nav>();
   const { firstPassword, bankName, maskedAccountNo, returnTo } = useRoute<Route>().params;
+  const { setup, isSettingUp } = usePayPasswordViewModel();
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
@@ -34,15 +36,22 @@ export function PayPasswordConfirmScreen() {
     if (error) setError('');
   };
 
-  const handleStart = () => {
+  const handleStart = async () => {
     if (password.length !== PASSWORD_LENGTH) return;
     if (password !== firstPassword) {
       setError('비밀번호가 일치하지 않습니다.');
       setPassword('');
       return;
     }
-    // TODO: 비밀번호 저장 API 연동 (POST /api/v1/pay-password)
-    navigation.replace('App');
+    const res = await setup(password);
+    if (res.ok) {
+      navigation.replace('App');
+    } else if (res.error === 'ALREADY_SET') {
+      navigation.replace('App');
+    } else {
+      setError('비밀번호 설정에 실패했습니다. 다시 시도해주세요.');
+      setPassword('');
+    }
   };
 
   return (
@@ -65,7 +74,8 @@ export function PayPasswordConfirmScreen() {
         <View style={styles.bottomArea}>
           <FilledButton
             text="시작하기"
-            onPress={password.length === PASSWORD_LENGTH ? handleStart : undefined}
+            onPress={password.length === PASSWORD_LENGTH && !isSettingUp ? handleStart : undefined}
+            isLoading={isSettingUp}
           />
         </View>
       </SafeAreaView>
