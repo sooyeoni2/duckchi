@@ -1,4 +1,4 @@
-import { CommonActions, useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import React, { useEffect, useRef, useState } from 'react';
@@ -58,38 +58,11 @@ export function BankAccountVerifyScreen() {
 
     if (res.ok) {
       await refresh();
-      if (returnTo === 'Settings') {
-        navigation.dispatch(
-          CommonActions.reset({
-            index: 0,
-            routes: [
-              {
-                name: 'App',
-                state: {
-                  routes: [
-                    {
-                      name: 'Profile',
-                      state: {
-                        routes: [
-                          { name: 'ProfileMain' },
-                          { name: 'Settings' },
-                          { name: 'BankAccountRegister' },
-                        ],
-                        index: 2,
-                      },
-                    },
-                  ],
-                },
-              },
-            ],
-          }),
-        );
-      } else if (returnTo === 'NewUser') {
-        // TODO: 비밀번호 설정 화면 구현 후 'PayPasswordSetup'으로 교체
-        navigation.replace('App');
-      } else {
-        navigation.replace('App');
-      }
+      navigation.replace('BankAccountComplete', {
+        bankName,
+        maskedAccountNo,
+        returnTo,
+      });
     } else if (res.error === 'LOCKED') {
       lockBank(route.params.bankCode);
       Alert.alert('잠김', '인증 번호를 3회 틀리셨습니다.\n계좌를 다시 등록해 주세요.', [

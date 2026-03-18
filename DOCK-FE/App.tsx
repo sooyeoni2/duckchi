@@ -11,6 +11,7 @@ import { OnboardingScreen } from './src/features/onboarding/OnboardingScreen';
 import { useAuthStore } from './src/features/auth/models/authStore';
 import { BankAccountSetupScreen } from './src/features/bank/views/BankAccountSetupScreen';
 import { BankAccountVerifyScreen } from './src/features/bank/views/BankAccountVerifyScreen';
+import { BankAccountCompleteScreen } from './src/features/bank/views/BankAccountCompleteScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -47,6 +48,7 @@ function App() {
           <Stack.Screen name="App" component={AppNavigator} />
           <Stack.Screen name="BankAccountSetup" component={BankAccountSetupScreen} />
           <Stack.Screen name="BankAccountVerify" component={BankAccountVerifyScreen} />
+          <Stack.Screen name="BankAccountComplete" component={BankAccountCompleteScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>

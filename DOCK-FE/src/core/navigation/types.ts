@@ -10,6 +10,11 @@ export type RootStackParamList = {
     maskedAccountNo: string;
     returnTo: 'App' | 'Settings' | 'NewUser';
   };
+  BankAccountComplete: {
+    bankName: string;
+    maskedAccountNo: string;
+    returnTo: 'App' | 'Settings' | 'NewUser';
+  };
 };
 
 export type ProfileStackParamList = {
