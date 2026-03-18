@@ -23,7 +23,3 @@ finance:
   api:
     base-url: http://localhost:8080
     key: test-key
-
-
-jwt:
-  secret: duckchi-test-shared-jwt-secret-key-12345678901234567890
