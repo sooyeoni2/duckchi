@@ -2,14 +2,21 @@ export type RootStackParamList = {
   Onboarding: undefined;
   Auth: undefined;
   App: undefined;
-  BankAccountSetup: { returnTo: 'App' | 'Settings'; lockedBankCode?: string };
+  BankAccountSetup: { returnTo: 'App' | 'Settings' | 'NewUser'; lockedBankCode?: string };
   BankAccountVerify: {
     accountId: number;
     bankCode: string;
     bankName: string;
     maskedAccountNo: string;
-    returnTo: 'App' | 'Settings';
+    returnTo: 'App' | 'Settings' | 'NewUser';
   };
+  BankAccountComplete: {
+    bankName: string;
+    maskedAccountNo: string;
+    returnTo: 'App' | 'Settings' | 'NewUser';
+  };
+  PayPasswordSetup: { bankName?: string; maskedAccountNo?: string; returnTo?: 'App' | 'Settings' | 'NewUser' } | undefined;
+  PayPasswordConfirm: { firstPassword: string; bankName?: string; maskedAccountNo?: string; returnTo?: 'App' | 'Settings' | 'NewUser' };
 };
 
 export type ProfileStackParamList = {

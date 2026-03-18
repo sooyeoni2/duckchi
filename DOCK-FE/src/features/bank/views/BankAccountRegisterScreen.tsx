@@ -12,7 +12,7 @@ import { KBODiaGothicTextStyle } from '../../../core/theme/typography';
 import { ConfirmDialog } from '../../../shared/components/dialog/ConfirmDialog';
 import { CustomAppBar } from '../../../shared/components/app_bar/CustomAppBar';
 import { FilledButton } from '../../../shared/components/buttons/FilledButton';
-import { useProfileViewModel } from '../viewmodels/useProfileViewModel';
+import { useProfileViewModel } from '../../profile/viewmodels/useProfileViewModel';
 
 type Nav = CompositeNavigationProp<
   NativeStackNavigationProp<ProfileStackParamList>,

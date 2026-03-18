@@ -1,10 +1,13 @@
 import { useCallback, useState } from 'react';
 
-import { registerBankAccount, verify1Won } from '../models/profileService';
-import type { RegisterBankAccountResult } from '../models/profileTypes';
+import { registerBankAccount, verify1Won } from '../models/bankService';
+import type { RegisterBankAccountResult } from '../models/bankTypes';
 
-type RegisterError = 'BAD_REQUEST' | 'CONFLICT' | 'SERVER_ERROR';
-type VerifyError = 'BAD_CODE' | 'LOCKED' | 'ALREADY_VERIFIED' | 'NOT_FOUND' | 'SERVER_ERROR';
+type RegisterError = 'BAD_REQUEST' | 'CONFLICT' | 'LOCKED' | 'SERVER_ERROR';
+type VerifyError = 'BAD_CODE' | 'LOCKED' | 'ALREADY_VERIFIED' | 'BAD_GATEWAY' | 'SERVER_ERROR';
+
+const parseErrorCode = (e: any): string =>
+  e?.response?.data?.errorcode ?? e?.response?.data?.errorCode ?? '';
 
 export const useBankAccountViewModel = () => {
   const [isRegistering, setIsRegistering] = useState(false);
@@ -20,9 +23,10 @@ export const useBankAccountViewModel = () => {
         const result = await registerBankAccount(bankCode, accountNo);
         return { ok: true, result };
       } catch (e: any) {
-        const errorCode: string = e?.response?.data?.errorcode ?? '';
-        if (errorCode === 'ACCOUNT-409-1') return { ok: false, error: 'CONFLICT' };
-        if (errorCode === 'ACCOUNT-400-1') return { ok: false, error: 'BAD_REQUEST' };
+        const code = parseErrorCode(e);
+        if (code === 'ACCOUNT-400-1') return { ok: false, error: 'BAD_REQUEST' };
+        if (code === 'ACCOUNT-409-1') return { ok: false, error: 'CONFLICT' };
+        if (code === 'ACCOUNT-423-1') return { ok: false, error: 'LOCKED' };
         return { ok: false, error: 'SERVER_ERROR' };
       } finally {
         setIsRegistering(false);
@@ -41,11 +45,11 @@ export const useBankAccountViewModel = () => {
         await verify1Won(accountId, verificationCode);
         return { ok: true };
       } catch (e: any) {
-        const errorCode: string = e?.response?.data?.errorcode ?? '';
-        if (errorCode === 'ACCOUNT-423-1') return { ok: false, error: 'LOCKED' };
-        if (errorCode === 'ACCOUNT-409-2') return { ok: false, error: 'ALREADY_VERIFIED' };
-        if (errorCode === 'ACCOUNT-400-3') return { ok: false, error: 'BAD_CODE' };
-        if (errorCode === 'ACCOUNT-404-1') return { ok: false, error: 'NOT_FOUND' };
+        const code = parseErrorCode(e);
+        if (code === 'ACCOUNT-400-3') return { ok: false, error: 'BAD_CODE' };
+        if (code === 'ACCOUNT-409-2') return { ok: false, error: 'ALREADY_VERIFIED' };
+        if (code === 'ACCOUNT-423-1') return { ok: false, error: 'LOCKED' };
+        if (code === 'ACCOUNT-502-1') return { ok: false, error: 'BAD_GATEWAY' };
         return { ok: false, error: 'SERVER_ERROR' };
       } finally {
         setIsVerifying(false);

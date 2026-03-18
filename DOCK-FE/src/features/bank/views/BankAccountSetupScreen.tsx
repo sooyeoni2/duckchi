@@ -5,12 +5,14 @@ import React, { useRef, useState } from 'react';
 import {
   Alert,
   FlatList,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -24,6 +26,7 @@ import { FilledButton } from '../../../shared/components/buttons/FilledButton';
 import { CustomTextField } from '../../../shared/components/inputs/CustomTextField';
 import { useLockedBanksStore } from '../models/lockedBanksStore';
 import { useBankAccountViewModel } from '../viewmodels/useBankAccountViewModel';
+
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'BankAccountSetup'>;
@@ -53,6 +56,7 @@ export function BankAccountSetupScreen() {
   const navigation = useNavigation<Nav>();
   const { returnTo } = useRoute<Route>().params;
   const checkIsLocked = useLockedBanksStore(s => s.isLocked);
+  const lockBank = useLockedBanksStore(s => s.lockBank);
   const { register, isRegistering } = useBankAccountViewModel();
 
   const scrollViewRef = useRef<ScrollView>(null);
@@ -84,6 +88,9 @@ export function BankAccountSetupScreen() {
       Alert.alert('알림', '이미 등록된 계좌입니다.');
     } else if (res.error === 'BAD_REQUEST') {
       setAccountNoError('계좌번호 형식이 올바르지 않습니다.');
+    } else if (res.error === 'LOCKED') {
+      lockBank(selectedBank.code);
+      Alert.alert('잠김', '인증 실패 횟수를 초과한 계좌입니다.\n다른 계좌를 이용해 주세요.');
     } else {
       Alert.alert('오류', '계좌 등록에 실패했습니다. 잠시 후 다시 시도해주세요.');
     }
@@ -92,6 +99,7 @@ export function BankAccountSetupScreen() {
   const canSubmit = selectedBank !== null && accountNo.trim().length >= 10 && !isRegistering;
 
   return (
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <CustomAppBar
         showBackButton
@@ -169,6 +177,7 @@ export function BankAccountSetupScreen() {
       </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
+    </TouchableWithoutFeedback>
   );
 }
 

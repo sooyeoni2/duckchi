@@ -4,7 +4,7 @@ import React from 'react';
 import type { ProfileStackParamList } from '../../core/navigation/types';
 import { BadgeListScreen } from './views/BadgeListScreen';
 import { ProfileScreen } from './views/ProfileScreen';
-import { BankAccountRegisterScreen } from './views/BankAccountRegisterScreen';
+import { BankAccountRegisterScreen } from '../bank/views/BankAccountRegisterScreen';
 import { SettingsScreen } from './views/SettingsScreen';
 import { TransferLimitScreen } from './views/TransferLimitScreen';
 

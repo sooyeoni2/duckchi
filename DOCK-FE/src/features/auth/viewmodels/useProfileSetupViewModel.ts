@@ -12,7 +12,10 @@ export const useProfileSetupViewModel = (navigation: Navigation) => {
   const [submitting, setSubmitting] = useState(false);
 
   const submit = async (profileImageKey: string) => {
-    if (!user) return;
+    if (!user) {
+      navigation.getParent()?.navigate('BankAccountSetup', { returnTo: 'NewUser' });
+      return;
+    }
     setSubmitting(true);
     try {
       const result = await setupProfile({
@@ -26,12 +29,12 @@ export const useProfileSetupViewModel = (navigation: Navigation) => {
         tag: result.tag,
         profileImageUrl: result.profileImageUrl,
       });
-      navigation.getParent()?.navigate('App');
+      navigation.getParent()?.navigate('BankAccountSetup', { returnTo: 'NewUser' });
     } catch (e: any) {
       const status = e?.response?.status;
       // TODO: S3 구현 완료 후 500 예외 처리 제거
       if (status === 500) {
-        navigation.getParent()?.navigate('App');
+        navigation.getParent()?.navigate('BankAccountSetup', { returnTo: 'NewUser' });
         return;
       }
       const data = e?.response?.data;
