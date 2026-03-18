@@ -82,9 +82,9 @@ export const CustomAppBar: React.FC<CustomAppBarProps> = ({
         translucent={Platform.OS === 'android'}
       />
       <View style={[styles.container, { backgroundColor: effectiveBg }, style]}>
-        <View style={styles.leadingArea}>{hasLeading ? renderLeading() : null}</View>
+        {hasLeading && <View style={styles.leadingArea}>{renderLeading()}</View>}
 
-        <View style={[styles.titleArea, centerTitle && styles.titleCenter]}>
+        <View style={[styles.titleArea, centerTitle && styles.titleCenter, !hasLeading && !centerTitle && styles.titleNoLeading]}>
           {titleWidget ?? (
             <Text
               style={KBODiaGothicTextStyle.medium({ fontSize: 18, color: effectiveFg })}
@@ -227,6 +227,9 @@ const styles = StyleSheet.create({
   titleArea: {
     flex: 1,
     justifyContent: 'center',
+  },
+  titleNoLeading: {
+    paddingLeft: 12,
   },
   titleCenter: {
     alignItems: 'center',

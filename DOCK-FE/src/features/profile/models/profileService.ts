@@ -225,6 +225,27 @@ export const deleteAccount = async (accountId: number): Promise<void> => {
   await axiosClient.post(`/api/v1/auth/bank-accounts/${accountId}/delete`);
 };
 
+export const mockAddAccount = (account: {
+  accountId: number;
+  bankCode: string;
+  bankName: string;
+  maskedAccountNo: string;
+}) => {
+  mockProfile = {
+    ...mockProfile,
+    accounts: [
+      ...mockProfile.accounts,
+      {
+        accountId: account.accountId,
+        bankCode: account.bankCode,
+        bankName: account.bankName,
+        accountNumber: account.maskedAccountNo,
+        registeredAt: new Date().toISOString(),
+      },
+    ],
+  };
+};
+
 
 export const fetchBadges = async (): Promise<BadgeList> => {
   if (USE_MOCK) {
