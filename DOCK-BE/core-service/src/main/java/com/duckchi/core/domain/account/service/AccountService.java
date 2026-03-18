@@ -12,7 +12,7 @@ public interface AccountService {
 
     RegisterBankAccountResponse registerBankAccount(Long userId, RegisterBankAccountRequest request);
 
-    void sendOneWon(UserAccount userAccount);
+    void sendOneWon(UserAccount userAccount,Long userId);
 
     VerifyOneWonResponse verifyOneWon(Long userId, Long accountId, VerifyOneWonRequest request);
 

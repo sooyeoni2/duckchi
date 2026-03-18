@@ -47,7 +47,6 @@ public class AccountServiceImpl implements AccountService {
 
     private final UserRepository userRepository;
     private static final String AUTH_TEXT = "SSAFY";
-    private static final String TEMP_USER_KEY = "06ac95e7-e593-4f3f-8cc6-7f5d4ff47400";
     private final AccountStatusService accountStatusService;
     private final PayPasswordStatusService payPasswordStatusService;
     private final UserAccountRepository userAccountRepository;
@@ -106,7 +105,7 @@ public class AccountServiceImpl implements AccountService {
                             .build()
             );
             //1원 송금 + Redis Pending 저장
-            sendOneWon(userAccount);
+            sendOneWon(userAccount,userId);
 
             //DB에 등록한 계좌 정보 response로 반환
             return new RegisterBankAccountResponse(
@@ -124,9 +123,11 @@ public class AccountServiceImpl implements AccountService {
 
     //1원 송금 + Redis Pending 저장 (두 동작은 종속된 동작이므로)
     @Override
-    public void sendOneWon(UserAccount userAccount) {
+    public void sendOneWon(UserAccount userAccount,Long userId) {
+        User user = getUser(userId);
+        String SSAFY_USER_KEY = user.getSsafyUserKey();
         OpenAccountAuthRequest financeRequest = new OpenAccountAuthRequest(
-                oneVerifyHeaderFactory.create("openAccountAuth", TEMP_USER_KEY),
+                oneVerifyHeaderFactory.create("openAccountAuth", SSAFY_USER_KEY),
                 userAccount.getAccountNumber(),
                 AUTH_TEXT
         );
@@ -145,7 +146,8 @@ public class AccountServiceImpl implements AccountService {
     //1원 송금 검증
     @Override
     public VerifyOneWonResponse verifyOneWon(Long userId, Long accountId, VerifyOneWonRequest request) {
-
+        User user = getUser(userId);
+        String SSAFY_USER_KEY = user.getSsafyUserKey();
         //UserAccount 가져오기
         UserAccount userAccount = userAccountRepository
                 .findByIdAndUserIdAndDeletedAtIsNull(accountId,userId)
@@ -178,7 +180,7 @@ public class AccountServiceImpl implements AccountService {
 
         //금융망 1원 송금 검증 api 호출 request 생성
         CheckAuthCodeRequest financeRequest = new CheckAuthCodeRequest(
-                oneVerifyHeaderFactory.create("checkAuthCode", TEMP_USER_KEY),
+                oneVerifyHeaderFactory.create("checkAuthCode", SSAFY_USER_KEY),
                 userAccount.getAccountNumber(),
                 AUTH_TEXT,
                 request.verificationCode()
