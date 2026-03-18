@@ -2,8 +2,9 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
+  BackHandler,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -32,6 +33,11 @@ export function BankAccountCompleteScreen() {
   const [transferLimit, setTransferLimit] = useState('');
   const limitInputRef = useRef<TextInput>(null);
 
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => true);
+    return () => sub.remove();
+  }, []);
+
   const handleLimitChange = (text: string) => {
     const digits = text.replace(/[^0-9]/g, '');
     setTransferLimit(digits ? Number(digits).toLocaleString() : '');
@@ -40,7 +46,7 @@ export function BankAccountCompleteScreen() {
   const handleNext = () => {
     // TODO: 한도 저장 API 연동
     if (returnTo === 'NewUser') {
-      navigation.replace('PayPasswordSetup');
+      navigation.replace('PayPasswordSetup', { bankName, maskedAccountNo, returnTo });
     } else {
       navigation.replace('App');
     }
@@ -89,7 +95,7 @@ export function BankAccountCompleteScreen() {
 
           {/* 다음 버튼 */}
           <View style={styles.bottomArea}>
-            <FilledButton text="다음" onPress={handleNext} />
+            <FilledButton text="다음" onPress={transferLimit.length > 0 ? handleNext : undefined} />
           </View>
         </KeyboardAvoidingView>
       </SafeAreaView>

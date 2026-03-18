@@ -19,18 +19,30 @@ import { FilledButton } from '../../../shared/components/buttons/FilledButton';
 import { PasswordDotsInput } from '../components/PasswordDotsInput';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
-type Route = RouteProp<RootStackParamList, 'PayPasswordSetup'>;
+type Route = RouteProp<RootStackParamList, 'PayPasswordConfirm'>;
 
 const PASSWORD_LENGTH = 6;
 
-export function PayPasswordSetupScreen() {
+export function PayPasswordConfirmScreen() {
   const navigation = useNavigation<Nav>();
-  const { bankName, maskedAccountNo, returnTo } = useRoute<Route>().params;
+  const { firstPassword, bankName, maskedAccountNo, returnTo } = useRoute<Route>().params;
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
 
-  const handleConfirm = () => {
+  const handleChangeText = (text: string) => {
+    setPassword(text);
+    if (error) setError('');
+  };
+
+  const handleStart = () => {
     if (password.length !== PASSWORD_LENGTH) return;
-    navigation.replace('PayPasswordConfirm', { firstPassword: password, bankName, maskedAccountNo, returnTo });
+    if (password !== firstPassword) {
+      setError('비밀번호가 일치하지 않습니다.');
+      setPassword('');
+      return;
+    }
+    // TODO: 비밀번호 저장 API 연동 (POST /api/v1/pay-password)
+    navigation.replace('App');
   };
 
   return (
@@ -41,18 +53,19 @@ export function PayPasswordSetupScreen() {
           centerTitle={false}
           showBackButton
           backgroundColor={AppColorStyles.background}
-          onBackPress={() => navigation.replace('BankAccountComplete', { bankName, maskedAccountNo, returnTo })}
+          onBackPress={() => navigation.replace('PayPasswordSetup', { bankName, maskedAccountNo, returnTo })}
         />
 
         <View style={styles.content}>
-          <Text style={styles.title}>결제 비밀번호를{'\n'}설정해주세요!</Text>
-          <PasswordDotsInput password={password} onChangeText={setPassword} />
+          <Text style={styles.title}>결제 비밀번호를{'\n'}다시 한번 입력해 주세요</Text>
+          <PasswordDotsInput password={password} onChangeText={handleChangeText} />
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
         </View>
 
         <View style={styles.bottomArea}>
           <FilledButton
-            text="확인"
-            onPress={password.length === PASSWORD_LENGTH ? handleConfirm : undefined}
+            text="시작하기"
+            onPress={password.length === PASSWORD_LENGTH ? handleStart : undefined}
           />
         </View>
       </SafeAreaView>
@@ -83,5 +96,10 @@ const styles = StyleSheet.create({
     bottom: 60,
     left: 0,
     right: 0,
+  },
+  errorText: {
+    ...KBODiaGothicTextStyle.medium({ fontSize: 13, color: AppColorStyles.danger }),
+    textAlign: 'center',
+    marginTop: 16,
   },
 });

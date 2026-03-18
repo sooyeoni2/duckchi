@@ -13,6 +13,7 @@ import { BankAccountSetupScreen } from './src/features/bank/views/BankAccountSet
 import { BankAccountVerifyScreen } from './src/features/bank/views/BankAccountVerifyScreen';
 import { BankAccountCompleteScreen } from './src/features/bank/views/BankAccountCompleteScreen';
 import { PayPasswordSetupScreen } from './src/features/bank/views/PayPasswordSetupScreen';
+import { PayPasswordConfirmScreen } from './src/features/bank/views/PayPasswordConfirmScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -51,6 +52,7 @@ function App() {
           <Stack.Screen name="BankAccountVerify" component={BankAccountVerifyScreen} />
           <Stack.Screen name="BankAccountComplete" component={BankAccountCompleteScreen} />
           <Stack.Screen name="PayPasswordSetup" component={PayPasswordSetupScreen} />
+          <Stack.Screen name="PayPasswordConfirm" component={PayPasswordConfirmScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>
