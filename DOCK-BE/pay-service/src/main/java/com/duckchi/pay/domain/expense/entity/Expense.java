@@ -53,6 +53,9 @@ public class Expense {
     @Column(nullable = false)
     private Integer totalAmount;     // 결제 총액임.
 
+    @Column
+    private LocalDateTime paidAt;    // 실제 결제 일시 (미확정 시 NULL 가능)임.
+
     /**
      * JPA Auditing을 사용하여 생성 시간을 자동으로 관리함.
      */
@@ -80,9 +83,10 @@ public class Expense {
     /**
      * 결제 원장의 기본 정보를 업데이트함.
      */
-    public void updateBasicInfo(String title, Integer totalAmount, String receiptImageUrl) {
+    public void updateBasicInfo(String title, Integer totalAmount, LocalDateTime paidAt, String receiptImageUrl) {
         this.title = title;
         this.totalAmount = totalAmount;
+        this.paidAt = paidAt;
         this.receiptImageUrl = receiptImageUrl;
     }
 }

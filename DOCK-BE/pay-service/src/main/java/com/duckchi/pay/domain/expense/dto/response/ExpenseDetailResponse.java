@@ -3,6 +3,7 @@ package com.duckchi.pay.domain.expense.dto.response;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -24,6 +25,9 @@ public class ExpenseDetailResponse {
 
     @Schema(description = "총 결제 금액", example = "120000")
     private Integer totalAmount;
+
+    @Schema(description = "결제 일시", example = "2026-03-12T14:30:00")
+    private LocalDateTime paidAt;
 
     @Schema(description = "결제자 이름", example = "강산천")
     private String payerUserName;
