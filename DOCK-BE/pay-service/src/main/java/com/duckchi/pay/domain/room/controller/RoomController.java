@@ -76,9 +76,9 @@ public class RoomController {
     @Operation(summary = "ROOM-14 모임방 자동이체 동의 여부 수정")
     public ResponseEntity<ApiResponseDto<UpdateAutoDebitConsentResponse>> toggleAutoDebitConsent(
             @PathVariable("roomId") Long roomId,
-            @Parameter(hidden = true) @RequestHeader(value = "Authorization", required = false) String authorization
+            @RequestHeader(value = USER_ID_HEADER, required = false) String userIdHeader
     ) {
-        Long currentUserId = jwtUserIdResolver.resolveRequired(authorization);
+        Long currentUserId = resolveRequiredUserId(userIdHeader);
         UpdateAutoDebitConsentResponse response = roomService.toggleAutoDebitConsent(roomId, currentUserId);
         return ResponseEntity.ok(ApiResponseDto.success(response));
     }

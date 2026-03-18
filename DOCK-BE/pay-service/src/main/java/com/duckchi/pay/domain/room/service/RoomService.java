@@ -23,7 +23,6 @@ public interface RoomService {
             Long currentUserId
     );
 
-    void updateRoomInfo(Long roomId, Long currentUserId, com.duckchi.pay.domain.room.dto.request.UpdateRoomRequest request);
     List<RoomListResponse> getRoomLists(Long currentUserId, Boolean isProgress);
 
     void updateRoomInfo(Long roomId, Long currentUserId, UpdateRoomRequest request);
