@@ -2,7 +2,7 @@ import { CommonActions, useNavigation, useRoute } from '@react-navigation/native
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Keyboard, Pressable, StyleSheet, Text, TextInput, TouchableWithoutFeedback, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { RootStackParamList } from '../../../core/navigation/types';
@@ -84,6 +84,9 @@ export function BankAccountVerifyScreen() {
             ],
           }),
         );
+      } else if (returnTo === 'NewUser') {
+        // TODO: 비밀번호 설정 화면 구현 후 'PayPasswordSetup'으로 교체
+        navigation.replace('App');
       } else {
         navigation.replace('App');
       }
@@ -101,70 +104,74 @@ export function BankAccountVerifyScreen() {
       ]);
     } else if (res.error === 'BAD_CODE') {
       setCodeError('인증코드가 올바르지 않습니다.');
+    } else if (res.error === 'BAD_GATEWAY') {
+      Alert.alert('오류', '계좌 인증에 실패했습니다. 잠시 후 다시 시도해주세요.');
     } else {
       Alert.alert('오류', '계좌 인증에 실패했습니다. 잠시 후 다시 시도해주세요.');
     }
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <CustomAppBar
-        showBackButton
-        backgroundColor={AppColorStyles.background}
-        onBackPress={() => navigation.goBack()}
-      />
-
-      <View style={styles.content}>
-        <Text style={styles.title}>1원을 보냈어요!{'\n'}입금자명을 확인해 주세요</Text>
-
-        <View style={styles.accountCard}>
-          <Text style={styles.cardBankName}>{bankName}</Text>
-          <Text style={styles.cardAccountNo}>{maskedAccountNo}</Text>
-        </View>
-
-        <View style={styles.inputArea}>
-          <Text style={styles.inputHint}>입금자명 4자리 입력</Text>
-          <View style={styles.codeRowWrapper}>
-            <View style={styles.codeRow}>
-              {[0, 1, 2, 3].map(i => (
-                <View key={i} style={styles.codeBox}>
-                  <Text style={styles.codeChar}>{code[i] ?? ''}</Text>
-                  <View
-                    style={[
-                      styles.codeUnderline,
-                      { backgroundColor: code[i] ? AppColorStyles.black : '#BDBDBD' },
-                    ]}
-                  />
-                </View>
-              ))}
-            </View>
-            <TextInput
-              ref={inputRef}
-              value={code}
-              onChangeText={text => {
-                setCode(text.slice(0, 4));
-                if (codeError) setCodeError('');
-              }}
-              maxLength={4}
-              autoFocus
-              autoCapitalize="characters"
-              caretHidden
-              style={styles.overlayInput}
-            />
-          </View>
-          {codeError && <Text style={styles.errorText}>{codeError}</Text>}
-          <Text style={styles.timer}>남은 시간 {minutes} : {seconds}</Text>
-        </View>
-      </View>
-
-      <View style={styles.bottomArea}>
-        <FilledButton
-          text="인증하기"
-          onPress={code.length === 4 && !isVerifying ? handleVerify : undefined}
-          isLoading={isVerifying}
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <CustomAppBar
+          showBackButton
+          backgroundColor={AppColorStyles.background}
+          onBackPress={() => navigation.replace('BankAccountSetup', { returnTo })}
         />
-      </View>
-    </SafeAreaView>
+
+        <View style={styles.content}>
+          <Text style={styles.title}>1원을 보냈어요!{'\n'}입금자명을 확인해 주세요</Text>
+
+          <View style={styles.accountCard}>
+            <Text style={styles.cardBankName}>{bankName}</Text>
+            <Text style={styles.cardAccountNo}>{maskedAccountNo}</Text>
+          </View>
+
+          <View style={styles.inputArea}>
+            <Text style={styles.inputHint}>입금자명 4자리 입력</Text>
+            <Pressable style={styles.codeRowWrapper} onPress={() => inputRef.current?.focus()}>
+              <View style={styles.codeRow}>
+                {[0, 1, 2, 3].map(i => (
+                  <View key={i} style={styles.codeBox}>
+                    <Text style={styles.codeChar}>{code[i] ?? ''}</Text>
+                    <View
+                      style={[
+                        styles.codeUnderline,
+                        { backgroundColor: code[i] ? AppColorStyles.black : '#BDBDBD' },
+                      ]}
+                    />
+                  </View>
+                ))}
+              </View>
+              <TextInput
+                ref={inputRef}
+                value={code}
+                onChangeText={text => {
+                  setCode(text.slice(0, 4));
+                  if (codeError) setCodeError('');
+                }}
+                maxLength={4}
+                autoFocus
+                autoCapitalize="characters"
+                caretHidden
+                style={styles.overlayInput}
+              />
+            </Pressable>
+            {codeError && <Text style={styles.errorText}>{codeError}</Text>}
+            <Text style={styles.timer}>남은 시간 {minutes} : {seconds}</Text>
+          </View>
+        </View>
+
+        <View style={styles.bottomArea}>
+          <FilledButton
+            text="인증하기"
+            onPress={code.length === 4 && !isVerifying ? handleVerify : undefined}
+            isLoading={isVerifying}
+          />
+        </View>
+      </SafeAreaView>
+    </TouchableWithoutFeedback>
   );
 }
 
