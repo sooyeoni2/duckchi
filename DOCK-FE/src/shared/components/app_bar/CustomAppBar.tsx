@@ -62,6 +62,7 @@ export const CustomAppBar: React.FC<CustomAppBarProps> = ({
 
   const renderLeading = () => {
     if (leading != null) return leading;
+    if (!showBackButton) return <View style={styles.leadingPlaceholder} />;
     return (
       <TouchableOpacity
         onPress={onBackPress}
@@ -81,7 +82,7 @@ export const CustomAppBar: React.FC<CustomAppBarProps> = ({
         translucent={Platform.OS === 'android'}
       />
       <View style={[styles.container, { backgroundColor: effectiveBg }, style]}>
-        <View style={styles.leadingArea}>{renderLeading()}</View>
+        <View style={styles.leadingArea}>{hasLeading ? renderLeading() : null}</View>
 
         <View style={[styles.titleArea, centerTitle && styles.titleCenter]}>
           {titleWidget ?? (
@@ -214,7 +215,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   leadingPlaceholder: {
-    width: 48,
+    width: 44,
+    height: 44,
   },
   backButton: {
     width: 44,
