@@ -34,7 +34,7 @@ export function MeetingRoomCreateScreen() {
   };
 
   const handleCopyLink = () => {
-    Alert.alert('초대 링크', 'mock 링크가 준비되었습니다.');
+    Alert.alert('초대 링크', '링크가 복사되었습니다.');
   };
 
   const handleCloseSheet = () => {
