@@ -264,9 +264,24 @@ export const registerBankAccount = async (
   return response.data.data as RegisterBankAccountResult;
 };
 
+let mockVerifyAttempts = 0;
+
 export const verify1Won = async (accountId: number, verificationCode: string): Promise<void> => {
   if (USE_MOCK) {
     await new Promise<void>(resolve => setTimeout(resolve, 500));
+    if (verificationCode !== '0000') {
+      mockVerifyAttempts += 1;
+      if (mockVerifyAttempts >= 3) {
+        mockVerifyAttempts = 0;
+        const err: any = new Error('LOCKED');
+        err.response = { data: { errorcode: 'ACCOUNT-423-1' } };
+        throw err;
+      }
+      const err: any = new Error('BAD_CODE');
+      err.response = { data: { errorcode: 'ACCOUNT-400-3' } };
+      throw err;
+    }
+    mockVerifyAttempts = 0;
     if (mockPendingAccount && mockPendingAccount.accountId === accountId) {
       mockProfile = {
         ...mockProfile,

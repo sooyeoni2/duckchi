@@ -1,8 +1,8 @@
 import { CommonActions, useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
-import React, { useState } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { RootStackParamList } from '../../../core/navigation/types';
@@ -10,12 +10,14 @@ import { AppColorStyles } from '../../../core/theme/colors';
 import { KBODiaGothicTextStyle } from '../../../core/theme/typography';
 import { CustomAppBar } from '../../../shared/components/app_bar/CustomAppBar';
 import { FilledButton } from '../../../shared/components/buttons/FilledButton';
-import { CustomTextField } from '../../../shared/components/inputs/CustomTextField';
+import { useLockedBanksStore } from '../models/lockedBanksStore';
 import { useBankAccountViewModel } from '../viewmodels/useBankAccountViewModel';
 import { useProfileViewModel } from '../viewmodels/useProfileViewModel';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'BankAccountVerify'>;
+
+const TIMER_SECONDS = 5 * 60;
 
 export function BankAccountVerifyScreen() {
   const navigation = useNavigation<Nav>();
@@ -24,9 +26,26 @@ export function BankAccountVerifyScreen() {
 
   const { verify, isVerifying } = useBankAccountViewModel();
   const { refresh } = useProfileViewModel();
+  const lockBank = useLockedBanksStore(s => s.lockBank);
 
   const [code, setCode] = useState('');
   const [codeError, setCodeError] = useState('');
+  const [timeLeft, setTimeLeft] = useState(TIMER_SECONDS);
+  const inputRef = useRef<TextInput>(null);
+
+  useEffect(() => {
+    if (timeLeft <= 0) {
+      Alert.alert('시간 초과', '인증 시간이 만료되었습니다.\n계좌 인증을 다시 진행해 주세요.', [
+        { text: '확인', onPress: () => navigation.replace('BankAccountSetup', { returnTo }) },
+      ]);
+      return;
+    }
+    const timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
+    return () => clearInterval(timer);
+  }, [timeLeft]);
+
+  const minutes = String(Math.floor(timeLeft / 60)).padStart(2, '0');
+  const seconds = String(timeLeft % 60).padStart(2, '0');
 
   const handleVerify = async () => {
     if (code.length !== 4) {
@@ -69,8 +88,12 @@ export function BankAccountVerifyScreen() {
         navigation.replace('App');
       }
     } else if (res.error === 'LOCKED') {
-      Alert.alert('잠김', '인증 실패 횟수를 초과했습니다. 잠시 후 다시 시도해주세요.', [
-        { text: '확인', onPress: () => navigation.replace('App') },
+      lockBank(route.params.bankCode);
+      Alert.alert('잠김', '인증 번호를 3회 틀리셨습니다.\n계좌를 다시 등록해 주세요.', [
+        {
+          text: '확인',
+          onPress: () => navigation.replace('BankAccountSetup', { returnTo }),
+        },
       ]);
     } else if (res.error === 'ALREADY_VERIFIED') {
       Alert.alert('알림', '이미 인증이 완료된 계좌입니다.', [
@@ -92,27 +115,45 @@ export function BankAccountVerifyScreen() {
       />
 
       <View style={styles.content}>
-        <Text style={styles.title}>1원 인증을 진행해요</Text>
-        <Text style={styles.subtitle}>
-          {bankName} {maskedAccountNo} 계좌로{'\n'}
-          1원을 입금했어요. 입금자명 4자리를 입력해주세요.
-        </Text>
+        <Text style={styles.title}>1원을 보냈어요!{'\n'}입금자명을 확인해 주세요</Text>
+
+        <View style={styles.accountCard}>
+          <Text style={styles.cardBankName}>{bankName}</Text>
+          <Text style={styles.cardAccountNo}>{maskedAccountNo}</Text>
+        </View>
 
         <View style={styles.inputArea}>
-          <CustomTextField
-            label="인증코드"
-            hint="입금자명 4자리 입력"
-            value={code}
-            onChangeText={text => {
-              setCode(text.replace(/[^0-9]/g, ''));
-              if (codeError) setCodeError('');
-            }}
-            keyboardType="numeric"
-            returnKeyType="done"
-            errorText={codeError}
-            maxLength={4}
-            autoFocus
-          />
+          <Text style={styles.inputHint}>입금자명 4자리 입력</Text>
+          <View style={styles.codeRowWrapper}>
+            <View style={styles.codeRow}>
+              {[0, 1, 2, 3].map(i => (
+                <View key={i} style={styles.codeBox}>
+                  <Text style={styles.codeChar}>{code[i] ?? ''}</Text>
+                  <View
+                    style={[
+                      styles.codeUnderline,
+                      { backgroundColor: code[i] ? AppColorStyles.black : '#BDBDBD' },
+                    ]}
+                  />
+                </View>
+              ))}
+            </View>
+            <TextInput
+              ref={inputRef}
+              value={code}
+              onChangeText={text => {
+                setCode(text.slice(0, 4));
+                if (codeError) setCodeError('');
+              }}
+              maxLength={4}
+              autoFocus
+              autoCapitalize="characters"
+              caretHidden
+              style={styles.overlayInput}
+            />
+          </View>
+          {codeError && <Text style={styles.errorText}>{codeError}</Text>}
+          <Text style={styles.timer}>남은 시간 {minutes} : {seconds}</Text>
         </View>
       </View>
 
@@ -140,19 +181,77 @@ const styles = StyleSheet.create({
   title: {
     ...KBODiaGothicTextStyle.medium({ fontSize: 26, color: AppColorStyles.black }),
     lineHeight: 32,
-    marginBottom: 12,
+    marginBottom: 38,
   },
-  subtitle: {
-    ...KBODiaGothicTextStyle.medium({ fontSize: 15, color: AppColorStyles.gray2 }),
-    lineHeight: 22,
-    marginBottom: 32,
+  accountCard: {
+    backgroundColor: AppColorStyles.surface,
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 16,
+    marginBottom: 56,
+    shadowColor: AppColorStyles.gray2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 2,
+    elevation: 2,
+    gap: 10,
+  },
+  cardBankName: {
+    ...KBODiaGothicTextStyle.medium({ fontSize: 13, color: '#C2C2C2' }),
+  },
+  cardAccountNo: {
+    ...KBODiaGothicTextStyle.bold({ fontSize: 24, color: AppColorStyles.black }),
   },
   inputArea: {
-    marginTop: 8,
+    alignItems: 'center',
+    gap: 16,
+  },
+  inputHint: {
+    ...KBODiaGothicTextStyle.medium({ fontSize: 13, color: '#DADADA' }),
+    marginBottom: 21,
+  },
+  codeRow: {
+    flexDirection: 'row',
+    gap: 24,
+  },
+  codeBox: {
+    alignItems: 'center',
+    gap: 8,
+  },
+  codeChar: {
+    ...KBODiaGothicTextStyle.bold({ fontSize: 24, color: AppColorStyles.black }),
+    width: 50,
+    textAlign: 'center',
+  },
+  codeUnderline: {
+    width: 50,
+    height: 2,
+  },
+  timer: {
+    ...KBODiaGothicTextStyle.medium({ fontSize: 13, color: '#C2C2C2' }),
+  },
+  errorText: {
+    ...KBODiaGothicTextStyle.medium({ fontSize: 13, color: AppColorStyles.danger }),
+  },
+  codeRowWrapper: {
+    position: 'relative',
+  },
+  overlayInput: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    opacity: 0,
   },
   bottomArea: {
     paddingHorizontal: 24,
     paddingBottom: 24,
     paddingTop: 8,
+    position: 'absolute',
+    bottom: 60,
+    left: 0,
+    right: 0,
   },
 });

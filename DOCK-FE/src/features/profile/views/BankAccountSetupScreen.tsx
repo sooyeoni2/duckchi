@@ -20,6 +20,7 @@ import { KBODiaGothicTextStyle } from '../../../core/theme/typography';
 import { CustomAppBar } from '../../../shared/components/app_bar/CustomAppBar';
 import { FilledButton } from '../../../shared/components/buttons/FilledButton';
 import { CustomTextField } from '../../../shared/components/inputs/CustomTextField';
+import { useLockedBanksStore } from '../models/lockedBanksStore';
 import { useBankAccountViewModel } from '../viewmodels/useBankAccountViewModel';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -49,6 +50,7 @@ const BANKS = [
 export function BankAccountSetupScreen() {
   const navigation = useNavigation<Nav>();
   const { returnTo } = useRoute<Route>().params;
+  const checkIsLocked = useLockedBanksStore(s => s.isLocked);
   const { register, isRegistering } = useBankAccountViewModel();
 
   const scrollViewRef = useRef<ScrollView>(null);
@@ -71,6 +73,7 @@ export function BankAccountSetupScreen() {
     if (res.ok) {
       navigation.replace('BankAccountVerify', {
         accountId: res.result.accountId,
+        bankCode: selectedBank.code,
         bankName: res.result.bankName,
         maskedAccountNo: res.result.maskedAccountNo,
         returnTo,
@@ -87,7 +90,7 @@ export function BankAccountSetupScreen() {
   const canSubmit = selectedBank !== null && accountNo.trim().length >= 10 && !isRegistering;
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <CustomAppBar
         showBackButton
         backgroundColor={AppColorStyles.background}
@@ -112,18 +115,19 @@ export function BankAccountSetupScreen() {
           renderItem={({ item }) => {
             const color = getBankColor(item.code);
             const isSelected = selectedBank?.code === item.code;
+            const isLocked = checkIsLocked(item.code);
             return (
               <TouchableOpacity
-                style={[styles.bankTile, isSelected && styles.bankTileSelected]}
-                onPress={() => setSelectedBank(item)}
-                activeOpacity={0.7}
+                style={[styles.bankTile, isSelected && styles.bankTileSelected, isLocked && styles.bankTileLocked]}
+                onPress={() => !isLocked && setSelectedBank(item)}
+                activeOpacity={isLocked ? 1 : 0.7}
               >
-                <View style={[styles.bankCircle, { backgroundColor: color.bg }]}>
-                  <Text style={[styles.bankCircleText, { color: color.text }]}>
+                <View style={[styles.bankCircle, { backgroundColor: isLocked ? '#E0E0E0' : color.bg }]}>
+                  <Text style={[styles.bankCircleText, { color: isLocked ? '#BDBDBD' : color.text }]}>
                     {item.name.charAt(0)}
                   </Text>
                 </View>
-                <Text style={styles.bankLabel} numberOfLines={1}>
+                <Text style={[styles.bankLabel, isLocked && styles.bankLabelLocked]} numberOfLines={1}>
                   {item.name}
                 </Text>
               </TouchableOpacity>
@@ -195,6 +199,12 @@ const styles = StyleSheet.create({
   bankTileSelected: {
     borderColor: AppColorStyles.black,
     backgroundColor: AppColorStyles.surface,
+  },
+  bankTileLocked: {
+    opacity: 0.4,
+  },
+  bankLabelLocked: {
+    color: '#BDBDBD',
   },
   bankCircle: {
     width: 44,

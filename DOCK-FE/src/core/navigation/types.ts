@@ -2,9 +2,10 @@ export type RootStackParamList = {
   Onboarding: undefined;
   Auth: undefined;
   App: undefined;
-  BankAccountSetup: { returnTo: 'App' | 'Settings' };
+  BankAccountSetup: { returnTo: 'App' | 'Settings'; lockedBankCode?: string };
   BankAccountVerify: {
     accountId: number;
+    bankCode: string;
     bankName: string;
     maskedAccountNo: string;
     returnTo: 'App' | 'Settings';
