@@ -17,6 +17,7 @@ import { KBODiaGothicTextStyle } from '../../../core/theme/typography';
 import { CustomAppBar } from '../../../shared/components/app_bar/CustomAppBar';
 import { FilledButton } from '../../../shared/components/buttons/FilledButton';
 import { PasswordDotsInput } from '../components/PasswordDotsInput';
+import { useAuthStore } from '../../auth/models/authStore';
 import { usePayPasswordViewModel } from '../viewmodels/usePayPasswordViewModel';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -28,6 +29,7 @@ export function PayPasswordConfirmScreen() {
   const navigation = useNavigation<Nav>();
   const { firstPassword, bankName, maskedAccountNo, returnTo } = useRoute<Route>().params;
   const { setup, isSettingUp } = usePayPasswordViewModel();
+  const setHasPayPassword = useAuthStore(s => s.setHasPayPassword);
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
@@ -45,6 +47,7 @@ export function PayPasswordConfirmScreen() {
     }
     const res = await setup(password);
     if (res.ok) {
+      setHasPayPassword();
       navigation.replace('App');
     } else if (res.error === 'ALREADY_SET') {
       navigation.replace('App');

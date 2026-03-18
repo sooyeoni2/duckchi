@@ -25,7 +25,10 @@ const PASSWORD_LENGTH = 6;
 
 export function PayPasswordSetupScreen() {
   const navigation = useNavigation<Nav>();
-  const { bankName, maskedAccountNo, returnTo } = useRoute<Route>().params;
+  const params = useRoute<Route>().params;
+  const bankName = params?.bankName;
+  const maskedAccountNo = params?.maskedAccountNo;
+  const returnTo = params?.returnTo ?? 'NewUser';
   const [password, setPassword] = useState('');
 
   const handleConfirm = () => {
@@ -39,9 +42,11 @@ export function PayPasswordSetupScreen() {
         <CustomAppBar
           title="결제 비밀번호 설정"
           centerTitle={false}
-          showBackButton
+          showBackButton={!!bankName}
           backgroundColor={AppColorStyles.background}
-          onBackPress={() => navigation.replace('BankAccountComplete', { bankName, maskedAccountNo, returnTo })}
+          onBackPress={bankName && maskedAccountNo
+            ? () => navigation.replace('BankAccountComplete', { bankName, maskedAccountNo, returnTo })
+            : undefined}
         />
 
         <View style={styles.content}>

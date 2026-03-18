@@ -23,6 +23,7 @@ import { KBODiaGothicTextStyle } from '../../../core/theme/typography';
 import { FilledButton } from '../../../shared/components/buttons/FilledButton';
 import { useAuthStore } from '../../auth/models/authStore';
 
+
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'BankAccountComplete'>;
 
@@ -30,6 +31,7 @@ export function BankAccountCompleteScreen() {
   const navigation = useNavigation<Nav>();
   const { bankName, maskedAccountNo, returnTo } = useRoute<Route>().params;
   const userName = useAuthStore(s => s.user?.name ?? '');
+  const setHasBankAccount = useAuthStore(s => s.setHasBankAccount);
   const [transferLimit, setTransferLimit] = useState('');
   const limitInputRef = useRef<TextInput>(null);
 
@@ -45,6 +47,7 @@ export function BankAccountCompleteScreen() {
 
   const handleNext = () => {
     // TODO: 한도 저장 API 연동
+    setHasBankAccount();
     if (returnTo === 'NewUser') {
       navigation.replace('PayPasswordSetup', { bankName, maskedAccountNo, returnTo });
     } else {
