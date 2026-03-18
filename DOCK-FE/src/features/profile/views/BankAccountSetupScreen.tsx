@@ -5,6 +5,8 @@ import React, { useRef, useState } from 'react';
 import {
   Alert,
   FlatList,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -97,6 +99,10 @@ export function BankAccountSetupScreen() {
         onBackPress={() => navigation.goBack()}
       />
 
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
       <ScrollView
         ref={scrollViewRef}
         style={styles.scroll}
@@ -161,6 +167,7 @@ export function BankAccountSetupScreen() {
           />
         </View>
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
