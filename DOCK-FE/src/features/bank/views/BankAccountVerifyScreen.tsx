@@ -12,7 +12,7 @@ import { CustomAppBar } from '../../../shared/components/app_bar/CustomAppBar';
 import { FilledButton } from '../../../shared/components/buttons/FilledButton';
 import { useLockedBanksStore } from '../models/lockedBanksStore';
 import { useBankAccountViewModel } from '../viewmodels/useBankAccountViewModel';
-import { useProfileViewModel } from '../viewmodels/useProfileViewModel';
+import { useProfileViewModel } from '../../profile/viewmodels/useProfileViewModel';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'BankAccountVerify'>;

@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 
-import { registerBankAccount, verify1Won } from '../models/profileService';
-import type { RegisterBankAccountResult } from '../models/profileTypes';
+import { registerBankAccount, verify1Won } from '../models/bankService';
+import type { RegisterBankAccountResult } from '../models/bankTypes';
 
 type RegisterError = 'BAD_REQUEST' | 'CONFLICT' | 'SERVER_ERROR';
 type VerifyError = 'BAD_CODE' | 'LOCKED' | 'ALREADY_VERIFIED' | 'NOT_FOUND' | 'SERVER_ERROR';
