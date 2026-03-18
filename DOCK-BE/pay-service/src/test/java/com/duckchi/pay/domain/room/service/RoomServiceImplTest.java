@@ -8,15 +8,21 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.duckchi.pay.domain.expenses.repository.ExpenseRepository;
 import com.duckchi.pay.domain.room.dto.request.CreateRoomRequest;
+import com.duckchi.pay.domain.room.dto.request.UpdateRoomRequest;
 import com.duckchi.pay.domain.room.dto.response.CreateRoomResponse;
+import com.duckchi.pay.domain.room.dto.response.RoomListResponse;
 import com.duckchi.pay.domain.room.entity.Room;
 import com.duckchi.pay.domain.room.entity.RoomParticipant;
 import com.duckchi.pay.domain.room.repository.RoomParticipantRepository;
 import com.duckchi.pay.domain.room.repository.RoomRepository;
-
+import com.duckchi.pay.domain.room.repository.projection.RoomExpenseSummaryProjection;
+import com.duckchi.pay.domain.room.repository.projection.RoomParticipantUserProjection;
+import com.duckchi.pay.domain.room.repository.projection.RoomSettlementSummaryProjection;
 import com.duckchi.pay.global.error.CustomException;
 import com.duckchi.pay.global.error.ErrorCode;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -33,6 +39,9 @@ class RoomServiceImplTest {
 
     @Mock
     private RoomParticipantRepository roomParticipantRepository;
+
+    @Mock
+    private ExpenseRepository expenseRepository;
 
     @InjectMocks
     private RoomServiceImpl roomService;
@@ -79,8 +88,51 @@ class RoomServiceImplTest {
     }
 
     @Test
+    void getRoomLists_success_mergesRoomParticipantAndSummaryData() {
+        Room room = Room.builder()
+                .name("C102회식")
+                .category("여행")
+                .isProgress(true)
+                .build();
+        ReflectionTestUtils.setField(room, "id", 101L);
+
+        when(roomRepository.findParticipatingRooms(7L, true)).thenReturn(List.of(room));
+        when(roomParticipantRepository.findParticipantUserMappingsByRoomIds(List.of(101L)))
+                .thenReturn(List.of(
+                        participantProjection(101L, 1L),
+                        participantProjection(101L, 2L),
+                        participantProjection(101L, 3L)
+                ));
+        when(expenseRepository.findRoomExpenseSummaries(List.of(101L)))
+                .thenReturn(List.of(expenseProjection(101L, 180000L, 2L)));
+        when(roomRepository.findRoomSettlementSummaries(List.of(101L)))
+                .thenReturn(List.of(settlementProjection(101L, 3L, 4L)));
+
+        List<RoomListResponse> result = roomService.getRoomLists(7L, true);
+
+        assertEquals(1, result.size());
+        assertEquals(101L, result.get(0).getRoomId());
+        assertEquals("C102회식", result.get(0).getRoomName());
+        assertEquals("여행", result.get(0).getCategory());
+        assertEquals(true, result.get(0).isProgress());
+        assertEquals(3, result.get(0).getParticipants().size());
+        assertEquals(3, result.get(0).getParticipantCount());
+        assertEquals(180000, result.get(0).getTotalPay());
+        assertEquals(2, result.get(0).getPayCount());
+        assertEquals(75, result.get(0).getPercent());
+    }
+
+    @Test
+    void getRoomLists_withoutUserHeader_throwsUnauthorized() {
+        CustomException ex = assertThrows(CustomException.class, () -> roomService.getRoomLists(null, null));
+
+        assertEquals(ErrorCode.COMMON_UNAUTHORIZED, ex.getErrorCode());
+        verify(roomRepository, never()).findParticipatingRooms(any(), any());
+    }
+
+    @Test
     void updateRoomInfo_success_updatesNameAndCategory() {
-        com.duckchi.pay.domain.room.dto.request.UpdateRoomRequest request = new com.duckchi.pay.domain.room.dto.request.UpdateRoomRequest();
+        UpdateRoomRequest request = new UpdateRoomRequest();
         ReflectionTestUtils.setField(request, "name", "새로운이름");
         ReflectionTestUtils.setField(request, "category", "새로운카테고리");
 
@@ -107,7 +159,7 @@ class RoomServiceImplTest {
 
     @Test
     void updateRoomInfo_whenInProgress_throwsCustomException() {
-        com.duckchi.pay.domain.room.dto.request.UpdateRoomRequest request = new com.duckchi.pay.domain.room.dto.request.UpdateRoomRequest();
+        UpdateRoomRequest request = new UpdateRoomRequest();
         ReflectionTestUtils.setField(request, "name", "새로운이름");
 
         Room room = Room.builder()
@@ -130,7 +182,7 @@ class RoomServiceImplTest {
 
     @Test
     void updateRoomInfo_notAdmin_throwsCustomException() {
-        com.duckchi.pay.domain.room.dto.request.UpdateRoomRequest request = new com.duckchi.pay.domain.room.dto.request.UpdateRoomRequest();
+        UpdateRoomRequest request = new UpdateRoomRequest();
         ReflectionTestUtils.setField(request, "name", "새로운이름");
 
         Room room = Room.builder()
@@ -141,7 +193,7 @@ class RoomServiceImplTest {
         RoomParticipant member = RoomParticipant.builder()
                 .room(room)
                 .userId(7L)
-                .isAdmin(false) // <-- Not an admin
+                .isAdmin(false)
                 .build();
 
         when(roomRepository.findById(101L)).thenReturn(java.util.Optional.of(room));
@@ -153,7 +205,7 @@ class RoomServiceImplTest {
 
     @Test
     void updateRoomInfo_partialUpdateOnlyNameNullCategory_success() {
-        com.duckchi.pay.domain.room.dto.request.UpdateRoomRequest request = new com.duckchi.pay.domain.room.dto.request.UpdateRoomRequest();
+        UpdateRoomRequest request = new UpdateRoomRequest();
         ReflectionTestUtils.setField(request, "name", "이름만수정");
         ReflectionTestUtils.setField(request, "category", null);
 
@@ -175,7 +227,6 @@ class RoomServiceImplTest {
 
         roomService.updateRoomInfo(101L, 7L, request);
 
-        // Name is updated, category remains unchanged (due to how entity updateRoomInfo handles null)
         assertEquals("이름만수정", room.getName());
         assertEquals("이전카테고리", room.getCategory());
     }
@@ -215,7 +266,58 @@ class RoomServiceImplTest {
 
         roomService.deleteRoom(101L, 7L);
 
-        // verify deletedAt is set
         assertTrue(room.getDeletedAt() != null);
+    }
+
+    private RoomParticipantUserProjection participantProjection(Long roomId, Long userId) {
+        return new RoomParticipantUserProjection() {
+            @Override
+            public Long getRoomId() {
+                return roomId;
+            }
+
+            @Override
+            public Long getUserId() {
+                return userId;
+            }
+        };
+    }
+
+    private RoomExpenseSummaryProjection expenseProjection(Long roomId, Long totalPay, Long payCount) {
+        return new RoomExpenseSummaryProjection() {
+            @Override
+            public Long getRoomId() {
+                return roomId;
+            }
+
+            @Override
+            public Long getTotalPay() {
+                return totalPay;
+            }
+
+            @Override
+            public Long getPayCount() {
+                return payCount;
+            }
+        };
+    }
+
+    private RoomSettlementSummaryProjection settlementProjection(Long roomId, Long completedCount, Long targetCount) {
+        return new RoomSettlementSummaryProjection() {
+            @Override
+            public Long getRoomId() {
+                return roomId;
+            }
+
+            @Override
+            public Long getCompletedCount() {
+                return completedCount;
+            }
+
+            @Override
+            public Long getTargetCount() {
+                return targetCount;
+            }
+        };
     }
 }
