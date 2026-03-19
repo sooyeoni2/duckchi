@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { RootStackParamList } from '../../../core/navigation/types';
+import { usePaymentConfirmStore } from '../../../features/room/models/paymentConfirmStore';
 import { AppColorStyles } from '../../../core/theme/colors';
 import { KBODiaGothicTextStyle } from '../../../core/theme/typography';
 import { CustomAppBar } from '../../../shared/components/app_bar/CustomAppBar';
@@ -36,6 +37,8 @@ export function PayPasswordInputScreen() {
     if (text.length === PASSWORD_LENGTH) Keyboard.dismiss();
   };
 
+  const confirm = usePaymentConfirmStore((s) => s.confirm);
+
   const handleConfirm = () => {
     if (password.length !== PASSWORD_LENGTH) return;
     if (password !== MOCK_PASSWORD) {
@@ -43,6 +46,7 @@ export function PayPasswordInputScreen() {
       setPassword('');
       return;
     }
+    confirm();
     navigation.goBack();
   };
 

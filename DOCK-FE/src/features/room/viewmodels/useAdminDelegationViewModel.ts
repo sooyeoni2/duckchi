@@ -52,7 +52,7 @@ export const useAdminDelegationViewModel = () => {
 
   const confirmDelegation = useCallback(async () => {
     // TODO: ROOM-15 API 연동 (POST /api/v1/rooms/{roomId}/delegations)
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise<void>((resolve) => setTimeout(() => resolve(), 1000));
     updateState({ isConfirmModalVisible: false });
     return true;
   }, [updateState]);

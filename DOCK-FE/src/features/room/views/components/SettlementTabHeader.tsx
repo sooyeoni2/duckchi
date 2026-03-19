@@ -64,13 +64,13 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12 * s,
+    paddingVertical: 10 * s,
   },
   activeLabel: {
-    ...KBODiaGothicTextStyle.medium({ fontSize: 16 * s, color: '#151414', letterSpacing: -0.32 * s }),
+    ...KBODiaGothicTextStyle.medium({ fontSize: 16 * s, lineHeight: 25 * s, color: '#151414', letterSpacing: -0.32 * s }),
   },
   inactiveLabel: {
-    ...KBODiaGothicTextStyle.medium({ fontSize: 16 * s, color: AppColorStyles.gray2, letterSpacing: -0.32 * s }),
+    ...KBODiaGothicTextStyle.medium({ fontSize: 16 * s, lineHeight: 25 * s, color: AppColorStyles.gray2, letterSpacing: -0.32 * s }),
   },
   lineTrack: {
     position: 'absolute',
