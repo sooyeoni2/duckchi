@@ -4,6 +4,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import {
   ActivityIndicator,
   Dimensions,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -41,7 +42,16 @@ export function RoomSettlementTransferView({ onBack }: RoomSettlementTransferVie
     markAsPaid,
     markAllAsPaid,
     reload,
+    refresh,
   } = useSettlementViewModel();
+
+  const [refreshing, setRefreshing] = React.useState(false);
+
+  const handleRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    await refresh();
+    setRefreshing(false);
+  }, [refresh]);
 
   const hasPending = inProgressCount > 0;
   const consume = usePaymentConfirmStore((s) => s.consume);
@@ -106,6 +116,13 @@ export function RoomSettlementTransferView({ onBack }: RoomSettlementTransferVie
         style={styles.scrollArea}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={AppColorStyles.black}
+          />
+        }
       >
         {settlementItems.map(item => (
           <SettlementCard
