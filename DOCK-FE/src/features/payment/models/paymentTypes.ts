@@ -70,6 +70,62 @@ export interface MyExpenseItem {
 export type ExpenseStatusFilter = 'ALL' | ExpenseStatus;
 
 /**
+ * 결제 상세 화면에서 참여자 분담 정보를 표현하는 타입.
+ * 이후 정산 요청/완료 상태를 붙일 때 그대로 확장할 수 있게 분리했다.
+ */
+export interface ExpenseParticipantPreview {
+  userId: number;
+  userName: string;
+  splitAmount: number;
+  isRequester: boolean;
+  isSettled: boolean;
+}
+
+/**
+ * 영수증/OCR/수기 입력 결과를 상세 화면에서 보여줄 세부 품목 타입.
+ */
+export interface ExpenseLineItemPreview {
+  itemId: number;
+  name: string;
+  quantity: number;
+  amount: number;
+  assignedParticipants: string[];
+}
+
+/**
+ * 결제 상세 화면에서 사용하는 확장 타입.
+ * 목록에는 없는 부가 설명, 참여자, 품목 정보를 mock으로 먼저 채운다.
+ */
+export interface MyExpenseDetail extends MyExpenseItem {
+  storeName: string;
+  memo: string;
+  participants: ExpenseParticipantPreview[];
+  lineItems: ExpenseLineItemPreview[];
+}
+
+/**
+ * 각 입력 진입 화면에서 어떤 필드를 먼저 구현해야 하는지 보여주기 위한 안내 row.
+ */
+export interface PaymentEntryGuideField {
+  label: string;
+  value: string;
+}
+
+/**
+ * 계좌/OCR/직접입력 진입 화면의 mock 설명 데이터.
+ * API 연결 전에도 사용자가 흐름을 리뷰할 수 있게 텍스트와 필드 구성을 담는다.
+ */
+export interface PaymentEntryPreview {
+  inputType: ExpenseInputType;
+  title: string;
+  headline: string;
+  description: string;
+  fieldGuides: PaymentEntryGuideField[];
+  checklist: string[];
+  primaryActionLabel: string;
+}
+
+/**
  * 결제 등록/수정 화면에서 참여자별 분담값을 담기 위한 draft 타입.
  * 지금은 목록 skeleton 단계지만, 이후 PAY-04 등록 화면으로 확장할 것을 대비해 같이 정리했다.
  */
