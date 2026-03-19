@@ -209,14 +209,14 @@ pipeline {
                             set -eu
                             set +x
 
-                            ssh -o BatchMode=yes "${DEPLOY_HOST}" bash -se -- "${DEPLOY_PATH}" "${COMPOSE_FILE}" "${REQUIRED_ENV_VARS}" "${DOCKERHUB_USERNAME}" "${BUILD_NUMBER}" <<'REMOTE'
+                            ssh -o BatchMode=yes "${DEPLOY_HOST}" bash -se -- "${DEPLOY_PATH}" "${COMPOSE_FILE}" "${DOCKERHUB_USERNAME}" "${BUILD_NUMBER}" <<'REMOTE'
 set -eu
 
 DEPLOY_PATH="$1"
 COMPOSE_FILE="$2"
-REQUIRED_ENV_VARS="$3"
-DOCKERHUB_USERNAME="$4"
-BUILD_NUMBER="$5"
+DOCKERHUB_USERNAME="$3"
+BUILD_NUMBER="$4"
+REQUIRED_ENV_VARS="SPRING_PROFILES_ACTIVE DB_HOST DB_PORT DB_USERNAME DB_PASSWORD CORE_DB_NAME PAY_DB_NAME INSIGHT_DB_NAME REDIS_HOST REDIS_PORT EUREKA_SERVER_URL"
 
 cd "${DEPLOY_PATH}"
 test -f "${COMPOSE_FILE}"
