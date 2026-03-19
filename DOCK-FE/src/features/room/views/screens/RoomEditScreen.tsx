@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { 
   View, 
   Text, 
@@ -8,12 +8,13 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-  ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppColorStyles } from '@core/theme/colors';
-import { AntDesign, Feather } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { CustomAppBar } from '@shared/components/app_bar/CustomAppBar';
+import { FilledButton } from '@shared/components/buttons/FilledButton';
 import { useRoomEditViewModel } from '../../viewmodels/useRoomEditViewModel';
 
 const CATEGORIES = ['회식', '여행', '데이트', '동아리', '기타'];
@@ -35,14 +36,14 @@ const RoomEditScreen: React.FC = () => {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-            <AntDesign name="left" size={24} color={AppColorStyles.black} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>모임방 수정</Text>
-          <View style={{ width: 24 }} />
-        </View>
+        {/* 공용 AppBar */}
+        <CustomAppBar
+          title="모임방 수정"
+          centerTitle={true}
+          showDivider
+          backgroundColor={AppColorStyles.background}
+          onBackPress={() => navigation.goBack()}
+        />
 
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
           {/* 모임명 입력 */}
@@ -91,20 +92,13 @@ const RoomEditScreen: React.FC = () => {
           </View>
         </ScrollView>
 
-        {/* 하단 버튼 */}
+        {/* 하단 버튼 — 공용 FilledButton 사용 */}
         <View style={styles.bottomContainer}>
-          <TouchableOpacity 
-            style={[styles.primaryButton, state.isSaving && styles.disabledButton]} 
-            activeOpacity={0.8}
-            onPress={handleSave}
-            disabled={state.isSaving || !state.name.trim()}
-          >
-            {state.isSaving ? (
-              <ActivityIndicator color={AppColorStyles.black} />
-            ) : (
-              <Text style={styles.buttonText}>저장하기</Text>
-            )}
-          </TouchableOpacity>
+          <FilledButton
+            text="저장하기"
+            onPress={state.isSaving || !state.name.trim() ? undefined : handleSave}
+            isLoading={state.isSaving}
+          />
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -115,23 +109,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: AppColorStyles.background,
-  },
-  header: {
-    height: 56,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    backgroundColor: AppColorStyles.background,
-  },
-  backButton: {
-    padding: 4,
-    marginLeft: -4,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: AppColorStyles.textPrimary,
   },
   scrollContent: {
     padding: 20,
@@ -205,21 +182,6 @@ const styles = StyleSheet.create({
   bottomContainer: {
     padding: 20,
     paddingBottom: 24,
-  },
-  primaryButton: {
-    backgroundColor: AppColorStyles.yellow,
-    height: 56,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  disabledButton: {
-    backgroundColor: '#E0E0E0',
-  },
-  buttonText: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: AppColorStyles.black,
   },
 });
 
