@@ -50,85 +50,86 @@ export function MeetingRoomEditor({
   return (
     <View style={styles.body}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-      <ScrollView
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>모임 이름 (최대 20자)</Text>
-          <CustomTextField
-            value={roomName}
-            hint="모임 이름"
-            onChangeText={(text) => onRoomNameChange(text.slice(0, 20))}
-            borderRadius={12}
-            style={styles.input}
-          />
-          <Text style={styles.counterText}>{roomName.length}/20</Text>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>모임 태그</Text>
-          <View style={styles.tagGrid}>
-            {TAG_OPTIONS.map((option) => {
-              const isSelected = option.label === selectedTag;
-              return (
-                <Pressable
-                  key={option.label}
-                  onPress={() => onTagChange(option.label)}
-                  style={[styles.tagCard, isSelected && styles.tagCardSelected]}
-                >
-                  <MaterialCommunityIcons
-                    name={option.icon}
-                    size={28}
-                    color={isSelected ? AppColorStyles.white : AppColorStyles.gray1}
-                    style={styles.tagIcon}
-                  />
-                  <Text style={[styles.tagLabel, isSelected && styles.tagLabelSelected]}>
-                    {option.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
+        <ScrollView
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>모임 이름 (최대 20자)</Text>
+            <CustomTextField
+              value={roomName}
+              hint="모임 이름"
+              onChangeText={(text) => onRoomNameChange(text.slice(0, 20))}
+              borderRadius={12}
+              style={styles.input}
+            />
+            <Text style={styles.counterText}>{roomName.length}/20</Text>
           </View>
-        </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>세부 내용</Text>
-          <CustomTextField
-            value={detail}
-            hint="세부 내용"
-            onChangeText={onDetailChange}
-            borderRadius={12}
-            style={styles.input}
-          />
-        </View>
-
-        {showInviteGuide ? (
-          <View style={styles.inviteCard}>
-            <View style={styles.inviteIconWrap}>
-              <MaterialCommunityIcons name="link-variant" size={34} color={AppColorStyles.black} />
-            </View>
-            <View style={styles.inviteTextWrap}>
-              <Text style={styles.inviteTitle}>방 만들면 초대링크 자동 생성</Text>
-              <Text style={styles.inviteDescription}>링크 공유만으로 참여자 초대</Text>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>모임 태그</Text>
+            <View style={styles.tagGrid}>
+              {TAG_OPTIONS.map((option) => {
+                const isSelected = option.label === selectedTag;
+                return (
+                  <Pressable
+                    key={option.label}
+                    onPress={() => onTagChange(option.label)}
+                    style={[styles.tagCard, isSelected && styles.tagCardSelected]}
+                  >
+                    <MaterialCommunityIcons
+                      name={option.icon}
+                      size={28}
+                      color={isSelected ? AppColorStyles.white : AppColorStyles.gray1}
+                      style={styles.tagIcon}
+                    />
+                    <Text style={[styles.tagLabel, isSelected && styles.tagLabelSelected]}>
+                      {option.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
             </View>
           </View>
-        ) : null}
-      </ScrollView>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>세부 내용</Text>
+            <CustomTextField
+              value={detail}
+              hint="세부 내용"
+              onChangeText={onDetailChange}
+              borderRadius={12}
+              style={styles.input}
+            />
+          </View>
+
+          {showInviteGuide ? (
+            <View style={styles.inviteCard}>
+              <View style={styles.inviteIconWrap}>
+                <MaterialCommunityIcons name="link-variant" size={34} color={AppColorStyles.black} />
+              </View>
+              <View style={styles.inviteTextWrap}>
+                <Text style={styles.inviteTitle}>방 만들면 초대링크 자동 생성</Text>
+                <Text style={styles.inviteDescription}>링크 공유만으로 참여자 초대</Text>
+              </View>
+            </View>
+          ) : null}
+
+          <View style={styles.footer}>
+            <FilledButton
+              text={submitLabel}
+              onPress={onSubmit}
+              isFullWidth={false}
+              width={370}
+              height={62}
+              borderRadius={12}
+              textStyle={styles.submitButtonText}
+              style={!canSubmit ? styles.submitButtonDisabled : undefined}
+            />
+          </View>
+        </ScrollView>
       </KeyboardAvoidingView>
-
-      <View style={styles.footer}>
-        <FilledButton
-          text={submitLabel}
-          onPress={onSubmit}
-          isFullWidth={false}
-          width={370}
-          height={62}
-          borderRadius={12}
-          textStyle={styles.submitButtonText}
-          style={!canSubmit ? styles.submitButtonDisabled : undefined}
-        />
-      </View>
     </View>
   );
 }
@@ -145,7 +146,7 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 48,
     paddingTop: 24,
-    paddingBottom: 100,
+    paddingBottom: 24,
     gap: 28,
   },
   section: {
