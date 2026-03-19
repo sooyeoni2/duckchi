@@ -23,3 +23,8 @@ finance:
   api:
     base-url: http://localhost:8080
     key: test-key
+
+ocr:
+  naver:
+    invoke-url: http://localhost:8089
+    secret: test-secret
