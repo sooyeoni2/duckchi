@@ -70,6 +70,7 @@ export function RoomScreen() {
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             style={styles.moreButton}
             activeOpacity={0.8}
+            onPress={() => navigation.navigate('RoomMoreOptions', { roomId: room.roomId })}
           >
             <MaterialDesignIcons name="dots-horizontal" size={24 * s} color={AppColorStyles.black} />
           </TouchableOpacity>,

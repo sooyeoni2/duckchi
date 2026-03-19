@@ -33,6 +33,10 @@ export type RoomStackParamList = {
   RoomDetail: { roomId: number };
   RoomCreate: undefined;
   RoomRestart: { roomId: number };
+  RoomMoreOptions: { roomId: number };
+  AutoTransferAgree: { roomId: number };
+  AdminDelegation: { roomId: number };
+  RoomEdit: { roomId: number };
 };
 
 export type AuthStackParamList = {
