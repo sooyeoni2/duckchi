@@ -232,9 +232,9 @@ done
 REGISTRY_NAMESPACE="$(printf '%s' "${DOCKERHUB_USERNAME}" | tr '[:upper:]' '[:lower:]')"
 IMAGE_TAG="${BUILD_NUMBER}"
 
-REGISTRY_NAMESPACE="${REGISTRY_NAMESPACE}" IMAGE_TAG="${IMAGE_TAG}" docker-compose -f "${COMPOSE_FILE}" config >/dev/null
-REGISTRY_NAMESPACE="${REGISTRY_NAMESPACE}" IMAGE_TAG="${IMAGE_TAG}" docker-compose -f "${COMPOSE_FILE}" pull
-REGISTRY_NAMESPACE="${REGISTRY_NAMESPACE}" IMAGE_TAG="${IMAGE_TAG}" docker-compose -f "${COMPOSE_FILE}" up -d --remove-orphans
+REGISTRY_NAMESPACE="${REGISTRY_NAMESPACE}" IMAGE_TAG="${IMAGE_TAG}" docker compose -f "${COMPOSE_FILE}" config >/dev/null
+REGISTRY_NAMESPACE="${REGISTRY_NAMESPACE}" IMAGE_TAG="${IMAGE_TAG}" docker compose -f "${COMPOSE_FILE}" pull
+REGISTRY_NAMESPACE="${REGISTRY_NAMESPACE}" IMAGE_TAG="${IMAGE_TAG}" docker compose -f "${COMPOSE_FILE}" up -d --remove-orphans
 REMOTE
                         '''
                     }
