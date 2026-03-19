@@ -25,13 +25,13 @@ const ACTION_STRINGS: Record<RoomActionType, { title: string, desc: string, conf
     title: '모임방을 삭제할까요?',
     desc: '삭제된 모임방은 복구할 수 없어요\n정산 내역이 모두 사라져요',
     confirm: '삭제하기',
-    color: AppColorStyles.warning,
+    color: AppColorStyles.yellow,
   },
   LEAVE: {
-    title: '모임방에서 나갈까요?',
-    desc: '나간 후에는 초대 링크를 통해\n다시 입장해야 해요',
+    title: '모임방을 나가시겠어요?',
+    desc: '나가면 정산 내역을 더 이상 볼 수 없어요.',
     confirm: '나가기',
-    color: AppColorStyles.warning,
+    color: AppColorStyles.yellow,
   },
   START: {
     title: '모임을 시작할까요?',
