@@ -18,6 +18,8 @@ interface MeetingRoomLinkSheetProps {
   inviteLink: MeetingRoomInviteLink;
   onCopyLink: () => void;
   onLater: () => void;
+  title?: string;
+  showLater?: boolean;
 }
 
 export function MeetingRoomLinkSheet({
@@ -25,6 +27,8 @@ export function MeetingRoomLinkSheet({
   inviteLink,
   onCopyLink,
   onLater,
+  title = '모임방이 만들어졌어요!',
+  showLater = true,
 }: MeetingRoomLinkSheetProps) {
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onLater}>
@@ -32,7 +36,7 @@ export function MeetingRoomLinkSheet({
         <Pressable style={styles.scrim} onPress={onLater} />
         <View style={styles.sheet}>
           <View style={styles.handle} />
-          <Text style={styles.title}>모임방이 만들어졌어요!</Text>
+          <Text style={styles.title}>{title}</Text>
           <Text style={styles.description}>링크를 공유하면 참여자가{'\n'}바로 모임에 입장해요</Text>
 
           <TouchableOpacity activeOpacity={0.85} style={styles.linkBox} onPress={onCopyLink}>
@@ -42,9 +46,11 @@ export function MeetingRoomLinkSheet({
             <MaterialCommunityIcons name="link-variant" size={28} color={AppColorStyles.black} />
           </TouchableOpacity>
 
-          <TouchableOpacity activeOpacity={0.8} onPress={onLater} style={styles.laterButton}>
-            <Text style={styles.laterText}>나중에 하기</Text>
-          </TouchableOpacity>
+          {showLater && (
+            <TouchableOpacity activeOpacity={0.8} onPress={onLater} style={styles.laterButton}>
+              <Text style={styles.laterText}>나중에 하기</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     </Modal>
@@ -66,7 +72,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     paddingTop: 18,
     paddingHorizontal: 28,
-    paddingBottom: 24,
+    paddingBottom: 60,
   },
   handle: {
     alignSelf: 'center',
@@ -87,7 +93,7 @@ const styles = StyleSheet.create({
   description: {
     ...KBODiaGothicTextStyle.medium({
       fontSize: 18,
-      color: AppColorStyles.gray1,
+      color: '#C2C2C2',
       lineHeight: 28,
     }),
     marginBottom: 28,

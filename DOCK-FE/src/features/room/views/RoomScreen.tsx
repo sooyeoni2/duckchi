@@ -44,7 +44,9 @@ type Route = RouteProp<RoomStackParamList, 'RoomDetail'>;
 export function RoomScreen() {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
-  const [viewMode, setViewMode] = useState<RoomViewMode>('SUMMARY');
+  const [viewMode, setViewMode] = useState<RoomViewMode>(
+    route.params.showTransfer === true ? 'TRANSFER' : 'SUMMARY',
+  );
   const [selectedRoomTab, setSelectedRoomTab] =
     useState<RoomMainTab>('SETTLEMENT');
   const rooms = useRoomStore((state) => state.rooms);
