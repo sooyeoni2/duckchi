@@ -229,11 +229,12 @@ for key in ${REQUIRED_ENV_VARS}; do
   fi
 done
 
-export REGISTRY_NAMESPACE="$(printf '%s' "${DOCKERHUB_USERNAME}" | tr '[:upper:]' '[:lower:]')"
-export IMAGE_TAG="${BUILD_NUMBER}"
-docker-compose -f "${COMPOSE_FILE}" config >/dev/null
-docker-compose -f "${COMPOSE_FILE}" pull
-docker-compose -f "${COMPOSE_FILE}" up -d --remove-orphans
+REGISTRY_NAMESPACE="$(printf '%s' "${DOCKERHUB_USERNAME}" | tr '[:upper:]' '[:lower:]')"
+IMAGE_TAG="${BUILD_NUMBER}"
+
+REGISTRY_NAMESPACE="${REGISTRY_NAMESPACE}" IMAGE_TAG="${IMAGE_TAG}" docker-compose -f "${COMPOSE_FILE}" config >/dev/null
+REGISTRY_NAMESPACE="${REGISTRY_NAMESPACE}" IMAGE_TAG="${IMAGE_TAG}" docker-compose -f "${COMPOSE_FILE}" pull
+REGISTRY_NAMESPACE="${REGISTRY_NAMESPACE}" IMAGE_TAG="${IMAGE_TAG}" docker-compose -f "${COMPOSE_FILE}" up -d --remove-orphans
 REMOTE
                         '''
                     }
