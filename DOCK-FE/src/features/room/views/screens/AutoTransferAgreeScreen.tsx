@@ -1,9 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppColorStyles } from '@core/theme/colors';
-import { AntDesign } from '@expo/vector-icons';
+import { KBODiaGothicTextStyle } from '@core/theme/typography';
 import { useNavigation } from '@react-navigation/native';
+import { CustomAppBar } from '@shared/components/app_bar/CustomAppBar';
+import { FilledButton } from '@shared/components/buttons/FilledButton';
 import { useAutoTransferAgreeViewModel } from '../../viewmodels/useAutoTransferAgreeViewModel';
 
 import { AutoTransferConfirmBottomSheet } from '../components/AutoTransferConfirmBottomSheet';
@@ -14,14 +16,14 @@ const AutoTransferAgreeScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <AntDesign name="left" size={24} color={AppColorStyles.black} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>자동이체 동의</Text>
-        <View style={{ width: 24 }} />
-      </View>
+      {/* 공용 AppBar */}
+      <CustomAppBar
+        title="자동이체 동의"
+        centerTitle={false}
+        showDivider
+        backgroundColor={AppColorStyles.background}
+        onBackPress={() => navigation.goBack()}
+      />
 
       <View style={styles.content}>
         {/* 모임방 정보 카드 */}
@@ -70,17 +72,12 @@ const AutoTransferAgreeScreen: React.FC = () => {
         )}
       </View>
 
-      {/* 하단 버튼 */}
+      {/* 하단 버튼 — 공용 FilledButton 사용 */}
       <View style={styles.bottomContainer}>
-        <TouchableOpacity 
-          style={styles.primaryButton} 
-          activeOpacity={0.8}
+        <FilledButton
+          text={state.isAgreed ? '동의 취소하기' : '자동이체 동의하기'}
           onPress={openConfirmModal}
-        >
-          <Text style={styles.buttonText}>
-            {state.isAgreed ? '동의 취소하기' : '자동이체 동의하기'}
-          </Text>
-        </TouchableOpacity>
+        />
       </View>
 
       {/* 확인 및 취소 바텀시트 모달 */}
@@ -100,31 +97,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: AppColorStyles.background,
   },
-  header: {
-    height: 56,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    backgroundColor: AppColorStyles.background,
-  },
-  backButton: {
-    padding: 4,
-    marginLeft: -4,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: AppColorStyles.textPrimary,
-  },
   content: {
     flex: 1,
-    padding: 16,
-    gap: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    gap: 8,
   },
   card: {
     backgroundColor: AppColorStyles.surface,
-    borderRadius: 12,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: AppColorStyles.divider,
     padding: 24,
     gap: 8,
   },
@@ -134,44 +117,44 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   roomTitle: {
-    fontSize: 22,
-    fontWeight: '700',
+    ...KBODiaGothicTextStyle.bold({ fontSize: 24 }),
     color: AppColorStyles.black,
   },
   badge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: 16,
+    height: 24,
     borderRadius: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   badgeRed: {
-    backgroundColor: '#FFEBEE', // 연한 빨강 배경
+    backgroundColor: '#FFEBEE',
   },
   badgeTextRed: {
-    color: AppColorStyles.warning, // 빨강 텍스트
-    fontSize: 13,
-    fontWeight: '600',
+    ...KBODiaGothicTextStyle.medium({ fontSize: 13, letterSpacing: 0.5 }),
+    color: AppColorStyles.warning,
   },
   badgeGreen: {
-    backgroundColor: '#E8F5E9', // 연한 초록 배경
+    backgroundColor: '#E8F5E9',
   },
   badgeTextGreen: {
-    color: '#2E7D32', // 진한 초록 텍스트
-    fontSize: 13,
-    fontWeight: '600',
+    ...KBODiaGothicTextStyle.medium({ fontSize: 13, letterSpacing: 0.5 }),
+    color: '#2E7D32',
   },
   subText: {
-    fontSize: 14,
-    color: AppColorStyles.textHint,
+    ...KBODiaGothicTextStyle.light({ fontSize: 13, lineHeight: 20 }),
+    color: '#C2C2C2',
     marginTop: 4,
   },
   infoCard: {
-    backgroundColor: '#EBEBEB',
-    borderRadius: 12,
+    backgroundColor: AppColorStyles.surface,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: AppColorStyles.divider,
     padding: 24,
   },
   infoTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    ...KBODiaGothicTextStyle.medium({ fontSize: 20, lineHeight: 30 }),
     marginBottom: 12,
     color: AppColorStyles.black,
   },
@@ -179,49 +162,38 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   infoBullet: {
-    fontSize: 15,
+    ...KBODiaGothicTextStyle.medium({ fontSize: 15, lineHeight: 22 }),
     color: AppColorStyles.textSecondary,
-    lineHeight: 22,
   },
   limitCard: {
     backgroundColor: AppColorStyles.surface,
-    borderRadius: 12,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: AppColorStyles.divider,
     padding: 20,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   limitLabel: {
-    fontSize: 15,
-    color: AppColorStyles.textSecondary,
+    ...KBODiaGothicTextStyle.light({ fontSize: 15 }),
+    color: '#000000',
   },
   limitValue: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: AppColorStyles.textPrimary,
+    ...KBODiaGothicTextStyle.bold({ fontSize: 20 }),
+    color: '#333333',
   },
   limitHint: {
     textAlign: 'center',
-    fontSize: 13,
-    color: AppColorStyles.textHint,
-    marginTop: -8,
+    ...KBODiaGothicTextStyle.light({ fontSize: 13, lineHeight: 13 }),
+    color: '#C2C2C2',
+    marginTop: 4,
   },
   bottomContainer: {
     padding: 20,
-    paddingBottom: 24,
-  },
-  primaryButton: {
-    backgroundColor: AppColorStyles.yellow,
-    height: 56,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonText: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: AppColorStyles.black,
+    paddingBottom: 8,
   },
 });
 
 export default AutoTransferAgreeScreen;
+

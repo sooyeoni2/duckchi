@@ -8,10 +8,6 @@ import type {
   AccountHistoryItem,
 } from '../models/paymentTypes';
 
-/**
- * 계좌 내역 목록 조회 상태.
- * 리스트 화면은 이 상태만 보고 loading / empty / error / loaded를 분기한다.
- */
 export type PaymentAccountHistoryState =
   | { status: 'idle' }
   | { status: 'loading' }
@@ -19,19 +15,58 @@ export type PaymentAccountHistoryState =
   | { status: 'empty' }
   | { status: 'error'; message: string };
 
-/**
- * 계좌 내역에서 "장바구니 담기" 후 진입하는 draft 폼 상태.
- */
 export type PaymentAccountHistoryDraftState =
   | { status: 'idle' }
   | { status: 'loading'; historyId: string }
   | { status: 'loaded'; draft: AccountHistoryEntryDraft }
   | { status: 'error'; historyId: string; message: string };
 
-/**
- * payment feature 내부에서만 쓰는 계좌 내역 전용 ViewModel.
- * room 종속 상태이므로 전역 store로 빼지 않고, hook 인스턴스 로컬 상태로 관리한다.
- */
+const parseAmount = (text: string): number => {
+  const digitsOnly = text.replace(/[^0-9]/g, '');
+  return digitsOnly.length > 0 ? Number(digitsOnly) : 0;
+};
+
+const distributeAmountEvenly = (
+  draft: AccountHistoryEntryDraft,
+): AccountHistoryEntryDraft => {
+  const selectedParticipants = draft.participants.filter(
+    (participant) => participant.isSelected,
+  );
+
+  if (selectedParticipants.length === 0) {
+    return {
+      ...draft,
+      participants: draft.participants.map((participant) => ({
+        ...participant,
+        splitAmount: 0,
+      })),
+    };
+  }
+
+  const baseAmount = Math.floor(draft.amount / selectedParticipants.length);
+  let remainingAmount = draft.amount % selectedParticipants.length;
+
+  return {
+    ...draft,
+    participants: draft.participants.map((participant) => {
+      if (!participant.isSelected) {
+        return {
+          ...participant,
+          splitAmount: 0,
+        };
+      }
+
+      const bonusAmount = remainingAmount > 0 ? 1 : 0;
+      remainingAmount = Math.max(remainingAmount - 1, 0);
+
+      return {
+        ...participant,
+        splitAmount: baseAmount + bonusAmount,
+      };
+    }),
+  };
+};
+
 export function usePaymentAccountHistoryViewModel(roomId: number) {
   const [historyState, setHistoryState] =
     React.useState<PaymentAccountHistoryState>({
@@ -43,7 +78,6 @@ export function usePaymentAccountHistoryViewModel(roomId: number) {
     });
 
   React.useEffect(() => {
-    // room이 바뀌면 이전 room의 거래 내역/참여자 draft를 그대로 가져가면 안 된다.
     setHistoryState({ status: 'idle' });
     setDraftState({ status: 'idle' });
   }, [roomId]);
@@ -98,9 +132,6 @@ export function usePaymentAccountHistoryViewModel(roomId: number) {
     [roomId],
   );
 
-  /**
-   * 장바구니 항목명은 사용자가 거래 메모와 다른 이름으로 정리할 수 있으므로 로컬 draft에서 수정한다.
-   */
   const updateItemName = React.useCallback((itemName: string) => {
     setDraftState((previousState) => {
       if (previousState.status !== 'loaded') {
@@ -117,9 +148,6 @@ export function usePaymentAccountHistoryViewModel(roomId: number) {
     });
   }, []);
 
-  /**
-   * 참여자 토글은 API 호출 전까지 완전히 FE draft state만 변경한다.
-   */
   const toggleParticipant = React.useCallback((userId: number) => {
     setDraftState((previousState) => {
       if (previousState.status !== 'loaded') {
@@ -132,7 +160,11 @@ export function usePaymentAccountHistoryViewModel(roomId: number) {
           ...previousState.draft,
           participants: previousState.draft.participants.map((participant) =>
             participant.userId === userId
-              ? { ...participant, isSelected: !participant.isSelected }
+              ? {
+                  ...participant,
+                  isSelected: !participant.isSelected,
+                  splitAmount: participant.isSelected ? 0 : participant.splitAmount,
+                }
               : participant,
           ),
         },
@@ -140,15 +172,67 @@ export function usePaymentAccountHistoryViewModel(roomId: number) {
     });
   }, []);
 
+  const prepareSplitStep = React.useCallback(() => {
+    if (draftState.status !== 'loaded') {
+      return false;
+    }
+
+    if (
+      draftState.draft.itemName.trim().length === 0 ||
+      draftState.draft.amount <= 0 ||
+      draftState.draft.participants.every((participant) => !participant.isSelected)
+    ) {
+      return false;
+    }
+
+    setDraftState({
+      status: 'loaded',
+      draft: distributeAmountEvenly(draftState.draft),
+    });
+
+    return true;
+  }, [draftState]);
+
+  const updateParticipantSplitAmount = React.useCallback(
+    (userId: number, text: string) => {
+      setDraftState((previousState) => {
+        if (previousState.status !== 'loaded') {
+          return previousState;
+        }
+
+        return {
+          status: 'loaded',
+          draft: {
+            ...previousState.draft,
+            participants: previousState.draft.participants.map((participant) =>
+              participant.userId === userId
+                ? {
+                    ...participant,
+                    splitAmount: parseAmount(text),
+                  }
+                : participant,
+            ),
+          },
+        };
+      });
+    },
+    [],
+  );
+
   const resetDraft = React.useCallback(() => {
     setDraftState({ status: 'idle' });
   }, []);
 
-  const selectedParticipantCount =
+  const selectedParticipants =
     draftState.status === 'loaded'
       ? draftState.draft.participants.filter((participant) => participant.isSelected)
-          .length
-      : 0;
+      : [];
+
+  const selectedParticipantCount = selectedParticipants.length;
+  const splitAmountTotal = selectedParticipants.reduce(
+    (sum, participant) => sum + participant.splitAmount,
+    0,
+  );
 
   return {
     historyState,
@@ -158,7 +242,11 @@ export function usePaymentAccountHistoryViewModel(roomId: number) {
     openDraft,
     updateItemName,
     toggleParticipant,
+    prepareSplitStep,
+    updateParticipantSplitAmount,
     resetDraft,
+    selectedParticipants,
     selectedParticipantCount,
+    splitAmountTotal,
   };
 }

@@ -10,6 +10,7 @@ import RoomMoreOptionsScreen from './views/screens/RoomMoreOptionsScreen';
 import AutoTransferAgreeScreen from './views/screens/AutoTransferAgreeScreen';
 import AdminDelegationScreen from './views/screens/AdminDelegationScreen';
 import RoomEditScreen from './views/screens/RoomEditScreen';
+import { SettlementRequestListScreen } from './views/SettlementRequestListScreen';
 
 const Stack = createNativeStackNavigator<RoomStackParamList>();
 
@@ -24,6 +25,7 @@ export function RoomNavigator() {
       <Stack.Screen name="AutoTransferAgree" component={AutoTransferAgreeScreen} options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="AdminDelegation" component={AdminDelegationScreen} options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="RoomEdit" component={RoomEditScreen} options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="SettlementRequestList" component={SettlementRequestListScreen} options={{ animation: 'slide_from_right' }} />
     </Stack.Navigator>
   );
 }

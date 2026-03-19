@@ -1,4 +1,4 @@
-﻿import { MaterialCommunityIcons as MaterialDesignIcons } from '@expo/vector-icons';
+import { MaterialCommunityIcons as MaterialDesignIcons } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AppColorStyles } from '@core/theme/colors';
@@ -6,7 +6,13 @@ import {
   KBODiaGothicTextStyle,
   PretendardTextStyle,
 } from '@core/theme/typography';
+import {
+  formatExpenseListDate,
+  formatExpenseTotalAmount,
+  getExpensePrimaryDisplayDate,
+} from '../../models/paymentDisplay';
 import type { MyExpenseItem } from '../../models/paymentTypes';
+import { PaymentExpenseStatusBadge } from './PaymentExpenseStatusBadge';
 
 interface PaymentExpenseSelectionCardProps {
   expense: MyExpenseItem;
@@ -15,108 +21,88 @@ interface PaymentExpenseSelectionCardProps {
   onDetailPress: () => void;
 }
 
-const STATUS_LABEL: Record<MyExpenseItem['status'], string> = {
-  PENDING: '정산 전',
-  REQUESTED: '요청됨',
-  SETTLED: '완료',
-};
-
-const formatAmount = (amount: number): string =>
-  `${amount.toLocaleString('ko-KR')}원`;
-
-const formatDate = (date: Date | null): string => {
-  if (date == null) {
-    return '일시 미정';
-  }
-
-  return `${date.getMonth() + 1}.${date
-    .getDate()
-    .toString()
-    .padStart(2, '0')}`;
-};
-
-/**
- * 와이어프레임의 결제 선택 카드를 payment 전용 컴포넌트로 분리했다.
- * 선택 상태는 부모가 관리하고, 이 카드는 표현과 클릭 이벤트 전달만 담당한다.
- */
 export function PaymentExpenseSelectionCard({
   expense,
   selected,
   onToggle,
   onDetailPress,
 }: PaymentExpenseSelectionCardProps) {
+  const isPending = expense.status === 'PENDING';
+  const isSettled = expense.status === 'SETTLED';
+  const displayTime = formatExpenseListDate(
+    getExpensePrimaryDisplayDate(expense),
+  );
+
   return (
-    <View style={styles.card}>
-      <TouchableOpacity
-        activeOpacity={0.85}
-        onPress={onToggle}
-        style={styles.topRow}
-      >
-        <View style={styles.titleRow}>
-          <MaterialDesignIcons
-            name={selected ? 'checkbox-marked' : 'checkbox-blank-outline'}
-            size={22}
-            color={selected ? AppColorStyles.gray1 : AppColorStyles.black}
-            style={styles.checkboxIcon}
-          />
-
-          <View style={styles.titleWrap}>
-            <Text
-              style={KBODiaGothicTextStyle.bold({
-                fontSize: 18,
-                color: AppColorStyles.black,
-              })}
+    <View
+      style={[
+        styles.card,
+        selected && styles.cardSelected,
+        isSettled && styles.cardSettled,
+      ]}
+    >
+      <View style={styles.row}>
+        <View style={styles.leadingSlot}>
+          {isPending ? (
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={onToggle}
+              style={styles.checkboxButton}
             >
-              {expense.title}
-            </Text>
-            <Text
-              style={PretendardTextStyle.medium({
-                fontSize: 12,
-                color: AppColorStyles.textSecondary,
-              })}
-            >
-              {`${STATUS_LABEL[expense.status]} · ${formatDate(expense.paidAt)}`}
-            </Text>
-          </View>
+              <MaterialDesignIcons
+                name={selected ? 'checkbox-marked' : 'checkbox-blank-outline'}
+                size={22}
+                color={selected ? AppColorStyles.gray1 : AppColorStyles.gray2}
+              />
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.leadingSpacer} />
+          )}
         </View>
-
-        <Text
-          style={KBODiaGothicTextStyle.bold({
-            fontSize: 20,
-            color: AppColorStyles.gray1,
-          })}
-        >
-          {formatAmount(expense.totalAmount)}
-        </Text>
-      </TouchableOpacity>
-
-      <View style={styles.bottomRow}>
-        <Text
-          style={PretendardTextStyle.medium({
-            fontSize: 12,
-            color: AppColorStyles.textSecondary,
-          })}
-        >
-          {expense.inputType === 'ACCOUNT_HISTORY'
-            ? '계좌 내역'
-            : expense.inputType === 'OCR'
-              ? '영수증 OCR'
-              : '직접 입력'}
-        </Text>
 
         <TouchableOpacity
           activeOpacity={0.85}
           onPress={onDetailPress}
-          style={styles.detailChip}
+          style={styles.contentButton}
         >
-          <Text
-            style={PretendardTextStyle.semiBold({
-              fontSize: 12,
-              color: AppColorStyles.black,
-            })}
-          >
-            상세내역
-          </Text>
+          <View style={styles.titleRow}>
+            <Text
+              numberOfLines={1}
+              style={[
+                KBODiaGothicTextStyle.bold({
+                  fontSize: 18,
+                  color: isSettled
+                    ? AppColorStyles.textSecondary
+                    : AppColorStyles.black,
+                }),
+                styles.titleText,
+              ]}
+            >
+              {expense.title}
+            </Text>
+            <PaymentExpenseStatusBadge status={expense.status} />
+          </View>
+
+          <View style={styles.metaRow}>
+            <Text
+              style={KBODiaGothicTextStyle.bold({
+                fontSize: 16,
+                color: isSettled ? AppColorStyles.gray2 : AppColorStyles.gray1,
+              })}
+            >
+              {formatExpenseTotalAmount(expense.totalAmount)}
+            </Text>
+            <Text
+              style={PretendardTextStyle.medium({
+                fontSize: 13,
+                color: isSettled
+                  ? AppColorStyles.textHint
+                  : AppColorStyles.textSecondary,
+              })}
+            >
+              {displayTime}
+            </Text>
+          </View>
         </TouchableOpacity>
       </View>
     </View>
@@ -126,8 +112,7 @@ export function PaymentExpenseSelectionCard({
 const styles = StyleSheet.create({
   card: {
     paddingHorizontal: 14,
-    paddingTop: 18,
-    paddingBottom: 12,
+    paddingVertical: 16,
     borderRadius: 14,
     backgroundColor: AppColorStyles.white,
     borderWidth: 1,
@@ -139,33 +124,50 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  topRow: {
+  cardSettled: {
+    backgroundColor: AppColorStyles.gray5,
+    borderColor: AppColorStyles.border,
+  },
+  cardSelected: {
+    backgroundColor: AppColorStyles.yellowLight,
+    borderColor: AppColorStyles.yellow,
+  },
+  row: {
     flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  leadingSlot: {
+    width: 32,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    paddingTop: 1,
+  },
+  checkboxButton: {
+    width: 28,
+    height: 28,
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
+  },
+  leadingSpacer: {
+    width: 28,
+    height: 28,
+  },
+  contentButton: {
+    flex: 1,
   },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
-    paddingRight: 12,
+    justifyContent: 'space-between',
   },
-  checkboxIcon: {
-    marginRight: 10,
-  },
-  titleWrap: {
+  titleText: {
     flex: 1,
   },
-  bottomRow: {
-    marginTop: 12,
+  metaRow: {
+    marginTop: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-  },
-  detailChip: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: AppColorStyles.gray4,
+    flex: 1,
   },
 });

@@ -1,18 +1,25 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, StyleSheet, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppColorStyles } from '@core/theme/colors';
-import { AntDesign } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import type { RouteProp } from '@react-navigation/native';
+import type { RoomStackParamList } from '@core/navigation/types';
+import { CustomAppBar } from '@shared/components/app_bar/CustomAppBar';
 
 import { useRoomMoreOptionsViewModel } from '../../viewmodels/useRoomMoreOptionsViewModel';
 import { useRoomActionViewModel } from '../../viewmodels/useRoomActionViewModel';
 import { RoomMenuItem } from '../components/RoomMenuItem';
-import { InviteLinkBottomSheet } from '../components/InviteLinkBottomSheet';
-import { RoomActionConfirmBottomSheet } from '../components/RoomActionConfirmBottomSheet';
+import { RoomActionConfirmBottomSheet, type PendingSettlement } from '../components/RoomActionConfirmBottomSheet';
+import { MeetingRoomLinkSheet } from '../../components/MeetingRoomLinkSheet';
+import { getMeetingRoomInviteLinkMock } from '../../models/roomMockData';
+
+type Route = RouteProp<RoomStackParamList, 'RoomMoreOptions'>;
 
 const RoomMoreOptionsScreen: React.FC = () => {
   const navigation = useNavigation<any>();
+  const route = useRoute<Route>();
+  const { roomId } = route.params;
   
   // ViewModel 훅을 통해 상태와 로직(핸들러)을 가져옴
   const { state, openInviteModal, closeInviteModal, openActionModal, closeActionModal } = useRoomMoreOptionsViewModel();
@@ -20,8 +27,24 @@ const RoomMoreOptionsScreen: React.FC = () => {
 
   const { state: actionState, startRoom, endRoom, deleteRoom, leaveRoom } = useRoomActionViewModel();
 
+  // 팀 공용 MeetingRoomLinkSheet에서 사용할 초대 링크 Mock
+  const inviteLink = getMeetingRoomInviteLinkMock(1);
+
+  // 미완료 정산 Mock (실제 연동 시 서버 데이터로 교체)
+  const pendingSettlement: PendingSettlement | undefined =
+    (activeActionType === 'LEAVE' || activeActionType === 'DELETE')
+      ? { count: 1, name: '고기집', amount: 20000, requester: '류병선' }
+      : undefined;
+
   const handleActionConfirm = async () => {
     if (!activeActionType) return;
+
+    // 미완료 정산이 있으면 정산하기 화면으로 이동
+    if (pendingSettlement != null) {
+      closeActionModal();
+      navigation.navigate('RoomDetail', { roomId, showTransfer: true });
+      return;
+    }
 
     let success = false;
     switch (activeActionType) {
@@ -34,31 +57,21 @@ const RoomMoreOptionsScreen: React.FC = () => {
     if (success) {
       closeActionModal();
       if (activeActionType === 'DELETE' || activeActionType === 'LEAVE') {
-        navigation.navigate('Home'); // 임시로 홈으로 이동
+        navigation.navigate('Home');
       }
     }
   };
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <AntDesign name="left" size={24} color={AppColorStyles.black} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>더보기</Text>
-        <View style={{ width: 24 }} />
-      </View>
+      {/* 공용 AppBar 컴포넌트 사용 */}
+      <CustomAppBar
+        showDivider
+        backgroundColor={AppColorStyles.background}
+        onBackPress={() => navigation.goBack()}
+      />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* 모임방 정보 헤더 카드 */}
-        <View style={styles.infoCard}>
-          <Text style={styles.infoTitle}>{roomInfo.title}</Text>
-          <Text style={styles.infoSubtitle}>
-            {roomInfo.category} · {roomInfo.memberCount}명 · {roomInfo.status === 'READY' ? '준비중' : roomInfo.status === 'START' ? '진행중' : '종료됨'}
-          </Text>
-        </View>
-
         {/* 메인 메뉴 카드 */}
         <View style={styles.card}>
           <RoomMenuItem 
@@ -70,7 +83,6 @@ const RoomMoreOptionsScreen: React.FC = () => {
             title="자동이체 동의" 
             onPress={() => navigation.navigate('AutoTransferAgree')}
           />
-          <RoomMenuItem title="총무 뽑기" />
           
           {roomInfo.isAdmin && (
             <RoomMenuItem 
@@ -84,17 +96,18 @@ const RoomMoreOptionsScreen: React.FC = () => {
             onPress={() => navigation.navigate('RoomEdit')}
           />
           
+          {/* 삭제: danger 색상으로 메뉴 텍스트만 시각 구분 */}
           {roomInfo.isAdmin && (
             <RoomMenuItem 
               title="모임방 삭제" 
-              textColor="#007AFF" // 주의 행동 (파란색)
+              textColor="#0055FF"
               onPress={() => openActionModal('DELETE')}
               showBorder={false}
             />
           )}
         </View>
 
-        {/* 위험 구역 카드 (나가기) */}
+        {/* 나가기: warning 색상으로 메뉴 텍스트만 시각 구분 */}
         <View style={styles.card}>
           <RoomMenuItem 
             title="모임방 나가기" 
@@ -105,19 +118,25 @@ const RoomMoreOptionsScreen: React.FC = () => {
         </View>
       </ScrollView>
 
-      {/* 초대링크 공유 바텀시트 모달 (분리된 컴포넌트) */}
-      <InviteLinkBottomSheet
-        isVisible={isInviteModalVisible}
-        onClose={closeInviteModal}
-        inviteLink={roomInfo.inviteLink}
+      {/* 초대링크 공유 — 팀 공용 MeetingRoomLinkSheet 사용 */}
+      <MeetingRoomLinkSheet
+        visible={isInviteModalVisible}
+        inviteLink={inviteLink}
+        title="친구를 모임방으로 초대하기"
+        showLater={false}
+        onCopyLink={() => {
+          Alert.alert('초대 링크', '링크가 복사되었습니다.');
+        }}
+        onLater={closeInviteModal}
       />
 
-      {/* 각종 액션 확인 바텀시트 모달 */}
+      {/* 각종 액션 확인 바텀시트 모달 (버튼 색상: 모두 노란색) */}
       {activeActionType && (
         <RoomActionConfirmBottomSheet
           isVisible={isActionModalVisible}
           type={activeActionType}
           isProcessing={actionState.isProcessing}
+          pendingSettlement={pendingSettlement}
           onClose={closeActionModal}
           onConfirm={handleActionConfirm}
         />
@@ -131,49 +150,20 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: AppColorStyles.background,
   },
-  header: {
-    height: 56,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    backgroundColor: AppColorStyles.background,
-  },
-  backButton: {
-    padding: 4,
-    marginLeft: -4,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: AppColorStyles.textPrimary,
-  },
   scrollContent: {
-    padding: 16,
-    paddingTop: 8,
-    gap: 16,
-  },
-  infoCard: {
-    backgroundColor: AppColorStyles.surface, 
-    borderRadius: 12,
     padding: 20,
+    paddingTop: 20,
     gap: 8,
-  },
-  infoTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: AppColorStyles.black,
-  },
-  infoSubtitle: {
-    fontSize: 14,
-    color: AppColorStyles.textHint,
-    fontWeight: '500',
   },
   card: {
     backgroundColor: AppColorStyles.surface,
-    borderRadius: 12,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: AppColorStyles.divider,
     overflow: 'hidden',
   },
 });
 
 export default RoomMoreOptionsScreen;
+
+

@@ -1,13 +1,15 @@
 import React from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
-  Modal, 
-  TouchableWithoutFeedback 
+import {
+  View,
+  Text,
+  StyleSheet,
+  Modal,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { AppColorStyles } from '@core/theme/colors';
+import { FilledButton } from '@shared/components/buttons/FilledButton';
+import { OutlineButton } from '@shared/components/buttons/OutlineButton';
 
 interface AutoTransferConfirmBottomSheetProps {
   isVisible: boolean;
@@ -28,7 +30,7 @@ export const AutoTransferConfirmBottomSheet: React.FC<AutoTransferConfirmBottomS
     <Modal
       visible={isVisible}
       transparent={true}
-      animationType="slide"
+      animationType="none"
       onRequestClose={onClose}
     >
       <TouchableOpacity 
@@ -64,26 +66,18 @@ export const AutoTransferConfirmBottomSheet: React.FC<AutoTransferConfirmBottomS
             )}
 
             <View style={styles.buttonRow}>
-              <TouchableOpacity 
-                style={styles.cancelButton} 
+              <OutlineButton
+                text="아니요"
                 onPress={onClose}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.cancelButtonText}>아니요</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={styles.confirmButton} 
-                onPress={() => {
-                  onConfirm();
-                  onClose();
-                }}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.confirmButtonText}>
-                  {isCurrentlyAgreed ? '취소하기' : '동의하기'}
-                </Text>
-              </TouchableOpacity>
+                isFullWidth={false}
+                style={styles.buttonFlex}
+              />
+              <FilledButton
+                text={isCurrentlyAgreed ? '취소하기' : '동의하기'}
+                onPress={() => { onConfirm(); onClose(); }}
+                isFullWidth={false}
+                style={styles.buttonFlex}
+              />
             </View>
           </View>
         </TouchableWithoutFeedback>
@@ -103,7 +97,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: 24,
-    paddingBottom: 40,
+    paddingBottom: 80,
     paddingTop: 12,
   },
   sheetHandle: {
@@ -149,32 +143,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
   },
-  cancelButton: {
+  buttonFlex: {
     flex: 1,
-    height: 52,
-    borderWidth: 1,
-    borderColor: AppColorStyles.yellow,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: AppColorStyles.surface,
-  },
-  cancelButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: AppColorStyles.black,
-  },
-  confirmButton: {
-    flex: 1,
-    height: 52,
-    backgroundColor: AppColorStyles.yellow,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  confirmButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: AppColorStyles.black,
   },
 });
