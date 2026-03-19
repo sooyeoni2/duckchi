@@ -74,30 +74,27 @@ export function MeetingCard({ category, rooms, onPress, onActionPress }: Meeting
 const styles = StyleSheet.create({
   cardShell: {
     width: '100%',
-    borderRadius: 10,
+    borderRadius: 18,
     backgroundColor: AppColorStyles.surface,
-    shadowColor: '#676767',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: AppColorStyles.divider,
     paddingTop: 15,
     paddingBottom: 18,
-    gap: 16,
+    gap: 12,
   },
   shellCategory: {
     ...KBODiaGothicTextStyle.medium({
       fontSize: 16,
-      color: AppColorStyles.gray2,
+      color: AppColorStyles.textHint,
       lineHeight: 16,
     }),
-    marginLeft: 14,
+    marginLeft: 16,
   },
   card: {
     height: 181,
-    marginHorizontal: 14,
+    marginHorizontal: 16,
     position: 'relative',
-    borderRadius: 10,
+    borderRadius: 14,
     backgroundColor: AppColorStyles.white,
     shadowColor: '#676767',
     shadowOffset: { width: 0, height: 2 },
@@ -187,8 +184,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 6,
     bottom: 10,
-    width: 130,
-    height: 44,
+    width: 110,
+    height: 36,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
@@ -197,7 +194,7 @@ const styles = StyleSheet.create({
     backgroundColor: AppColorStyles.yellow,
   },
   actionButtonMuted: {
-    backgroundColor: '#D9D9D9',
+    backgroundColor: AppColorStyles.divider,
   },
   actionButtonText: {
     ...KBODiaGothicTextStyle.medium({
