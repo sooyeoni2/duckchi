@@ -172,10 +172,11 @@ pipeline {
                 ]) {
                     sh '''
                         set -eu
+                        REGISTRY_NAMESPACE="$(printf '%s' "${DOCKERHUB_USERNAME}" | tr '[:upper:]' '[:lower:]')"
                         echo "${DOCKERHUB_TOKEN}" | docker login -u "${DOCKERHUB_USERNAME}" --password-stdin
 
                         for service in ${BACKEND_SERVICES}; do
-                          IMAGE_NAME="${DOCKERHUB_USERNAME}/duckchi-${service}"
+                          IMAGE_NAME="${REGISTRY_NAMESPACE}/duckchi-${service}"
                           docker build \
                             -t "${IMAGE_NAME}:${BUILD_NUMBER}" \
                             -t "${IMAGE_NAME}:latest" \
@@ -228,7 +229,7 @@ for key in ${REQUIRED_ENV_VARS}; do
   fi
 done
 
-export REGISTRY_NAMESPACE="${DOCKERHUB_USERNAME}"
+export REGISTRY_NAMESPACE="$(printf '%s' "${DOCKERHUB_USERNAME}" | tr '[:upper:]' '[:lower:]')"
 export IMAGE_TAG="${BUILD_NUMBER}"
 docker-compose -f "${COMPOSE_FILE}" config >/dev/null
 docker-compose -f "${COMPOSE_FILE}" pull
