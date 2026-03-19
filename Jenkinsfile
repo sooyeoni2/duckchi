@@ -207,27 +207,33 @@ pipeline {
                         sh '''
                             set -eu
                             set +x
-                            ssh -o BatchMode=yes "${DEPLOY_HOST}" 'bash -se' <<REMOTE
+
+                            printf '%s' "${DOCKERHUB_TOKEN}" | ssh -o BatchMode=yes "${DEPLOY_HOST}" 'cat > /tmp/duckchi_docker_token'
+
+                            ssh -o BatchMode=yes "${DEPLOY_HOST}" bash -se -- "${DEPLOY_PATH}" "${COMPOSE_FILE}" "${REQUIRED_ENV_VARS}" "${DOCKERHUB_USERNAME}" "${BUILD_NUMBER}" <<'REMOTE'
 set -eu
+
+DEPLOY_PATH="$1"
+COMPOSE_FILE="$2"
+REQUIRED_ENV_VARS="$3"
+DOCKERHUB_USERNAME="$4"
+BUILD_NUMBER="$5"
+TOKEN_FILE="/tmp/duckchi_docker_token"
+
 cd "${DEPLOY_PATH}"
 test -f "${COMPOSE_FILE}"
 test -f .env
 
 for key in ${REQUIRED_ENV_VARS}; do
-  if ! grep -q "^\\${key}=.\\+" .env; then
-    echo "Missing required env: \\${key}"
+  if ! grep -q "^${key}=.\\+" .env; then
+    echo "Missing required env: ${key}"
     exit 1
   fi
 done
 
-TOKEN_FILE="\$(mktemp)"
-trap 'rm -f "\${TOKEN_FILE}"' EXIT
+trap 'rm -f "${TOKEN_FILE}"' EXIT
 
-cat > "\${TOKEN_FILE}" <<'TOKEN_EOF'
-${DOCKERHUB_TOKEN}
-TOKEN_EOF
-
-cat "\${TOKEN_FILE}" | docker login -u "${DOCKERHUB_USERNAME}" --password-stdin
+docker login -u "${DOCKERHUB_USERNAME}" --password-stdin < "${TOKEN_FILE}"
 export REGISTRY_NAMESPACE="${DOCKERHUB_USERNAME}"
 export IMAGE_TAG="${BUILD_NUMBER}"
 docker-compose -f "${COMPOSE_FILE}" config >/dev/null
