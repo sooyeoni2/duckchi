@@ -52,12 +52,18 @@ export const useKakaoLoginViewModel = (navigation: Navigation) => {
           authorizationCode,
           redirectUri: KAKAO_WEB_REDIRECT_URI,
         });
-        setAuth(result.accessToken, result.refreshToken, result.user);
-        if (result.isNewUser) {
+        const { isNewUser, user } = result;
+        setAuth(result.accessToken, result.refreshToken, user);
+        if (isNewUser || !user.name) {
           navigation.replace('Terms');
+        } else if (!user.hasBankAccount) {
+          navigation.getParent()?.navigate('BankAccountSetup', { returnTo: 'NewUser' });
+        } else if (!user.hasPayPassword) {
+          navigation.getParent()?.navigate('PayPasswordSetup');
         } else {
           navigation.getParent()?.navigate('App');
         }
+        // TODO: 백엔드 hasBankAccount, hasPayPassword 필드 추가 후 위 분기 정상 동작
       } catch (e: any) {
         handledRef.current = false;
         const status = e?.response?.status;

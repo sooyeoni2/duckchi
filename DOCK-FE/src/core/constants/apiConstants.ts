@@ -1,6 +1,6 @@
-﻿import Constants from 'expo-constants';
+import Constants from 'expo-constants';
 
-export const API_BASE_URL = 'http://192.168.100.126:8081';
+export const API_BASE_URL = 'http://192.168.0.13:8081';
 export const API_TIMEOUT = 10000;
 
 export const ENDPOINTS = {
@@ -18,5 +18,6 @@ const extra = expoConfig?.extra ?? {};
 export const KAKAO_CLIENT_ID: string = extra.kakaoClientId ?? '';
 export const KAKAO_WEB_REDIRECT_URI: string = extra.kakaoRedirectUri ?? '';
 
-export const KAKAO_WEB_AUTH_URL =
-  `https://kauth.kakao.com/oauth/authorize?client_id=${KAKAO_CLIENT_ID}&redirect_uri=${encodeURIComponent(KAKAO_WEB_REDIRECT_URI)}&response_type=code`;
+export const KAKAO_WEB_AUTH_URL = `https://kauth.kakao.com/oauth/authorize?client_id=${KAKAO_CLIENT_ID}&redirect_uri=${encodeURIComponent(
+  KAKAO_WEB_REDIRECT_URI,
+)}&response_type=code`;

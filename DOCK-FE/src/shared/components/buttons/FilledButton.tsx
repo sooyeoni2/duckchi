@@ -2,7 +2,9 @@ import React from 'react';
 import {
   ActivityIndicator,
   StyleSheet,
+  StyleProp,
   Text,
+  TextStyle,
   TouchableOpacity,
   View,
   ViewStyle,
@@ -32,6 +34,7 @@ interface FilledButtonProps {
   prefixIcon?: React.ReactNode;
   suffixIcon?: React.ReactNode;
   style?: ViewStyle;
+  textStyle?: StyleProp<TextStyle>;
 }
 
 export const FilledButton: React.FC<FilledButtonProps> = ({
@@ -45,6 +48,7 @@ export const FilledButton: React.FC<FilledButtonProps> = ({
   prefixIcon,
   suffixIcon,
   style,
+  textStyle,
 }) => {
   const disabled = isLoading || !onPress;
 
@@ -73,6 +77,7 @@ export const FilledButton: React.FC<FilledButtonProps> = ({
             style={[
               KBODiaGothicTextStyle.bold({ fontSize: 20 }),
               { color: disabled ? AppColorStyles.textHint : AppColorStyles.black },
+              textStyle,
             ]}
           >
             {text}
