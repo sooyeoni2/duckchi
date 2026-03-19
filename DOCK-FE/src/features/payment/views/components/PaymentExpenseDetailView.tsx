@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AppColorStyles } from '@core/theme/colors';
 import {
@@ -9,7 +9,11 @@ import type { MyExpenseDetail } from '../../models/paymentTypes';
 
 interface PaymentExpenseDetailViewProps {
   expense: MyExpenseDetail;
-  onBack: () => void;
+  onEdit: () => void;
+  onCancel: () => void;
+  editDisabled?: boolean;
+  cancelDisabled?: boolean;
+  actionHelperMessage?: string | null;
 }
 
 interface InfoRowProps {
@@ -34,7 +38,7 @@ const formatAmount = (amount: number): string =>
 
 const formatDate = (date: Date | null): string => {
   if (date == null) {
-    return '일시 미정';
+    return '시간 정보 없음';
   }
 
   const month = date.getMonth() + 1;
@@ -68,14 +72,19 @@ function InfoRow({ label, value }: InfoRowProps) {
   );
 }
 
-/**
- * 목록 카드에서 진입한 상세내역 mock 화면.
- * 실제 API 전에도 어떤 정보를 사용자에게 보여줄지 섹션 단위로 검토할 수 있게 만든다.
- */
 export function PaymentExpenseDetailView({
   expense,
-  onBack,
+  onEdit,
+  onCancel,
+  editDisabled = false,
+  cancelDisabled = false,
+  actionHelperMessage = null,
 }: PaymentExpenseDetailViewProps) {
+  const shouldShowLineItems =
+    expense.inputType === 'OCR' && expense.lineItems.length > 0;
+  const shouldShowSourceInfo =
+    expense.sourceInfoRows != null && expense.sourceInfoRows.length > 0;
+
   return (
     <View>
       <View style={styles.heroCard}>
@@ -85,7 +94,7 @@ export function PaymentExpenseDetailView({
             color: AppColorStyles.textSecondary,
           })}
         >
-          상세내역
+          상세 내역
         </Text>
         <Text
           style={KBODiaGothicTextStyle.bold({
@@ -124,11 +133,33 @@ export function PaymentExpenseDetailView({
           기본 정보
         </Text>
         <View style={styles.sectionBody}>
-          <InfoRow label="결제 상태" value={STATUS_LABEL[expense.status]} />
-          <InfoRow label="입력 방식" value={INPUT_TYPE_LABEL[expense.inputType]} />
+          <InfoRow label="정산 상태" value={STATUS_LABEL[expense.status]} />
+          <InfoRow label="등록 방식" value={INPUT_TYPE_LABEL[expense.inputType]} />
           <InfoRow label="참여 인원" value={`${expense.participantCount}명`} />
         </View>
       </View>
+
+      {shouldShowSourceInfo && (
+        <View style={styles.sectionCard}>
+          <Text
+            style={KBODiaGothicTextStyle.medium({
+              fontSize: 18,
+              color: AppColorStyles.black,
+            })}
+          >
+            원본 정보
+          </Text>
+          <View style={styles.sectionBody}>
+            {expense.sourceInfoRows?.map((row) => (
+              <InfoRow
+                key={`${row.label}-${row.value}`}
+                label={row.label}
+                value={row.value}
+              />
+            ))}
+          </View>
+        </View>
+      )}
 
       <View style={styles.sectionCard}>
         <Text
@@ -137,7 +168,7 @@ export function PaymentExpenseDetailView({
             color: AppColorStyles.black,
           })}
         >
-          참여 인원
+          참여자 설정
         </Text>
         <View style={styles.sectionBody}>
           {expense.participants.map((participant) => (
@@ -167,7 +198,7 @@ export function PaymentExpenseDetailView({
                     {participant.isRequester
                       ? '요청자'
                       : participant.isSettled
-                        ? '정산 완료'
+                        ? '완료'
                         : '대기'}
                   </Text>
                 </View>
@@ -185,7 +216,7 @@ export function PaymentExpenseDetailView({
         </View>
       </View>
 
-      {expense.lineItems.length > 0 && (
+      {shouldShowLineItems && (
         <View style={styles.sectionCard}>
           <Text
             style={KBODiaGothicTextStyle.medium({
@@ -231,7 +262,7 @@ export function PaymentExpenseDetailView({
                     color: AppColorStyles.textSecondary,
                   })}
                 >
-                  {`분배 대상: ${item.assignedParticipants.join(', ')}`}
+                  {`배정 참여자 · ${item.assignedParticipants.join(', ')}`}
                 </Text>
               </View>
             ))}
@@ -261,20 +292,59 @@ export function PaymentExpenseDetailView({
         </View>
       </View>
 
-      <TouchableOpacity
-        activeOpacity={0.85}
-        onPress={onBack}
-        style={styles.backButton}
-      >
+      <View style={styles.actionRow}>
+        <TouchableOpacity
+          activeOpacity={0.85}
+          disabled={editDisabled}
+          onPress={onEdit}
+          style={[
+            styles.actionButton,
+            styles.editButton,
+            editDisabled && styles.disabledButton,
+          ]}
+        >
+          <Text
+            style={KBODiaGothicTextStyle.bold({
+              fontSize: 18,
+              color: AppColorStyles.black,
+            })}
+          >
+            수정하기
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          activeOpacity={0.85}
+          disabled={cancelDisabled}
+          onPress={onCancel}
+          style={[
+            styles.actionButton,
+            styles.cancelButton,
+            cancelDisabled && styles.disabledOutlineButton,
+          ]}
+        >
+          <Text
+            style={KBODiaGothicTextStyle.bold({
+              fontSize: 18,
+              color: AppColorStyles.black,
+            })}
+          >
+            취소하기
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {actionHelperMessage != null && (
         <Text
-          style={KBODiaGothicTextStyle.medium({
-            fontSize: 16,
-            color: AppColorStyles.black,
+          style={PretendardTextStyle.medium({
+            fontSize: 13,
+            lineHeight: 20,
+            color: AppColorStyles.textSecondary,
           })}
         >
-          결제 목록으로 돌아가기
+          {actionHelperMessage}
         </Text>
-      </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -314,6 +384,8 @@ const styles = StyleSheet.create({
   participantInfo: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
+    paddingRight: 12,
   },
   statusChip: {
     marginLeft: 10,
@@ -340,12 +412,32 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 8,
   },
-  backButton: {
-    height: 52,
+  actionRow: {
+    flexDirection: 'row',
+    marginTop: 8,
+    marginBottom: 12,
+  },
+  actionButton: {
+    flex: 1,
+    height: 60,
     borderRadius: 14,
-    backgroundColor: AppColorStyles.yellow,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
+  },
+  editButton: {
+    backgroundColor: AppColorStyles.yellow,
+    marginRight: 12,
+  },
+  cancelButton: {
+    backgroundColor: AppColorStyles.white,
+    borderWidth: 2,
+    borderColor: AppColorStyles.yellow,
+  },
+  disabledButton: {
+    backgroundColor: AppColorStyles.gray3,
+  },
+  disabledOutlineButton: {
+    backgroundColor: AppColorStyles.gray5,
+    borderColor: AppColorStyles.gray3,
   },
 });

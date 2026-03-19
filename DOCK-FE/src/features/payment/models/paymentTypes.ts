@@ -23,12 +23,16 @@ export const expenseInputTypeSchema = z.enum([
  */
 const myExpenseItemSchema = z.object({
   expenseId: z.number(),
+  roomSessionId: z.number().optional(),
   title: z.string(),
   participantCount: z.number().int().nonnegative(),
   totalAmount: z.number().int().nonnegative(),
+  payerUserName: z.string().optional(),
   status: expenseStatusSchema.optional(),
   inputType: expenseInputTypeSchema.optional(),
   paidAt: z.string().optional(),
+  createdAt: z.string().optional(),
+  completedAt: z.string().optional().nullable(),
 });
 
 /**
@@ -78,12 +82,16 @@ export type AccountHistoryListResponse = z.infer<
  */
 export interface MyExpenseItem {
   expenseId: number;
+  roomSessionId: number | null;
   title: string;
   participantCount: number;
   totalAmount: number;
+  payerUserName: string;
   status: ExpenseStatus;
   inputType: ExpenseInputType;
   paidAt: Date | null;
+  createdAt: Date | null;
+  completedAt?: Date | null;
 }
 
 /**
@@ -116,6 +124,15 @@ export interface ExpenseLineItemPreview {
 }
 
 /**
+ * 입력 방식별 원본 정보나 부가 정보를 상세 화면에서 행 단위로 보여주기 위한 타입.
+ * OCR만 품목 배열을 쓰고, 계좌 내역/직접 입력은 이런 key-value 정보 위주로 노출한다.
+ */
+export interface ExpenseSourceInfoRow {
+  label: string;
+  value: string;
+}
+
+/**
  * 결제 상세 화면에서 사용하는 확장 타입.
  * 목록에는 없는 부가 설명, 참여자, 품목 정보를 mock으로 먼저 채운다.
  */
@@ -124,6 +141,7 @@ export interface MyExpenseDetail extends MyExpenseItem {
   memo: string;
   participants: ExpenseParticipantPreview[];
   lineItems: ExpenseLineItemPreview[];
+  sourceInfoRows?: ExpenseSourceInfoRow[];
 }
 
 /**
@@ -167,6 +185,7 @@ export interface AccountHistoryParticipantDraft {
   userName: string;
   isSelected: boolean;
   isMe: boolean;
+  splitAmount: number;
 }
 
 /**
