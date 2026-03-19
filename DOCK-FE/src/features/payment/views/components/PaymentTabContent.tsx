@@ -66,6 +66,8 @@ type PaymentDetailState =
   | { status: 'loaded'; expenseId: number; detail: MyExpenseDetail }
   | { status: 'error'; expenseId: number; message: string };
 
+const EMPTY_EXPENSES: MyExpenseItem[] = [];
+
 const REQUEST_ACTIONS: Array<{
   key: ExpenseInputType;
   label: string;
@@ -269,7 +271,7 @@ export const PaymentTabContent = React.forwardRef<
     }
   }, [loadManualDraft, manualState.status, scene.kind]);
 
-  const expenses = state.status === 'loaded' ? state.expenses : [];
+  const expenses = state.status === 'loaded' ? state.expenses : EMPTY_EXPENSES;
   const pendingExpenses = React.useMemo(
     () => expenses.filter((expense) => expense.status === 'PENDING'),
     [expenses],
