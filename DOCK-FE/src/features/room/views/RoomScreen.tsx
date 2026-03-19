@@ -21,6 +21,11 @@ import { CustomAppBar } from '@shared/components/app_bar/CustomAppBar';
 import { FilledButton } from '@shared/components/buttons/FilledButton';
 
 import { meetingRoomMockData } from '../models/roomMockData';
+import {
+  roomParticipatedPaymentsMock,
+  roomSettlementRequestsMock,
+  type RoomSettlementRow,
+} from '../models/roomDetailMockData';
 import { useRoomStore } from '../models/roomStore';
 import { useSettlementViewModel } from '../viewmodels/useSettlementViewModel';
 import { SettlementCard } from './components/SettlementCard';
@@ -30,30 +35,9 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const s = SCREEN_WIDTH / 412;
 
 const ROOM_TABS = ['결제', '정산', '순위'] as const;
-const SELECTED_TAB_INDEX = 1;
 const CTA_HEIGHT = 60;
 
 type RoomViewMode = 'SUMMARY' | 'TRANSFER';
-
-interface SettlementRow {
-  id: number;
-  title: string;
-  subtitle: string;
-  amount: number;
-}
-
-const mockParticipatedPayments: Record<number, SettlementRow[]> = {
-  101: [
-    { id: 1, title: '고기집', subtitle: '류병선 올림 · 6명', amount: 120000 },
-    { id: 2, title: '엔젤리너스', subtitle: '류병선 올림 · 6명', amount: 60000 },
-  ],
-  102: [],
-};
-
-const mockSettlementRequests: Record<number, SettlementRow[]> = {
-  101: [{ id: 3, title: '볼링', subtitle: '류병선 올림 · 6명', amount: 30000 }],
-  102: [],
-};
 
 const toWon = (value: number) => `${value.toLocaleString('ko-KR')}원`;
 type Nav = NativeStackNavigationProp<RoomStackParamList, 'RoomDetail'>;
@@ -66,8 +50,8 @@ export function RoomScreen() {
   const rooms = useRoomStore((s) => s.rooms);
   const room = rooms.find((item) => item.roomId === route.params.roomId) ?? meetingRoomMockData[0];
   const expectedAmount = room != null ? Math.round(room.totalPay / Math.max(room.memberCount, 1)) : 0;
-  const participatedPayments = mockParticipatedPayments[room.roomId] ?? [];
-  const settlementRequests = mockSettlementRequests[room.roomId] ?? [];
+  const participatedPayments = roomParticipatedPaymentsMock[room.roomId] ?? [];
+  const settlementRequests = roomSettlementRequestsMock[room.roomId] ?? [];
 
   const handleBack = () => {
     if (navigation.canGoBack()) {
@@ -102,7 +86,7 @@ export function RoomScreen() {
       <View style={styles.roomTabContainer}>
         {ROOM_TABS.map((tab, index) => (
           <View key={tab} style={styles.roomTabButton}>
-            <Text style={index === SELECTED_TAB_INDEX ? styles.roomTabActive : styles.roomTabInactive}>{tab}</Text>
+            <Text style={index === 1 ? styles.roomTabActive : styles.roomTabInactive}>{tab}</Text>
           </View>
         ))}
 
@@ -234,7 +218,7 @@ function RoomSettlementTransferView({ onBack }: { onBack: () => void }) {
   );
 }
 
-function SettlementRowCard({ item, isLast }: { item: SettlementRow; isLast: boolean }) {
+function SettlementRowCard({ item, isLast }: { item: RoomSettlementRow; isLast: boolean }) {
   return (
     <View style={[styles.rowCard, isLast && styles.rowCardLast]}>
       <View>
@@ -335,8 +319,8 @@ const styles = StyleSheet.create({
     backgroundColor: AppColorStyles.gray1,
     borderRadius: 10 * s,
     paddingHorizontal: 14 * s,
-    paddingTop: 14 * s,
-    paddingBottom: 10 * s,
+    paddingTop: 21 * s,
+    paddingBottom: 12 * s,
     marginBottom: 16 * s,
     shadowColor: '#676767',
     shadowOffset: { width: 0, height: 2 },
@@ -352,7 +336,7 @@ const styles = StyleSheet.create({
     }),
   },
   expectedAmount: {
-    marginTop: 8 * s,
+    marginTop: 11 * s,
     ...KBODiaGothicTextStyle.bold({
       fontSize: 24 * s,
       lineHeight: 24 * s,
@@ -360,7 +344,7 @@ const styles = StyleSheet.create({
     }),
   },
   expectedBottomRow: {
-    marginTop: 18 * s,
+    marginTop: 21 * s,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
