@@ -18,12 +18,15 @@ import { AppColorStyles } from '@core/theme/colors';
 import { KBODiaGothicTextStyle } from '@core/theme/typography';
 import { CustomAppBar } from '@shared/components/app_bar/CustomAppBar';
 
-import { PaymentTabContent } from '../../payment/views/components/PaymentTabContent';
+import {
+  PaymentTabContent,
+  type PaymentTabContentHandle,
+} from '../../payment/views/components/PaymentTabContent';
 import { roomParticipatedPaymentsMock, roomSettlementRequestsMock } from '../models/roomDetailMockData';
 import { meetingRoomMockData } from '../models/roomMockData';
 import { useRoomStore } from '../models/roomStore';
-import { SettlementRowCard } from './components/SettlementRowCard';
 import { RoomSettlementTransferView } from './components/RoomSettlementTransferView';
+import { SettlementRowCard } from './components/SettlementRowCard';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const s = SCREEN_WIDTH / 412;
@@ -44,11 +47,17 @@ type Route = RouteProp<RoomStackParamList, 'RoomDetail'>;
 export function RoomScreen() {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
+<<<<<<< HEAD
   const [viewMode, setViewMode] = useState<RoomViewMode>(
     route.params.showTransfer === true ? 'TRANSFER' : 'SUMMARY',
   );
+=======
+  const paymentTabRef = React.useRef<PaymentTabContentHandle | null>(null);
+  const [viewMode, setViewMode] = useState<RoomViewMode>('SUMMARY');
+>>>>>>> b09b1b7708c904081a0e8e569921b0441eff29ea
   const [selectedRoomTab, setSelectedRoomTab] =
     useState<RoomMainTab>('SETTLEMENT');
+  const [roomTabHistory, setRoomTabHistory] = useState<RoomMainTab[]>([]);
   const rooms = useRoomStore((state) => state.rooms);
   const room =
     rooms.find((item) => item.roomId === route.params.roomId) ??
@@ -61,11 +70,47 @@ export function RoomScreen() {
     (tab) => tab.key === selectedRoomTab,
   );
 
-  const handleBack = () => {
+  const handleSelectRoomTab = React.useCallback((nextTab: RoomMainTab) => {
+    setSelectedRoomTab((currentTab) => {
+      if (currentTab === nextTab) {
+        return currentTab;
+      }
+
+      setRoomTabHistory((previousHistory) => [...previousHistory, currentTab]);
+      return nextTab;
+    });
+  }, []);
+
+  const handleBack = React.useCallback(() => {
+    if (
+      selectedRoomTab === 'PAYMENT' &&
+      paymentTabRef.current?.canGoBack()
+    ) {
+      paymentTabRef.current.goBack();
+      return;
+    }
+
+    let previousTab: RoomMainTab | null = null;
+
+    setRoomTabHistory((currentHistory) => {
+      if (currentHistory.length === 0) {
+        return currentHistory;
+      }
+
+      previousTab = currentHistory[currentHistory.length - 1];
+      return currentHistory.slice(0, -1);
+    });
+
+    if (previousTab != null) {
+      setSelectedRoomTab(previousTab);
+      return;
+    }
+
     if (navigation.canGoBack()) {
       navigation.goBack();
     }
-  };
+  }, [navigation, selectedRoomTab]);
+
   if (viewMode === 'TRANSFER') {
     return <RoomSettlementTransferView onBack={() => setViewMode('SUMMARY')} />;
   }
@@ -105,7 +150,7 @@ export function RoomScreen() {
             key={tab.key}
             style={styles.roomTabButton}
             activeOpacity={0.85}
-            onPress={() => setSelectedRoomTab(tab.key)}
+            onPress={() => handleSelectRoomTab(tab.key)}
           >
             <Text
               style={
@@ -132,10 +177,7 @@ export function RoomScreen() {
       </View>
 
       {selectedRoomTab === 'PAYMENT' ? (
-        <PaymentTabContent
-          roomId={room.roomId}
-          onExpenseDetailPress={() => navigation.navigate('SettlementRequestList', { roomId: room.roomId })}
-        />
+        <PaymentTabContent ref={paymentTabRef} roomId={room.roomId} />
       ) : selectedRoomTab === 'SETTLEMENT' ? (
         <ScrollView
           style={styles.scrollArea}
