@@ -233,6 +233,7 @@ REGISTRY_NAMESPACE="$(printf '%s' "${DOCKERHUB_USERNAME}" | tr '[:upper:]' '[:lo
 IMAGE_TAG="${BUILD_NUMBER}"
 
 REGISTRY_NAMESPACE="${REGISTRY_NAMESPACE}" IMAGE_TAG="${IMAGE_TAG}" docker compose -f "${COMPOSE_FILE}" config >/dev/null
+REGISTRY_NAMESPACE="${REGISTRY_NAMESPACE}" IMAGE_TAG="${IMAGE_TAG}" docker compose -f "${COMPOSE_FILE}" down --remove-orphans || true
 REGISTRY_NAMESPACE="${REGISTRY_NAMESPACE}" IMAGE_TAG="${IMAGE_TAG}" docker compose -f "${COMPOSE_FILE}" pull
 REGISTRY_NAMESPACE="${REGISTRY_NAMESPACE}" IMAGE_TAG="${IMAGE_TAG}" docker compose -f "${COMPOSE_FILE}" up -d --remove-orphans
 REMOTE
