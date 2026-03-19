@@ -17,6 +17,7 @@ export type RootStackParamList = {
   };
   PayPasswordSetup: { bankName?: string; maskedAccountNo?: string; returnTo?: 'App' | 'Settings' | 'NewUser' } | undefined;
   PayPasswordConfirm: { firstPassword: string; bankName?: string; maskedAccountNo?: string; returnTo?: 'App' | 'Settings' | 'NewUser' };
+  PayPasswordInput: undefined;
 };
 
 export type ProfileStackParamList = {

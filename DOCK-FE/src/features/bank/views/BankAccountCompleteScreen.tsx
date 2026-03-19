@@ -5,9 +5,8 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   BackHandler,
+  Dimensions,
   Keyboard,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -23,6 +22,7 @@ import { KBODiaGothicTextStyle } from '../../../core/theme/typography';
 import { FilledButton } from '../../../shared/components/buttons/FilledButton';
 import { useAuthStore } from '../../auth/models/authStore';
 
+const { height: H } = Dimensions.get('window');
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'BankAccountComplete'>;
@@ -45,23 +45,18 @@ export function BankAccountCompleteScreen() {
     setTransferLimit(digits ? Number(digits).toLocaleString() : '');
   };
 
+  const isNewUserFlow = returnTo === 'NewUser';
+
   const handleNext = () => {
     // TODO: 한도 저장 API 연동
     setHasBankAccount();
-    if (returnTo === 'NewUser') {
-      navigation.replace('PayPasswordSetup', { bankName, maskedAccountNo, returnTo });
-    } else {
-      navigation.replace('App');
-    }
+    navigation.replace('PayPasswordSetup', { bankName, maskedAccountNo, returnTo });
   };
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-        <KeyboardAvoidingView
-          style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
+      <View style={{ height: H }}>
+        <SafeAreaView style={styles.safeArea} edges={['top']}>
           <View style={styles.content}>
             {/* 체크 아이콘 */}
             <View style={styles.iconCircle}>
@@ -79,29 +74,36 @@ export function BankAccountCompleteScreen() {
               {userName ? <Text style={styles.cardHolder}>{userName}</Text> : null}
             </View>
 
-            {/* 자동이체 한도 설정 */}
-            <Text style={styles.limitLabel}>자동이체 한도 설정</Text>
-            <Pressable style={styles.inputRow} onPress={() => limitInputRef.current?.focus()}>
-              <Text style={styles.limitPlaceholder}>최대 출금 한도</Text>
-              <TextInput
-                ref={limitInputRef}
-                style={styles.limitInput}
-                placeholder="금액입력"
-                placeholderTextColor="#DADADA"
-                keyboardType="numeric"
-                value={transferLimit}
-                onChangeText={handleLimitChange}
-                textAlign="right"
-              />
-            </Pressable>
+            {/* 자동이체 한도 설정 - 신규유저만 */}
+            {isNewUserFlow && (
+              <>
+                <Text style={styles.limitLabel}>자동이체 한도 설정</Text>
+                <Pressable style={styles.inputRow} onPress={() => limitInputRef.current?.focus()}>
+                  <Text style={styles.limitPlaceholder}>최대 출금 한도</Text>
+                  <TextInput
+                    ref={limitInputRef}
+                    style={styles.limitInput}
+                    placeholder="금액입력"
+                    placeholderTextColor="#DADADA"
+                    keyboardType="numeric"
+                    value={transferLimit}
+                    onChangeText={handleLimitChange}
+                    textAlign="right"
+                  />
+                </Pressable>
+              </>
+            )}
           </View>
 
           {/* 다음 버튼 */}
           <View style={styles.bottomArea}>
-            <FilledButton text="다음" onPress={transferLimit.length > 0 ? handleNext : undefined} />
+            <FilledButton
+              text={isNewUserFlow ? '다음' : '완료'}
+              onPress={!isNewUserFlow || transferLimit.length > 0 ? handleNext : undefined}
+            />
           </View>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
+        </SafeAreaView>
+      </View>
     </TouchableWithoutFeedback>
   );
 }
@@ -181,16 +183,12 @@ const styles = StyleSheet.create({
     ...KBODiaGothicTextStyle.bold({ fontSize: 20, color: AppColorStyles.black }),
     textAlign: 'right',
   },
-  limitHint: {
-    ...KBODiaGothicTextStyle.medium({ fontSize: 11, color: '#DADADA' }),
-    marginTop: 6,
-  },
   bottomArea: {
     paddingHorizontal: 24,
-    paddingBottom: 24,
+    paddingBottom: H * 0.05,
     paddingTop: 8,
     position: 'absolute',
-    bottom: 60,
+    bottom: 0,
     left: 0,
     right: 0,
   },

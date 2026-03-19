@@ -1,6 +1,5 @@
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { RouteProp } from '@react-navigation/native';
 import React, { useState } from 'react';
 import {
   Dimensions,
@@ -22,26 +21,29 @@ import { PasswordDotsInput } from '../components/PasswordDotsInput';
 const { height: H } = Dimensions.get('window');
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
-type Route = RouteProp<RootStackParamList, 'PayPasswordSetup'>;
 
 const PASSWORD_LENGTH = 6;
+const MOCK_PASSWORD = '000000';
 
-export function PayPasswordSetupScreen() {
+export function PayPasswordInputScreen() {
   const navigation = useNavigation<Nav>();
-  const params = useRoute<Route>().params;
-  const bankName = params?.bankName;
-  const maskedAccountNo = params?.maskedAccountNo;
-  const returnTo = params?.returnTo ?? 'NewUser';
   const [password, setPassword] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
   const handleChangeText = (text: string) => {
     setPassword(text);
+    setErrorMessage('');
     if (text.length === PASSWORD_LENGTH) Keyboard.dismiss();
   };
 
   const handleConfirm = () => {
     if (password.length !== PASSWORD_LENGTH) return;
-    navigation.replace('PayPasswordConfirm', { firstPassword: password, bankName, maskedAccountNo, returnTo });
+    if (password !== MOCK_PASSWORD) {
+      setErrorMessage('비밀번호가 올바르지 않습니다.');
+      setPassword('');
+      return;
+    }
+    navigation.goBack();
   };
 
   return (
@@ -49,18 +51,17 @@ export function PayPasswordSetupScreen() {
       <View style={{ height: H }}>
         <SafeAreaView style={styles.safeArea} edges={['top']}>
           <CustomAppBar
-            title="결제 비밀번호 설정"
+            title="결제 비밀번호"
             centerTitle={false}
-            showBackButton={!!bankName}
+            showBackButton
             backgroundColor={AppColorStyles.background}
-            onBackPress={bankName && maskedAccountNo
-              ? () => navigation.replace('BankAccountComplete', { bankName, maskedAccountNo, returnTo })
-              : undefined}
+            onBackPress={() => navigation.goBack()}
           />
 
           <View style={styles.content}>
-            <Text style={styles.title}>결제 비밀번호를{'\n'}설정해주세요!</Text>
+            <Text style={styles.title}>결제 비밀번호를{'\n'}입력해주세요</Text>
             <PasswordDotsInput password={password} onChangeText={handleChangeText} />
+            {errorMessage !== '' && <Text style={styles.errorText}>{errorMessage}</Text>}
           </View>
 
           <View style={styles.bottomArea}>
@@ -89,6 +90,11 @@ const styles = StyleSheet.create({
     ...KBODiaGothicTextStyle.medium({ fontSize: 26, color: AppColorStyles.black }),
     lineHeight: 32,
     marginBottom: 60,
+  },
+  errorText: {
+    marginTop: 16,
+    textAlign: 'center',
+    ...KBODiaGothicTextStyle.medium({ fontSize: 14, color: '#E53935' }),
   },
   bottomArea: {
     paddingHorizontal: 24,

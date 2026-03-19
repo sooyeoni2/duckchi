@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import type { RoomStackParamList } from '@core/navigation/types';
+import type { RoomStackParamList, RootStackParamList } from '@core/navigation/types';
 import { AppColorStyles } from '@core/theme/colors';
 import { KBODiaGothicTextStyle } from '@core/theme/typography';
 import { CustomAppBar } from '@shared/components/app_bar/CustomAppBar';
@@ -140,18 +140,21 @@ export function RoomScreen() {
 }
 
 function RoomSettlementTransferView({ onBack }: { onBack: () => void }) {
+  const rootNavigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const {
     state,
     selectedTab,
     setSelectedTab,
     inProgressCount,
     settlementItems,
-    markAsPaid,
-    markAllAsPaid,
     reload,
   } = useSettlementViewModel();
 
   const hasPending = inProgressCount > 0;
+
+  const goToPayPasswordInput = () => {
+    rootNavigation.navigate('PayPasswordInput');
+  };
 
   if (state.status === 'idle' || state.status === 'loading') {
     return (
@@ -192,7 +195,7 @@ function RoomSettlementTransferView({ onBack }: { onBack: () => void }) {
         showsVerticalScrollIndicator={false}
       >
         {settlementItems.map(item => (
-          <SettlementCard key={item.id} item={item} onPressTransfer={() => markAsPaid(item.id)} />
+          <SettlementCard key={item.id} item={item} onPressTransfer={goToPayPasswordInput} />
         ))}
 
         {settlementItems.length === 0 && (
@@ -203,7 +206,7 @@ function RoomSettlementTransferView({ onBack }: { onBack: () => void }) {
 
         {selectedTab === 'IN_PROGRESS' && (
           <View style={styles.transferFooterInScroll}>
-            <FilledButton text="전체 송금하기" onPress={hasPending ? markAllAsPaid : undefined} height={CTA_HEIGHT * s} />
+            <FilledButton text="전체 송금하기" onPress={hasPending ? goToPayPasswordInput : undefined} height={CTA_HEIGHT * s} />
           </View>
         )}
       </ScrollView>

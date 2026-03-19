@@ -25,7 +25,7 @@ const ProfileSetupScreen: React.FC<Props> = ({ navigation }) => {
   const user = useAuthStore((s) => s.user);
   const { submitting, submit } = useProfileSetupViewModel(navigation);
   const name = user?.name ?? '';
-  const canConfirm = name.trim().length > 0 && !submitting;
+  const canConfirm = !!name && !submitting;
 
   const handleConfirm = () => {
     if (!canConfirm) return;
