@@ -37,7 +37,7 @@ export const useRoomEditViewModel = () => {
   const saveRoomInfo = useCallback(async () => {
     updateState({ isSaving: true });
     // TODO: ROOM-05 API 연동 (PATCH /api/v1/rooms/{roomId})
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Mock API delay
+    await new Promise<void>((resolve) => setTimeout(() => resolve(), 1000)); // Mock API delay
     updateState({ isSaving: false });
     return true;
   }, [updateState]);
