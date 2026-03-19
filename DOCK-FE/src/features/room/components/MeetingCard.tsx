@@ -8,76 +8,72 @@ import { ProgressBar } from './ProgressBar';
 
 const currency = new Intl.NumberFormat('ko-KR');
 
-interface MeetingCardProps {
-  meeting?: MeetingRoom;
+interface MeetingCardGroupProps {
+  category: string;
+  rooms: MeetingRoom[];
   onPress?: (meeting: MeetingRoom) => void;
   onActionPress: (meeting: MeetingRoom) => void;
 }
 
-export function MeetingCard({ meeting, onPress, onActionPress }: MeetingCardProps) {
-  if (meeting == null) {
-    return null;
-  }
-
-  const highlightedButton = meeting.status === 'ENDED';
-
+export function MeetingCard({ category, rooms, onPress, onActionPress }: MeetingCardGroupProps) {
   return (
-    <Pressable style={styles.cardShell} onPress={() => onPress?.(meeting)}>
-      <Text style={styles.shellCategory}>{meeting.category}</Text>
+    <View style={styles.cardShell}>
+      <Text style={styles.shellCategory}>{category}</Text>
 
-      <View style={styles.card}>
-        <View style={styles.titleRow}>
-          <View style={styles.titleWrap}>
-            <Text style={styles.title}>{meeting.roomName}</Text>
-            <Text style={styles.subtitle}>{meeting.description}</Text>
-          </View>
+      {rooms.map((meeting) => {
+        const highlightedButton = meeting.status === 'ENDED';
+        return (
+          <Pressable key={meeting.roomId} style={styles.card} onPress={() => onPress?.(meeting)}>
+            <View style={styles.titleRow}>
+              <View style={styles.titleWrap}>
+                <Text style={styles.title}>{meeting.roomName}</Text>
+                <Text style={styles.subtitle}>{meeting.description}</Text>
+              </View>
 
-          <View style={styles.categoryChip}>
-            <Text style={styles.categoryChipText}>{meeting.category}</Text>
-          </View>
-        </View>
+            </View>
 
-        <Text style={styles.metaText}>
-          {meeting.memberCount}명 · {currency.format(meeting.totalPay)}원 · 결제 {meeting.payCount}건
-        </Text>
-
-        <View style={styles.progressSection}>
-          <ProgressBar value={meeting.percent} />
-          <View style={styles.progressFooter}>
-            <Text style={styles.progressText}>
-              {meeting.completedCount}/{meeting.totalCount}명 완료
+            <Text style={styles.metaText}>
+              {meeting.memberCount}명 · {currency.format(meeting.totalPay)}원 · 결제 {meeting.payCount}건
             </Text>
-            <Text style={styles.progressText}>{meeting.percent}%</Text>
-          </View>
-        </View>
 
-        <ParticipantAvatarGroup
-          participants={meeting.participants}
-          extraCount={meeting.extraMemberCount}
-          style={styles.avatarGroup}
-        />
+            <View style={styles.progressSection}>
+              <ProgressBar value={meeting.percent} />
+              <View style={styles.progressFooter}>
+                <Text style={styles.progressText}>
+                  {meeting.completedCount}/{meeting.totalCount}명 완료
+                </Text>
+                <Text style={styles.progressText}>{meeting.percent}%</Text>
+              </View>
+            </View>
 
-        <Pressable
-          onPress={(event) => {
-            event.stopPropagation();
-            onActionPress(meeting);
-          }}
-          style={[
-            styles.actionButton,
-            highlightedButton ? styles.actionButtonHighlighted : styles.actionButtonMuted,
-          ]}
-        >
-          <Text style={styles.actionButtonText}>{meeting.actionLabel}</Text>
-        </Pressable>
-      </View>
-    </Pressable>
+            <ParticipantAvatarGroup
+              participants={meeting.participants}
+              extraCount={meeting.extraMemberCount}
+              style={styles.avatarGroup}
+            />
+
+            <Pressable
+              onPress={(event) => {
+                event.stopPropagation();
+                onActionPress(meeting);
+              }}
+              style={[
+                styles.actionButton,
+                highlightedButton ? styles.actionButtonHighlighted : styles.actionButtonMuted,
+              ]}
+            >
+              <Text style={styles.actionButtonText}>{meeting.actionLabel}</Text>
+            </Pressable>
+          </Pressable>
+        );
+      })}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   cardShell: {
     width: '100%',
-    height: 291,
     borderRadius: 10,
     backgroundColor: AppColorStyles.surface,
     shadowColor: '#676767',
@@ -85,7 +81,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 2,
     elevation: 2,
-    paddingTop: 24,
+    paddingTop: 15,
+    paddingBottom: 18,
+    gap: 16,
   },
   shellCategory: {
     ...KBODiaGothicTextStyle.medium({
@@ -96,13 +94,11 @@ const styles = StyleSheet.create({
     marginLeft: 14,
   },
   card: {
-    width: 339,
     height: 181,
-    marginTop: 7,
-    marginLeft: 14,
+    marginHorizontal: 14,
     position: 'relative',
     borderRadius: 10,
-    backgroundColor: AppColorStyles.surface,
+    backgroundColor: AppColorStyles.white,
     shadowColor: '#676767',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
@@ -137,7 +133,7 @@ const styles = StyleSheet.create({
   subtitle: {
     ...KBODiaGothicTextStyle.light({
       fontSize: 10,
-      color: '#CECECE',
+      color: '#C2C2C2',
       lineHeight: 10,
     }),
     paddingBottom: 4,

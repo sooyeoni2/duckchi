@@ -14,6 +14,7 @@ import {
   getMeetingRoomInviteLinkMock,
   type MeetingRoomTag,
 } from '../models/roomMockData';
+import { useRoomStore } from '../models/roomStore';
 
 export function MeetingRoomCreateScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RoomStackParamList, 'RoomCreate'>>();
@@ -21,6 +22,7 @@ export function MeetingRoomCreateScreen() {
   const [detail, setDetail] = useState(createMeetingRoomDraftMock.description);
   const [selectedTag, setSelectedTag] = useState<MeetingRoomTag>(createMeetingRoomDraftMock.category);
   const [sheetVisible, setSheetVisible] = useState(false);
+  const addRoom = useRoomStore((s) => s.addRoom);
 
   const inviteLink = getMeetingRoomInviteLinkMock(201);
 
@@ -34,10 +36,11 @@ export function MeetingRoomCreateScreen() {
   };
 
   const handleCopyLink = () => {
-    Alert.alert('초대 링크', 'mock 링크가 준비되었습니다.');
+    Alert.alert('초대 링크', '링크가 복사되었습니다.');
   };
 
   const handleCloseSheet = () => {
+    addRoom({ roomName, category: selectedTag, description: detail });
     setSheetVisible(false);
     navigation.goBack();
   };
