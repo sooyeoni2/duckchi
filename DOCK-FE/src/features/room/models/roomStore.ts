@@ -18,7 +18,7 @@ export const useRoomStore = create<RoomState>((set, get) => ({
       roomName: draft.roomName,
       category: draft.category,
       description: draft.description,
-      participants: [],
+      participants: ['나'],
       totalPay: 0,
       payCount: 0,
       percent: 0,

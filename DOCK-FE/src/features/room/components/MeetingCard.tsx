@@ -30,9 +30,6 @@ export function MeetingCard({ category, rooms, onPress, onActionPress }: Meeting
                 <Text style={styles.subtitle}>{meeting.description}</Text>
               </View>
 
-              <View style={styles.categoryChip}>
-                <Text style={styles.categoryChipText}>{meeting.category}</Text>
-              </View>
             </View>
 
             <Text style={styles.metaText}>
