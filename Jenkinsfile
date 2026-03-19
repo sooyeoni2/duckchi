@@ -208,8 +208,6 @@ pipeline {
                             set -eu
                             set +x
 
-                            printf '%s' "${DOCKERHUB_TOKEN}" | ssh -o BatchMode=yes "${DEPLOY_HOST}" 'cat > /tmp/duckchi_docker_token'
-
                             ssh -o BatchMode=yes "${DEPLOY_HOST}" bash -se -- "${DEPLOY_PATH}" "${COMPOSE_FILE}" "${REQUIRED_ENV_VARS}" "${DOCKERHUB_USERNAME}" "${BUILD_NUMBER}" <<'REMOTE'
 set -eu
 
@@ -218,7 +216,6 @@ COMPOSE_FILE="$2"
 REQUIRED_ENV_VARS="$3"
 DOCKERHUB_USERNAME="$4"
 BUILD_NUMBER="$5"
-TOKEN_FILE="/tmp/duckchi_docker_token"
 
 cd "${DEPLOY_PATH}"
 test -f "${COMPOSE_FILE}"
@@ -231,9 +228,6 @@ for key in ${REQUIRED_ENV_VARS}; do
   fi
 done
 
-trap 'rm -f "${TOKEN_FILE}"' EXIT
-
-docker login -u "${DOCKERHUB_USERNAME}" --password-stdin < "${TOKEN_FILE}"
 export REGISTRY_NAMESPACE="${DOCKERHUB_USERNAME}"
 export IMAGE_TAG="${BUILD_NUMBER}"
 docker-compose -f "${COMPOSE_FILE}" config >/dev/null
