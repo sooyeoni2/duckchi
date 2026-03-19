@@ -1,4 +1,4 @@
-### 결제안 API 간단 점검용 요청 모음
+### 결제 API 예제 요청 모음
 
 @pay-url = http://localhost:8082
 @roomId = 1
@@ -12,31 +12,68 @@ X-User-Id: {{myUserId}}
 
 {}
 
-### 2. 결제안 등록
+### 2. OCR 실행
+POST {{pay-url}}/api/v1/expenses/ocr
+Content-Type: multipart/form-data; boundary=Boundary
+
+--Boundary
+Content-Disposition: form-data; name="image"; filename="receipt.jpg"
+Content-Type: image/jpeg
+
+< ./receipt.jpg
+--Boundary--
+
+### 3. 결제 참여자 조회
+GET {{pay-url}}/api/v1/rooms/{{roomId}}/expenses/participants
+Content-Type: application/json
+X-User-Id: {{myUserId}}
+
+### 4. 결제안 등록
 POST {{pay-url}}/api/v1/rooms/{{roomId}}/expenses
 Content-Type: application/json
 X-User-Id: {{myUserId}}
 
 {
-  "roomId": {{roomId}},
   "roomSessionId": {{roomSessionId}},
-  "title": "저녁 정산",
+  "title": "저녁 식사 정산",
   "totalAmount": 120000,
   "paidAt": "2026-03-12T14:30:00",
   "inputType": "MANUAL",
   "participants": [
-    { "userId": {{myUserId}}, "userName": "결제자", "userTag": "#1A3", "splitAmount": 40000 },
-    { "userId": 2, "userName": "참여자2", "userTag": "#2B4", "splitAmount": 40000 },
-    { "userId": 3, "userName": "참여자3", "userTag": "#3C5", "splitAmount": 40000 }
+    { "userId": {{myUserId}}, "splitAmount": 40000 },
+    { "userId": 2, "splitAmount": 40000 },
+    { "userId": 3, "splitAmount": 40000 }
+  ],
+  "items": [
+    {
+      "name": "삼겹살 3인분",
+      "totalAmount": 90000,
+      "quantity": 3,
+      "splits": [
+        { "userId": {{myUserId}}, "splitAmount": 30000, "quantity": 1 },
+        { "userId": 2, "splitAmount": 30000, "quantity": 1 },
+        { "userId": 3, "splitAmount": 30000, "quantity": 1 }
+      ]
+    },
+    {
+      "name": "음료",
+      "totalAmount": 30000,
+      "quantity": 3,
+      "splits": [
+        { "userId": {{myUserId}}, "splitAmount": 10000, "quantity": 1 },
+        { "userId": 2, "splitAmount": 10000, "quantity": 1 },
+        { "userId": 3, "splitAmount": 10000, "quantity": 1 }
+      ]
+    }
   ]
 }
 
-### 3. 모임방 결제안 목록 조회
+### 5. 모임방 결제안 목록 조회
 GET {{pay-url}}/api/v1/rooms/{{roomId}}/expenses
 Content-Type: application/json
 X-User-Id: {{myUserId}}
 
-### 4. 내가 생성한 결제안 목록 조회
+### 6. 내가 생성한 결제안 목록 조회
 GET {{pay-url}}/api/v1/rooms/{{roomId}}/expenses/me
 Content-Type: application/json
 X-User-Id: {{myUserId}}
