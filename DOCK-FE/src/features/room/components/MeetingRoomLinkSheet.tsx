@@ -83,18 +83,18 @@ const styles = StyleSheet.create({
     marginBottom: 42,
   },
   title: {
-    ...KBODiaGothicTextStyle.bold({
-      fontSize: 26,
+    ...KBODiaGothicTextStyle.medium({
+      fontSize: 22,
       color: AppColorStyles.black,
       lineHeight: 32,
     }),
     marginBottom: 10,
   },
   description: {
-    ...KBODiaGothicTextStyle.medium({
-      fontSize: 18,
+    ...KBODiaGothicTextStyle.light({
+      fontSize: 15,
       color: '#C2C2C2',
-      lineHeight: 28,
+      lineHeight: 22,
     }),
     marginBottom: 28,
   },
@@ -103,11 +103,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     borderWidth: 1,
-    borderColor: AppColorStyles.gray4,
+    borderColor: AppColorStyles.yellow,
     borderRadius: 12,
     backgroundColor: AppColorStyles.white,
     paddingHorizontal: 16,
     paddingVertical: 14,
+    shadowColor: '#676767',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 2,
+    elevation: 2,
   },
   linkText: {
     flex: 1,

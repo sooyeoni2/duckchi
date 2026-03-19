@@ -175,16 +175,12 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   sheetTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: AppColorStyles.textPrimary,
+    ...KBODiaGothicTextStyle.medium({ fontSize: 22, color: AppColorStyles.textPrimary }),
     marginBottom: 8,
     textAlign: 'left',
   },
   sheetDescription: {
-    fontSize: 15,
-    color: AppColorStyles.textHint,
-    lineHeight: 22,
+    ...KBODiaGothicTextStyle.light({ fontSize: 15, lineHeight: 22, color: AppColorStyles.textHint }),
     marginBottom: 20,
     textAlign: 'left',
   },
