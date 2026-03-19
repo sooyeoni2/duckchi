@@ -21,6 +21,7 @@ import { CustomAppBar } from '@shared/components/app_bar/CustomAppBar';
 import { FilledButton } from '@shared/components/buttons/FilledButton';
 
 import { meetingRoomMockData } from '../models/roomMockData';
+import { useRoomStore } from '../models/roomStore';
 import { useSettlementViewModel } from '../viewmodels/useSettlementViewModel';
 import { SettlementCard } from './components/SettlementCard';
 import { SettlementTabHeader } from './components/SettlementTabHeader';
@@ -41,14 +42,18 @@ interface SettlementRow {
   amount: number;
 }
 
-const participatedPayments: SettlementRow[] = [
-  { id: 1, title: '고기집', subtitle: '류병선 올림 · 6명', amount: 120000 },
-  { id: 2, title: '엔젤리너스', subtitle: '류병선 올림 · 6명', amount: 60000 },
-];
+const mockParticipatedPayments: Record<number, SettlementRow[]> = {
+  101: [
+    { id: 1, title: '고기집', subtitle: '류병선 올림 · 6명', amount: 120000 },
+    { id: 2, title: '엔젤리너스', subtitle: '류병선 올림 · 6명', amount: 60000 },
+  ],
+  102: [],
+};
 
-const settlementRequests: SettlementRow[] = [
-  { id: 3, title: '볼링', subtitle: '류병선 올림 · 6명', amount: 30000 },
-];
+const mockSettlementRequests: Record<number, SettlementRow[]> = {
+  101: [{ id: 3, title: '볼링', subtitle: '류병선 올림 · 6명', amount: 30000 }],
+  102: [],
+};
 
 const toWon = (value: number) => `${value.toLocaleString('ko-KR')}원`;
 type Nav = NativeStackNavigationProp<RoomStackParamList, 'RoomDetail'>;
@@ -58,8 +63,11 @@ export function RoomScreen() {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
   const [viewMode, setViewMode] = useState<RoomViewMode>('SUMMARY');
-  const room = meetingRoomMockData.find((item) => item.roomId === route.params.roomId) ?? meetingRoomMockData[0];
+  const rooms = useRoomStore((s) => s.rooms);
+  const room = rooms.find((item) => item.roomId === route.params.roomId) ?? meetingRoomMockData[0];
   const expectedAmount = room != null ? Math.round(room.totalPay / Math.max(room.memberCount, 1)) : 0;
+  const participatedPayments = mockParticipatedPayments[room.roomId] ?? [];
+  const settlementRequests = mockSettlementRequests[room.roomId] ?? [];
 
   const handleBack = () => {
     if (navigation.canGoBack()) {
@@ -118,16 +126,28 @@ export function RoomScreen() {
 
         <View style={styles.sectionCardLarge}>
           <Text style={styles.sectionTitle}>내가 참여한 결제</Text>
-          {participatedPayments.map((item, index) => (
-            <SettlementRowCard key={item.id} item={item} isLast={index === participatedPayments.length - 1} />
-          ))}
+          {participatedPayments.length > 0 ? (
+            participatedPayments.map((item, index) => (
+              <SettlementRowCard key={item.id} item={item} isLast={index === participatedPayments.length - 1} />
+            ))
+          ) : (
+            <View style={styles.sectionEmptyBox}>
+              <Text style={styles.emptyText}>결제 목록이 없습니다</Text>
+            </View>
+          )}
         </View>
 
         <View style={styles.sectionCardSmall}>
           <Text style={styles.sectionTitle}>정산 요청 목록</Text>
-          {settlementRequests.map((item, index) => (
-            <SettlementRowCard key={item.id} item={item} isLast={index === settlementRequests.length - 1} />
-          ))}
+          {settlementRequests.length > 0 ? (
+            settlementRequests.map((item, index) => (
+              <SettlementRowCard key={item.id} item={item} isLast={index === settlementRequests.length - 1} />
+            ))
+          ) : (
+            <View style={styles.sectionEmptyBox}>
+              <Text style={styles.emptyText}>정산 목록이 없습니다</Text>
+            </View>
+          )}
         </View>
 
         <View style={styles.totalCard}>
@@ -476,6 +496,11 @@ const styles = StyleSheet.create({
   },
   emptyBox: {
     marginTop: 28 * s,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sectionEmptyBox: {
+    paddingVertical: 20 * s,
     alignItems: 'center',
     justifyContent: 'center',
   },
