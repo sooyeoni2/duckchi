@@ -2,7 +2,9 @@ import React from 'react';
 import {
   ActivityIndicator,
   StyleSheet,
+  StyleProp,
   Text,
+  TextStyle,
   TouchableOpacity,
   View,
   ViewStyle,
@@ -32,6 +34,7 @@ interface OutlineButtonProps {
   prefixIcon?: React.ReactNode;
   suffixIcon?: React.ReactNode;
   style?: ViewStyle;
+  textStyle?: StyleProp<TextStyle>;
 }
 
 export const OutlineButton: React.FC<OutlineButtonProps> = ({
@@ -47,6 +50,7 @@ export const OutlineButton: React.FC<OutlineButtonProps> = ({
   prefixIcon,
   suffixIcon,
   style,
+  textStyle,
 }) => {
   const disabled = isLoading || !onPress;
   const effectiveBorderColor = disabled
@@ -77,7 +81,12 @@ export const OutlineButton: React.FC<OutlineButtonProps> = ({
       ) : (
         <View style={styles.content}>
           {prefixIcon != null && <View style={styles.iconPrefix}>{prefixIcon}</View>}
-          <Text style={KBODiaGothicTextStyle.bold({ fontSize: 20, color: effectiveTextColor })}>
+          <Text
+            style={[
+              KBODiaGothicTextStyle.bold({ fontSize: 20, color: effectiveTextColor }),
+              textStyle,
+            ]}
+          >
             {text}
           </Text>
           {suffixIcon != null && <View style={styles.iconSuffix}>{suffixIcon}</View>}
