@@ -1,5 +1,5 @@
-import React from 'react';
-import { useNavigation } from '@react-navigation/native';
+import React, { useCallback, useRef } from 'react';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import {
   ActivityIndicator,
@@ -17,6 +17,7 @@ import { KBODiaGothicTextStyle } from '@core/theme/typography';
 import { CustomAppBar } from '@shared/components/app_bar/CustomAppBar';
 import { FilledButton } from '@shared/components/buttons/FilledButton';
 
+import { usePaymentConfirmStore, type PaymentAction } from '../../models/paymentConfirmStore';
 import { useSettlementViewModel } from '../../viewmodels/useSettlementViewModel';
 import { SettlementCard } from './SettlementCard';
 import { SettlementTabHeader } from './SettlementTabHeader';
@@ -37,12 +38,34 @@ export function RoomSettlementTransferView({ onBack }: RoomSettlementTransferVie
     setSelectedTab,
     inProgressCount,
     settlementItems,
+    markAsPaid,
+    markAllAsPaid,
     reload,
   } = useSettlementViewModel();
 
   const hasPending = inProgressCount > 0;
+  const consume = usePaymentConfirmStore((s) => s.consume);
+  const pendingActionRef = useRef<PaymentAction | null>(null);
 
-  const goToPayPasswordInput = () => {
+  useFocusEffect(
+    useCallback(() => {
+      const result = consume();
+      if (result?.confirmed && pendingActionRef.current) {
+        if (pendingActionRef.current.type === 'all') {
+          markAllAsPaid();
+        } else {
+          markAsPaid(pendingActionRef.current.id);
+        }
+      }
+      pendingActionRef.current = null;
+    }, [consume, markAsPaid, markAllAsPaid]),
+  );
+
+  const setPending = usePaymentConfirmStore((s) => s.setPending);
+
+  const goToPayPasswordInput = (action: PaymentAction) => {
+    pendingActionRef.current = action;
+    setPending(action);
     rootNavigation.navigate('PayPasswordInput');
   };
 
@@ -85,7 +108,11 @@ export function RoomSettlementTransferView({ onBack }: RoomSettlementTransferVie
         showsVerticalScrollIndicator={false}
       >
         {settlementItems.map(item => (
-          <SettlementCard key={item.id} item={item} onPressTransfer={goToPayPasswordInput} />
+          <SettlementCard
+            key={item.id}
+            item={item}
+            onPressTransfer={() => goToPayPasswordInput({ type: 'single', id: item.id })}
+          />
         ))}
 
         {settlementItems.length === 0 && (
@@ -98,7 +125,7 @@ export function RoomSettlementTransferView({ onBack }: RoomSettlementTransferVie
           <View style={styles.footer}>
             <FilledButton
               text="전체 송금하기"
-              onPress={hasPending ? goToPayPasswordInput : undefined}
+              onPress={hasPending ? () => goToPayPasswordInput({ type: 'all' }) : undefined}
               height={CTA_HEIGHT * s}
             />
           </View>
