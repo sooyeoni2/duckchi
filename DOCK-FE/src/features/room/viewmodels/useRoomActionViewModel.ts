@@ -27,7 +27,7 @@ export const useRoomActionViewModel = () => {
   const startRoom = useCallback(async () => {
     updateState({ isProcessing: true });
     // TODO: ROOM-17 API 연동 (POST /api/v1/rooms/{roomId}/start)
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise<void>((resolve) => setTimeout(() => resolve(), 1000));
     updateState({ status: 'START', isProcessing: false });
     return true;
   }, [updateState]);
@@ -35,7 +35,7 @@ export const useRoomActionViewModel = () => {
   const endRoom = useCallback(async () => {
     updateState({ isProcessing: true });
     // TODO: ROOM-18 API 연동 (POST /api/v1/rooms/{roomId}/end)
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise<void>((resolve) => setTimeout(() => resolve(), 1000));
     updateState({ status: 'END', isProcessing: false });
     return true;
   }, [updateState]);
@@ -43,7 +43,7 @@ export const useRoomActionViewModel = () => {
   const deleteRoom = useCallback(async () => {
     updateState({ isProcessing: true });
     // TODO: ROOM-07 API 연동 (DELETE /api/v1/rooms/{roomId}/delete)
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise<void>((resolve) => setTimeout(() => resolve(), 1000));
     updateState({ isProcessing: false });
     return true;
   }, [updateState]);
@@ -51,7 +51,7 @@ export const useRoomActionViewModel = () => {
   const leaveRoom = useCallback(async () => {
     updateState({ isProcessing: true });
     // TODO: ROOM-06 API 연동 (DELETE /api/v1/rooms/{roomId}/members/left)
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise<void>((resolve) => setTimeout(() => resolve(), 1000));
     updateState({ isProcessing: false });
     return true;
   }, [updateState]);

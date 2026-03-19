@@ -1,11 +1,20 @@
-﻿import type {
+import type {
+  AccountHistoryEntryDraft,
+  AccountHistoryItem,
+  AccountHistoryListResponse,
+  AccountHistoryParticipantDraft,
   ExpenseInputType,
+  ManualEntryDraft,
+  ManualEntryParticipantDraft,
   MyExpenseDetail,
   MyExpenseItem,
   MyExpenseListResponse,
   PaymentEntryPreview,
 } from './paymentTypes';
-import { myExpenseListResponseSchema } from './paymentTypes';
+import {
+  accountHistoryListResponseSchema,
+  myExpenseListResponseSchema,
+} from './paymentTypes';
 
 /**
  * 현재 FE worktree에는 최신 백엔드 구현이 아직 합쳐지지 않았으므로,
@@ -44,6 +53,111 @@ const MOCK_MY_EXPENSES: MyExpenseListResponse = {
       status: 'SETTLED',
       inputType: 'MANUAL',
       paidAt: '2026-03-13T21:00:00+09:00',
+    },
+  ],
+};
+
+/**
+ * 백엔드 AccountHistoryResponse를 흉내 낸 mock 응답.
+ * transactionMemo / amount / transactionAt만 두고,
+ * 화면 식별자(historyId)와 참여자 초안은 FE 계층에서 보완한다.
+ */
+const MOCK_ACCOUNT_HISTORY_RESPONSE: AccountHistoryListResponse = {
+  success: true,
+  data: [
+    {
+      transactionMemo: '한우마당',
+      amount: 120000,
+      transactionAt: '2026-02-28T18:30:30+09:00',
+    },
+    {
+      transactionMemo: '엔젤리너스',
+      amount: 60000,
+      transactionAt: '2026-02-28T20:30:30+09:00',
+    },
+    {
+      transactionMemo: '편의점',
+      amount: 10000,
+      transactionAt: '2026-02-28T20:30:30+09:00',
+    },
+  ],
+};
+
+/**
+ * 계좌 내역을 장바구니 등록 폼으로 넘길 때 필요한 FE 전용 meta 정보.
+ * 실제 서버는 아직 참여자 추천값을 주지 않으므로 itemName과 참여자 토글 기본 상태를 mock으로 둔다.
+ */
+const MOCK_ACCOUNT_HISTORY_ENTRY_META: Record<
+  string,
+  {
+    itemName: string;
+    participants: AccountHistoryParticipantDraft[];
+  }
+> = {
+  'account-history-1': {
+    itemName: '고기집',
+    participants: [
+      { userId: 1, userName: '박성환', isSelected: true, isMe: false },
+      { userId: 2, userName: '정우주', isSelected: true, isMe: false },
+      { userId: 3, userName: '강산천 (나)', isSelected: true, isMe: true },
+      { userId: 4, userName: '김수연', isSelected: false, isMe: false },
+    ],
+  },
+  'account-history-2': {
+    itemName: '카페 정산',
+    participants: [
+      { userId: 1, userName: '박성환', isSelected: true, isMe: false },
+      { userId: 2, userName: '정우주', isSelected: false, isMe: false },
+      { userId: 3, userName: '강산천 (나)', isSelected: true, isMe: true },
+      { userId: 4, userName: '김수연', isSelected: true, isMe: false },
+    ],
+  },
+  'account-history-3': {
+    itemName: '편의점 간식',
+    participants: [
+      { userId: 1, userName: '박성환', isSelected: false, isMe: false },
+      { userId: 2, userName: '정우주', isSelected: true, isMe: false },
+      { userId: 3, userName: '강산천 (나)', isSelected: true, isMe: true },
+      { userId: 4, userName: '김수연', isSelected: false, isMe: false },
+    ],
+  },
+};
+
+/**
+ * 직접 입력 flow의 초기 초안.
+ * 참여자는 room 멤버 mock을 재사용하고, 선택 상태와 총액만 먼저 채워서 1단계 폼으로 넘긴다.
+ */
+const MOCK_MANUAL_ENTRY_DRAFT: ManualEntryDraft = {
+  itemName: '고기집',
+  totalAmount: 120000,
+  participants: [
+    {
+      userId: 1,
+      userName: '박성환',
+      isSelected: true,
+      isMe: false,
+      splitAmount: 40000,
+    },
+    {
+      userId: 2,
+      userName: '정우주',
+      isSelected: true,
+      isMe: false,
+      splitAmount: 40000,
+    },
+    {
+      userId: 3,
+      userName: '강산천 (나)',
+      isSelected: true,
+      isMe: true,
+      splitAmount: 40000,
+    },
+    {
+      userId: 4,
+      userName: '김수연',
+      isSelected: false,
+      isMe: false,
+      splitAmount: 0,
     },
   ],
 };
@@ -230,6 +344,36 @@ const buildMyExpenseItems = (): MyExpenseItem[] => {
 };
 
 /**
+ * 계좌 거래 내역 raw 응답을 화면용 타입으로 정제한다.
+ * 원본 응답에 id가 없으므로 배열 순서 기반 historyId를 만들어 card key와 draft lookup에 사용한다.
+ */
+const buildAccountHistoryItems = (): AccountHistoryItem[] => {
+  const validated = accountHistoryListResponseSchema.parse(
+    MOCK_ACCOUNT_HISTORY_RESPONSE,
+  );
+
+  return validated.data.map((history, index) => ({
+    historyId: `account-history-${index + 1}`,
+    transactionMemo: history.transactionMemo,
+    amount: history.amount,
+    transactionAt: new Date(history.transactionAt),
+  }));
+};
+
+/**
+ * 직접 입력 초안은 매번 새 객체로 반환해야 토글/금액 수정이 service 원본을 오염시키지 않는다.
+ */
+const buildManualEntryDraft = (): ManualEntryDraft => ({
+  itemName: MOCK_MANUAL_ENTRY_DRAFT.itemName,
+  totalAmount: MOCK_MANUAL_ENTRY_DRAFT.totalAmount,
+  participants: MOCK_MANUAL_ENTRY_DRAFT.participants.map(
+    (participant): ManualEntryParticipantDraft => ({
+      ...participant,
+    }),
+  ),
+});
+
+/**
  * room별 "내 결제 목록" 조회.
  * 지금은 roomId를 실제로 쓰지 않지만, 나중에 endpoint로 바꾸면 이 인자를 그대로 사용한다.
  */
@@ -273,3 +417,58 @@ export const getExpenseDetail = async (
 export const getPaymentEntryPreview = (
   inputType: ExpenseInputType,
 ): PaymentEntryPreview => MOCK_ENTRY_PREVIEWS[inputType];
+
+/**
+ * 계좌 거래 내역 목록 조회 mock.
+ */
+export const getAccountHistories = async (
+  roomId: number,
+): Promise<AccountHistoryItem[]> => {
+  void roomId;
+
+  await wait(MOCK_NETWORK_DELAY_MS);
+  return buildAccountHistoryItems();
+};
+
+/**
+ * 계좌 내역에서 "장바구니 담기"를 눌렀을 때 생성되는 등록 초안 조회 mock.
+ * transactionMemo/amount/transactionAt은 원본 거래 정보에서, itemName/participants는 FE meta에서 가져온다.
+ */
+export const getAccountHistoryEntryDraft = async (
+  roomId: number,
+  historyId: string,
+): Promise<AccountHistoryEntryDraft> => {
+  void roomId;
+
+  await wait(MOCK_NETWORK_DELAY_MS);
+
+  const history = buildAccountHistoryItems().find(
+    (candidate) => candidate.historyId === historyId,
+  );
+  const meta = MOCK_ACCOUNT_HISTORY_ENTRY_META[historyId];
+
+  if (history == null || meta == null) {
+    throw new Error('계좌 내역 장바구니 mock 데이터를 찾지 못했습니다.');
+  }
+
+  return {
+    historyId: history.historyId,
+    transactionMemo: history.transactionMemo,
+    amount: history.amount,
+    transactionAt: history.transactionAt,
+    itemName: meta.itemName,
+    participants: meta.participants.map((participant) => ({ ...participant })),
+  };
+};
+
+/**
+ * 직접 입력 초기 draft 조회 mock.
+ */
+export const getManualEntryDraft = async (
+  roomId: number,
+): Promise<ManualEntryDraft> => {
+  void roomId;
+
+  await wait(MOCK_NETWORK_DELAY_MS);
+  return buildManualEntryDraft();
+};

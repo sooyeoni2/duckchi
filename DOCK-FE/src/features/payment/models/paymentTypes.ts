@@ -41,12 +41,35 @@ export const myExpenseListResponseSchema = z.object({
 });
 
 /**
+ * 계좌 거래 내역 한 건을 검증하는 스키마.
+ * 백엔드 AccountHistoryResponse 구조를 그대로 따라가고,
+ * historyId 같은 화면 전용 식별자는 service 계층에서 별도로 붙인다.
+ */
+const accountHistoryItemResponseSchema = z.object({
+  transactionMemo: z.string(),
+  amount: z.number().int().nonnegative(),
+  transactionAt: z.string(),
+});
+
+/**
+ * 계좌 거래 내역 목록 응답.
+ * 현재 mock도 success/data 구조를 유지해 실제 API 교체 비용을 줄인다.
+ */
+export const accountHistoryListResponseSchema = z.object({
+  success: z.boolean(),
+  data: z.array(accountHistoryItemResponseSchema),
+});
+
+/**
  * raw response 타입.
  * service 내부에서 "백엔드가 보내준 원본"을 다룰 때 쓴다.
  */
 export type ExpenseStatus = z.infer<typeof expenseStatusSchema>;
 export type ExpenseInputType = z.infer<typeof expenseInputTypeSchema>;
 export type MyExpenseListResponse = z.infer<typeof myExpenseListResponseSchema>;
+export type AccountHistoryListResponse = z.infer<
+  typeof accountHistoryListResponseSchema
+>;
 
 /**
  * 화면과 ViewModel이 사용하는 정제된 타입.
@@ -123,6 +146,62 @@ export interface PaymentEntryPreview {
   fieldGuides: PaymentEntryGuideField[];
   checklist: string[];
   primaryActionLabel: string;
+}
+
+/**
+ * 계좌 거래 내역 목록 화면에서 사용하는 정제 타입.
+ * 원본 응답에는 id가 없어서, historyId는 FE service에서만 관리한다.
+ */
+export interface AccountHistoryItem {
+  historyId: string;
+  transactionMemo: string;
+  amount: number;
+  transactionAt: Date;
+}
+
+/**
+ * 계좌 내역을 장바구니 등록 폼으로 넘긴 뒤 토글할 참여자 초안.
+ */
+export interface AccountHistoryParticipantDraft {
+  userId: number;
+  userName: string;
+  isSelected: boolean;
+  isMe: boolean;
+}
+
+/**
+ * 계좌 내역 -> 등록 폼으로 넘어가는 순간의 draft 데이터.
+ * 거래 원본 필드와 프론트 수정값(itemName, 참여자 선택)을 함께 가진다.
+ */
+export interface AccountHistoryEntryDraft {
+  historyId: string;
+  transactionMemo: string;
+  amount: number;
+  transactionAt: Date;
+  itemName: string;
+  participants: AccountHistoryParticipantDraft[];
+}
+
+/**
+ * 직접 입력 흐름에서 사용하는 참여자 초안.
+ * 1단계에서는 on/off 토글, 2단계에서는 splitAmount 편집까지 같은 draft로 이어간다.
+ */
+export interface ManualEntryParticipantDraft {
+  userId: number;
+  userName: string;
+  isSelected: boolean;
+  isMe: boolean;
+  splitAmount: number;
+}
+
+/**
+ * 직접 입력 2단계 mock에 사용하는 draft.
+ * 장바구니 항목명, 전체 금액, 참여자별 분배 금액을 모두 한 묶음으로 다룬다.
+ */
+export interface ManualEntryDraft {
+  itemName: string;
+  totalAmount: number;
+  participants: ManualEntryParticipantDraft[];
 }
 
 /**
