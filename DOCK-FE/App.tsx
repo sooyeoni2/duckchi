@@ -8,7 +8,7 @@ import { AppNavigator } from './src/core/navigation/AppNavigator';
 import { AuthNavigator } from './src/core/navigation/AuthNavigator';
 import { RootStackParamList } from './src/core/navigation/types';
 import { OnboardingScreen } from './src/features/onboarding/OnboardingScreen';
-// import { useAuthStore } from './src/features/auth/models/authStore';
+import { useAuthStore } from './src/features/auth/models/authStore';
 import { BankAccountSetupScreen } from './src/features/bank/views/BankAccountSetupScreen';
 import { BankAccountVerifyScreen } from './src/features/bank/views/BankAccountVerifyScreen';
 import { BankAccountCompleteScreen } from './src/features/bank/views/BankAccountCompleteScreen';
