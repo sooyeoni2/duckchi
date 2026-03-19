@@ -127,20 +127,20 @@ export const RoomActionConfirmBottomSheet: React.FC<RoomActionConfirmBottomSheet
                     text="취소"
                     onPress={onClose}
                     isFullWidth={false}
-                    width={150}
-                    height={44}
-                    borderRadius={10}
-                    textStyle={KBODiaGothicTextStyle.medium({ fontSize: 15, color: AppColorStyles.black })}
+                    height={52}
+                    borderRadius={12}
+                    textStyle={KBODiaGothicTextStyle.bold({ fontSize: 16, color: AppColorStyles.black })}
+                    style={styles.buttonFlex}
                   />
                   <FilledButton
                     text={content.confirm}
                     onPress={onConfirm}
                     isLoading={isProcessing}
                     isFullWidth={false}
-                    width={150}
-                    height={44}
-                    borderRadius={10}
-                    textStyle={KBODiaGothicTextStyle.medium({ fontSize: 15, color: AppColorStyles.black })}
+                    height={52}
+                    borderRadius={12}
+                    textStyle={KBODiaGothicTextStyle.bold({ fontSize: 16, color: AppColorStyles.black })}
+                    style={styles.buttonFlex}
                   />
                 </View>
               </>
@@ -246,7 +246,9 @@ const styles = StyleSheet.create({
   },
   buttonRow: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 22,
+    gap: 12,
+  },
+  buttonFlex: {
+    flex: 1,
   },
 });

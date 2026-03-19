@@ -83,7 +83,6 @@ const RoomMoreOptionsScreen: React.FC = () => {
             title="자동이체 동의" 
             onPress={() => navigation.navigate('AutoTransferAgree')}
           />
-          <RoomMenuItem title="총무 뽑기" />
           
           {roomInfo.isAdmin && (
             <RoomMenuItem 

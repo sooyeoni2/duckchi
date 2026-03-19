@@ -25,7 +25,7 @@ const AdminDelegationScreen: React.FC = () => {
       {/* 공용 AppBar */}
       <CustomAppBar
         title="방장 위임"
-        centerTitle={true}
+        centerTitle={false}
         showDivider
         backgroundColor={AppColorStyles.background}
         onBackPress={() => navigation.goBack()}
