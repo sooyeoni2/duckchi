@@ -27,6 +27,13 @@ export type ProfileStackParamList = {
   TransferLimit: undefined;
 };
 
+export type RoomStackParamList = {
+  RoomList: undefined;
+  RoomDetail: { roomId: number };
+  RoomCreate: undefined;
+  RoomRestart: { roomId: number };
+};
+
 export type AuthStackParamList = {
   Login: undefined;
   KakaoLogin: undefined;
@@ -37,7 +44,7 @@ export type AuthStackParamList = {
 
 export type AppTabParamList = {
   Home: undefined;
-  Room: undefined;
+  Room: { screen: keyof RoomStackParamList } | undefined;
   Report: undefined;
   Profile: { screen: keyof ProfileStackParamList } | undefined;
 };
