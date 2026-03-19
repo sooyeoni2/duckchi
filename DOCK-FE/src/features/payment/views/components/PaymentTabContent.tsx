@@ -34,6 +34,7 @@ import { PaymentRequestActionButton } from './PaymentRequestActionButton';
 
 interface PaymentTabContentProps {
   roomId: number;
+  onExpenseDetailPress?: (expenseId: number) => void;
 }
 
 interface FeedbackMessage {
@@ -82,7 +83,7 @@ const REQUEST_ACTIONS: Array<{
  * room 내부 "결제" 탭 본문만 담당하는 payment 전용 컨텐츠.
  * 방 shell은 room feature가 관리하고, payment는 내부 하위 flow만 가진다.
  */
-export function PaymentTabContent({ roomId }: PaymentTabContentProps) {
+export function PaymentTabContent({ roomId, onExpenseDetailPress }: PaymentTabContentProps) {
   const [scene, setScene] = React.useState<PaymentScene>({ kind: 'overview' });
   const [selectedExpenseIds, setSelectedExpenseIds] = React.useState<number[]>([]);
   const [feedbackMessage, setFeedbackMessage] =
@@ -232,6 +233,12 @@ export function PaymentTabContent({ roomId }: PaymentTabContentProps) {
 
   const handleOpenDetail = (expenseId: number) => {
     clearFeedback();
+
+    if (onExpenseDetailPress != null) {
+      onExpenseDetailPress(expenseId);
+      return;
+    }
+
     setScene({ kind: 'detail', expenseId });
   };
 

@@ -37,6 +37,7 @@ export type RoomStackParamList = {
   AutoTransferAgree: { roomId: number };
   AdminDelegation: { roomId: number };
   RoomEdit: { roomId: number };
+  SettlementRequestList: { roomId: number };
 };
 
 export type AuthStackParamList = {
