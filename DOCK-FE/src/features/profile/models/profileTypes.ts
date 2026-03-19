@@ -66,9 +66,3 @@ export interface UpdateProfileParams {
   profileImageKey?: string;
 }
 
-export interface RegisterBankAccountResult {
-  accountId: number;
-  bankCode: string;
-  bankName: string;
-  maskedAccountNo: string;
-}

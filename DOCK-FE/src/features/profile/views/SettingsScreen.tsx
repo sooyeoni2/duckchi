@@ -56,13 +56,10 @@ export function SettingsScreen() {
   const navigation = useNavigation<Nav>();
   const [notificationEnabled, setNotificationEnabled] = useState(true);
   const { state } = useProfileViewModel();
-
-  // TODO: 진행 중인 정산 여부는 별도 API 연동 필요
-  const hasOngoingSettlement = false;
   const hasAccount = state.status === 'loaded' && state.profile.accounts.length > 0;
 
   const handleAccountSetupPress = () => {
-    if (hasAccount || hasOngoingSettlement) {
+    if (hasAccount) {
       navigation.navigate('BankAccountRegister');
     } else {
       navigation.navigate('BankAccountSetup', { returnTo: 'Settings' });
