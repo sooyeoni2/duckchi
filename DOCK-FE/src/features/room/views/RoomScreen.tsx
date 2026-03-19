@@ -414,14 +414,19 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     paddingHorizontal: 16,
     borderRadius: 14,
-    backgroundColor: AppColorStyles.gray5,
+    backgroundColor: AppColorStyles.white,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#676767',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 2,
+    elevation: 2,
   },
   emptyText: {
-    ...PretendardTextStyle.medium({
-      fontSize: 13,
-      color: AppColorStyles.textSecondary,
+    ...KBODiaGothicTextStyle.light({
+      fontSize: 14,
+      color: AppColorStyles.gray2,
     }),
   },
   totalCard: {

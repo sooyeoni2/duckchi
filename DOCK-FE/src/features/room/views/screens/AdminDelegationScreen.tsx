@@ -100,16 +100,16 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 16,
-    gap: 16,
+    padding: 20,
+    gap: 8,
   },
   infoCard: {
-    backgroundColor: '#FFF8E1',
-    borderRadius: 12,
+    backgroundColor: AppColorStyles.yellowLight,
+    borderRadius: 18,
     padding: 24,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#FFF3E0',
+    borderColor: AppColorStyles.yellow,
   },
   infoText: {
     fontSize: 15,
@@ -119,7 +119,9 @@ const styles = StyleSheet.create({
   },
   listCard: {
     backgroundColor: AppColorStyles.surface,
-    borderRadius: 12,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: AppColorStyles.divider,
     padding: 8,
     flex: 1,
   },

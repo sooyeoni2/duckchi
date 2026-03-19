@@ -151,13 +151,15 @@ const styles = StyleSheet.create({
     backgroundColor: AppColorStyles.background,
   },
   scrollContent: {
-    padding: 16,
-    paddingTop: 32,
-    gap: 16,
+    padding: 20,
+    paddingTop: 20,
+    gap: 8,
   },
   card: {
     backgroundColor: AppColorStyles.surface,
-    borderRadius: 12,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: AppColorStyles.divider,
     overflow: 'hidden',
   },
 });

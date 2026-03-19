@@ -43,7 +43,7 @@ export const FilledButton: React.FC<FilledButtonProps> = ({
   isLoading = false,
   isFullWidth = true,
   width,
-  height = 52,
+  height = 60,
   borderRadius = 12,
   prefixIcon,
   suffixIcon,
