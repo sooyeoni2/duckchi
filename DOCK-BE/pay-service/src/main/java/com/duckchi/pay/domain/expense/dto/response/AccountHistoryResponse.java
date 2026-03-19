@@ -23,7 +23,4 @@ public class AccountHistoryResponse {
 
     @Schema(description = "거래 일시", example = "2026-03-12T14:00:00")
     private LocalDateTime transactionAt;
-
-    @Schema(description = "상대 계좌 번호", example = "123-456-789")
-    private String counterAccountNo;
 }
