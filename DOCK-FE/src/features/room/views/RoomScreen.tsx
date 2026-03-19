@@ -22,8 +22,8 @@ import { PaymentTabContent } from '../../payment/views/components/PaymentTabCont
 import { roomParticipatedPaymentsMock, roomSettlementRequestsMock } from '../models/roomDetailMockData';
 import { meetingRoomMockData } from '../models/roomMockData';
 import { useRoomStore } from '../models/roomStore';
-import { RoomSettlementTransferView } from './components/RoomSettlementTransferView';
 import { SettlementRowCard } from './components/SettlementRowCard';
+import { RoomSettlementTransferView } from './components/RoomSettlementTransferView';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const s = SCREEN_WIDTH / 412;
@@ -66,7 +66,6 @@ export function RoomScreen() {
       navigation.goBack();
     }
   };
-
   if (viewMode === 'TRANSFER') {
     return <RoomSettlementTransferView onBack={() => setViewMode('SUMMARY')} />;
   }
@@ -133,7 +132,10 @@ export function RoomScreen() {
       </View>
 
       {selectedRoomTab === 'PAYMENT' ? (
-        <PaymentTabContent roomId={room.roomId} />
+        <PaymentTabContent
+          roomId={room.roomId}
+          onExpenseDetailPress={() => navigation.navigate('SettlementRequestList', { roomId: room.roomId })}
+        />
       ) : selectedRoomTab === 'SETTLEMENT' ? (
         <ScrollView
           style={styles.scrollArea}
