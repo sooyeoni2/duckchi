@@ -51,18 +51,25 @@ pipeline {
             }
         }
 
-        stage('Build Backend Services') {
-            steps {
-                sh '''
-                    set -eu
-                    for service in ${BACKEND_SERVICES}; do
-                      echo "===> Building ${service}"
-                      cd "DOCK-BE/${service}"
-                      chmod +x ./gradlew
-                      ./gradlew clean build
-                      cd "${WORKSPACE}"
-                    done
-                '''
+       stage('Build Backend Services') {
+           steps {
+               sh '''
+                   set -eu
+                   for service in ${BACKEND_SERVICES}; do
+                     echo "===> Building ${service}"
+                     cd "DOCK-BE/${service}"
+                     chmod +x ./gradlew
+                     if [ "${JOB_NAME}" = "duckchi-cd-develop" ] || [[ "${JOB_NAME}" == */duckchi-cd-develop ]]; then
+                       ./gradlew clean bootJar -x test
+                     else
+                       ./gradlew clean build
+                     fi
+                     cd "${WORKSPACE}"
+                   done
+               '''
+           }
+       }
+
             }
         }
 
