@@ -3,9 +3,7 @@ import {
   ActivityIndicator,
   StyleSheet,
   StyleProp,
-  StyleProp,
   Text,
-  TextStyle,
   TextStyle,
   TouchableOpacity,
   View,
@@ -37,7 +35,6 @@ interface OutlineButtonProps {
   suffixIcon?: React.ReactNode;
   style?: ViewStyle;
   textStyle?: StyleProp<TextStyle>;
-  textStyle?: StyleProp<TextStyle>;
 }
 
 export const OutlineButton: React.FC<OutlineButtonProps> = ({
@@ -53,7 +50,6 @@ export const OutlineButton: React.FC<OutlineButtonProps> = ({
   prefixIcon,
   suffixIcon,
   style,
-  textStyle,
   textStyle,
 }) => {
   const disabled = isLoading || !onPress;
