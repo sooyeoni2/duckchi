@@ -11,6 +11,8 @@ export interface AuthUser {
   name: string;
   tag: string;
   profileImageUrl?: string;
+  hasBankAccount?: boolean;
+  hasPayPassword?: boolean;
 }
 
 /* AUTH-02 프로필 설정 */

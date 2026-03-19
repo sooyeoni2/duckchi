@@ -19,5 +19,7 @@ public class LoginResponse {
         private Long userId;
         private String name;
         private String tag;
+        private boolean hasBankAccount;
+        private boolean hasPayPassword;
     }
 }

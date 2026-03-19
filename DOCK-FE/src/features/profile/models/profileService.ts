@@ -9,30 +9,8 @@ import type {
   Profile,
   ProfileBadge,
   ProfileSummary,
-  RegisterBankAccountResult,
   UpdateProfileParams,
 } from './profileTypes';
-
-const MOCK_BANK_NAMES: Record<string, string> = {
-  '001': '한국은행',
-  '002': '산업은행',
-  '003': '기업은행',
-  '004': '국민은행',
-  '011': '농협은행',
-  '020': '우리은행',
-  '023': 'SC제일은행',
-  '027': '시티은행',
-  '032': '대구은행',
-  '034': '광주은행',
-  '035': '제주은행',
-  '037': '전북은행',
-  '039': '경남은행',
-  '045': '새마을금고',
-  '081': 'KEB하나은행',
-  '088': '신한은행',
-  '090': '카카오뱅크',
-  '999': '싸피은행',
-};
 
 // ─────────────────────────────────────────
 // Zod 스키마 (API 응답 검증용)
@@ -147,8 +125,6 @@ const toLockedBadge = (raw: z.infer<typeof lockedBadgeSchema>): LockedBadge => (
 // Mock 데이터
 // ─────────────────────────────────────────
 
-let mockPendingAccount: RegisterBankAccountResult | null = null;
-
 const USE_MOCK = true;
 
 let mockProfile = profileDetailSchema.parse({
@@ -249,61 +225,27 @@ export const deleteAccount = async (accountId: number): Promise<void> => {
   await axiosClient.post(`/api/v1/auth/bank-accounts/${accountId}/delete`);
 };
 
-export const registerBankAccount = async (
-  bankCode: string,
-  accountNo: string,
-): Promise<RegisterBankAccountResult> => {
-  if (USE_MOCK) {
-    await new Promise<void>(resolve => setTimeout(resolve, 500));
-    const bankName = MOCK_BANK_NAMES[bankCode] ?? '알 수 없는 은행';
-    const maskedAccountNo = accountNo.slice(0, 4) + '************';
-    mockPendingAccount = { accountId: Date.now(), bankCode, bankName, maskedAccountNo };
-    return mockPendingAccount;
-  }
-  const response = await axiosClient.post('/api/v1/auth/bank-accounts', { bankCode, accountNo });
-  return response.data.data as RegisterBankAccountResult;
+export const mockAddAccount = (account: {
+  accountId: number;
+  bankCode: string;
+  bankName: string;
+  maskedAccountNo: string;
+}) => {
+  mockProfile = {
+    ...mockProfile,
+    accounts: [
+      ...mockProfile.accounts,
+      {
+        accountId: account.accountId,
+        bankCode: account.bankCode,
+        bankName: account.bankName,
+        accountNumber: account.maskedAccountNo,
+        registeredAt: new Date().toISOString(),
+      },
+    ],
+  };
 };
 
-let mockVerifyAttempts = 0;
-
-export const verify1Won = async (accountId: number, verificationCode: string): Promise<void> => {
-  if (USE_MOCK) {
-    await new Promise<void>(resolve => setTimeout(resolve, 500));
-    if (verificationCode !== '0000') {
-      mockVerifyAttempts += 1;
-      if (mockVerifyAttempts >= 3) {
-        mockVerifyAttempts = 0;
-        const err: any = new Error('LOCKED');
-        err.response = { data: { errorcode: 'ACCOUNT-423-1' } };
-        throw err;
-      }
-      const err: any = new Error('BAD_CODE');
-      err.response = { data: { errorcode: 'ACCOUNT-400-3' } };
-      throw err;
-    }
-    mockVerifyAttempts = 0;
-    if (mockPendingAccount && mockPendingAccount.accountId === accountId) {
-      mockProfile = {
-        ...mockProfile,
-        accounts: [
-          ...mockProfile.accounts,
-          {
-            accountId: mockPendingAccount.accountId,
-            bankCode: mockPendingAccount.bankCode,
-            bankName: mockPendingAccount.bankName,
-            accountNumber: mockPendingAccount.maskedAccountNo,
-            registeredAt: new Date().toISOString(),
-          },
-        ],
-      };
-      mockPendingAccount = null;
-    }
-    return;
-  }
-  await axiosClient.post(`/api/v1/auth/bank-accounts/${accountId}/verify-1won`, {
-    verificationCode,
-  });
-};
 
 export const fetchBadges = async (): Promise<BadgeList> => {
   if (USE_MOCK) {
