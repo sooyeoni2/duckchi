@@ -1,6 +1,7 @@
 import React from 'react';
 import { Text, StyleSheet, Pressable, View } from 'react-native';
 import { AppColorStyles } from '@core/theme/colors';
+import { KBODiaGothicTextStyle } from '@core/theme/typography';
 import { Entypo } from '@expo/vector-icons';
 
 interface RoomMenuItemProps {
@@ -46,16 +47,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 14,
+    paddingVertical: 10,
     paddingHorizontal: 12,
-    marginVertical: 4,
+    marginVertical: 2,
     borderRadius: 12,
   },
   menuItemPressed: {
     backgroundColor: AppColorStyles.gray5,
   },
   menuText: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...KBODiaGothicTextStyle.medium({ fontSize: 15 }),
   },
 });

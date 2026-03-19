@@ -23,6 +23,7 @@ interface RoomCardProps {
 
 function RoomCard({ meeting, onPress, onActionPress }: RoomCardProps) {
   const scale = React.useRef(new Animated.Value(1)).current;
+  const actionScale = React.useRef(new Animated.Value(1)).current;
   const highlightedButton = meeting.status === 'ENDED';
 
   const handlePressIn = () => {
@@ -36,6 +37,24 @@ function RoomCard({ meeting, onPress, onActionPress }: RoomCardProps) {
 
   const handlePressOut = () => {
     Animated.spring(scale, {
+      toValue: 1,
+      useNativeDriver: true,
+      speed: 30,
+      bounciness: 4,
+    }).start();
+  };
+
+  const handleActionPressIn = () => {
+    Animated.spring(actionScale, {
+      toValue: 0.93,
+      useNativeDriver: true,
+      speed: 50,
+      bounciness: 0,
+    }).start();
+  };
+
+  const handleActionPressOut = () => {
+    Animated.spring(actionScale, {
       toValue: 1,
       useNativeDriver: true,
       speed: 30,
@@ -78,18 +97,22 @@ function RoomCard({ meeting, onPress, onActionPress }: RoomCardProps) {
           style={styles.avatarGroup}
         />
 
-        <Pressable
-          onPress={(event) => {
-            event.stopPropagation();
-            onActionPress(meeting);
-          }}
-          style={[
-            styles.actionButton,
-            highlightedButton ? styles.actionButtonHighlighted : styles.actionButtonMuted,
-          ]}
-        >
-          <Text style={styles.actionButtonText}>{meeting.actionLabel}</Text>
-        </Pressable>
+        <Animated.View style={[styles.actionButton, { transform: [{ scale: actionScale }] }]}>
+          <Pressable
+            onPress={(event) => {
+              event.stopPropagation();
+              onActionPress(meeting);
+            }}
+            onPressIn={handleActionPressIn}
+            onPressOut={handleActionPressOut}
+            style={[
+              styles.actionButton,
+              highlightedButton ? styles.actionButtonHighlighted : styles.actionButtonMuted,
+            ]}
+          >
+            <Text style={styles.actionButtonText}>{meeting.actionLabel}</Text>
+          </Pressable>
+        </Animated.View>
       </Pressable>
     </Animated.View>
   );
