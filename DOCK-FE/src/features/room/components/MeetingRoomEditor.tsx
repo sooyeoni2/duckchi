@@ -1,9 +1,9 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AppColorStyles } from '@core/theme/colors';
-import { KBODiaGothicTextStyle, PretendardTextStyle } from '@core/theme/typography';
+import { KBODiaGothicTextStyle } from '@core/theme/typography';
 import { FilledButton } from '../../../shared/components/buttons/FilledButton';
 import { CustomTextField } from '../../../shared/components/inputs/CustomTextField';
 import type { MeetingRoomTag } from '../models/roomMockData';
@@ -49,81 +49,87 @@ export function MeetingRoomEditor({
 
   return (
     <View style={styles.body}>
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>모임 이름 (최대 20자)</Text>
-          <CustomTextField
-            value={roomName}
-            onChangeText={(text) => onRoomNameChange(text.slice(0, 20))}
-            borderRadius={12}
-            style={styles.input}
-          />
-          <Text style={styles.counterText}>{roomName.length}/20</Text>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>모임 태그</Text>
-          <View style={styles.tagGrid}>
-            {TAG_OPTIONS.map((option) => {
-              const isSelected = option.label === selectedTag;
-              return (
-                <Pressable
-                  key={option.label}
-                  onPress={() => onTagChange(option.label)}
-                  style={[styles.tagCard, isSelected && styles.tagCardSelected]}
-                >
-                  <MaterialCommunityIcons
-                    name={option.icon}
-                    size={28}
-                    color={isSelected ? AppColorStyles.white : AppColorStyles.gray1}
-                    style={styles.tagIcon}
-                  />
-                  <Text style={[styles.tagLabel, isSelected && styles.tagLabelSelected]}>
-                    {option.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+        <ScrollView
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>모임 이름 (최대 20자)</Text>
+            <CustomTextField
+              value={roomName}
+              hint="모임 이름"
+              onChangeText={(text) => onRoomNameChange(text.slice(0, 20))}
+              borderRadius={12}
+              style={styles.input}
+            />
+            <Text style={styles.counterText}>{roomName.length}/20</Text>
           </View>
-        </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>세부 내용</Text>
-          <CustomTextField
-            value={detail}
-            onChangeText={onDetailChange}
-            borderRadius={12}
-            style={styles.input}
-          />
-        </View>
-
-        {showInviteGuide ? (
-          <View style={styles.inviteCard}>
-            <View style={styles.inviteIconWrap}>
-              <MaterialCommunityIcons name="link-variant" size={34} color={AppColorStyles.black} />
-            </View>
-            <View style={styles.inviteTextWrap}>
-              <Text style={styles.inviteTitle}>방 만들면 초대링크 자동 생성</Text>
-              <Text style={styles.inviteDescription}>링크 공유만으로 참여자 초대</Text>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>모임 태그</Text>
+            <View style={styles.tagGrid}>
+              {TAG_OPTIONS.map((option) => {
+                const isSelected = option.label === selectedTag;
+                return (
+                  <Pressable
+                    key={option.label}
+                    onPress={() => onTagChange(option.label)}
+                    style={[styles.tagCard, isSelected && styles.tagCardSelected]}
+                  >
+                    <MaterialCommunityIcons
+                      name={option.icon}
+                      size={28}
+                      color={isSelected ? AppColorStyles.white : AppColorStyles.gray1}
+                      style={styles.tagIcon}
+                    />
+                    <Text style={[styles.tagLabel, isSelected && styles.tagLabelSelected]}>
+                      {option.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
             </View>
           </View>
-        ) : null}
-      </ScrollView>
 
-      <View style={styles.footer}>
-        <FilledButton
-          text={submitLabel}
-          onPress={onSubmit}
-          height={62}
-          borderRadius={12}
-          textStyle={styles.submitButtonText}
-          style={!canSubmit ? styles.submitButtonDisabled : undefined}
-        />
-      </View>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>세부 내용</Text>
+            <CustomTextField
+              value={detail}
+              hint="세부 내용"
+              onChangeText={onDetailChange}
+              borderRadius={12}
+              style={styles.input}
+            />
+          </View>
+
+          {showInviteGuide ? (
+            <View style={styles.inviteCard}>
+              <View style={styles.inviteIconWrap}>
+                <MaterialCommunityIcons name="link-variant" size={34} color={AppColorStyles.black} />
+              </View>
+              <View style={styles.inviteTextWrap}>
+                <Text style={styles.inviteTitle}>방 만들면 초대링크 자동 생성</Text>
+                <Text style={styles.inviteDescription}>링크 공유만으로 참여자 초대</Text>
+              </View>
+            </View>
+          ) : null}
+
+          <View style={styles.footer}>
+            <FilledButton
+              text={submitLabel}
+              onPress={onSubmit}
+              isFullWidth={false}
+              width={370}
+              height={62}
+              borderRadius={12}
+              textStyle={styles.submitButtonText}
+              style={!canSubmit ? styles.submitButtonDisabled : undefined}
+            />
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }
@@ -138,7 +144,7 @@ const styles = StyleSheet.create({
     backgroundColor: AppColorStyles.background,
   },
   content: {
-    paddingHorizontal: 32,
+    paddingHorizontal: 48,
     paddingTop: 24,
     paddingBottom: 24,
     gap: 28,
@@ -148,9 +154,9 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     ...KBODiaGothicTextStyle.medium({
-      fontSize: 16,
+      fontSize: 14,
       color: AppColorStyles.gray1,
-      lineHeight: 22,
+      lineHeight: 21,
     }),
   },
   input: {
@@ -162,24 +168,24 @@ const styles = StyleSheet.create({
   },
   counterText: {
     alignSelf: 'flex-end',
-    ...PretendardTextStyle.medium({
-      fontSize: 12,
-      color: AppColorStyles.gray2,
-      lineHeight: 16,
+    ...KBODiaGothicTextStyle.light({
+      fontSize: 10,
+      color: '#818181',
+      lineHeight: 10,
     }),
   },
   tagGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    rowGap: 18,
+    rowGap: 21,
   },
   tagCard: {
-    width: '30.5%',
-    minHeight: 88,
-    borderRadius: 12,
+    width: 85,
+    height: 85,
+    borderRadius: 9,
     borderWidth: 1,
-    borderColor: AppColorStyles.gray3,
+    borderColor: '#CECECE',
     backgroundColor: AppColorStyles.white,
     alignItems: 'center',
     justifyContent: 'center',
@@ -192,18 +198,19 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   tagCardSelected: {
-    borderColor: AppColorStyles.gray1,
-    backgroundColor: AppColorStyles.gray1,
+    borderColor: '#333333',
+    backgroundColor: '#333333',
   },
   tagIcon: {
-    marginBottom: 8,
+    marginBottom: 6,
   },
   tagLabel: {
     textAlign: 'center',
     ...KBODiaGothicTextStyle.medium({
-      fontSize: 15,
+      fontSize: 12,
       color: AppColorStyles.gray1,
-      lineHeight: 20,
+      lineHeight: 16,
+      letterSpacing: 0.5,
     }),
   },
   tagLabelSelected: {
@@ -213,46 +220,47 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    borderRadius: 14,
+    borderRadius: 10,
     borderWidth: 1,
     borderStyle: 'dashed',
-    borderColor: AppColorStyles.gray1,
+    borderColor: AppColorStyles.black,
     backgroundColor: AppColorStyles.white,
     paddingHorizontal: 18,
     paddingVertical: 14,
   },
   inviteIconWrap: {
-    width: 54,
+    width: 46,
     alignItems: 'center',
     justifyContent: 'center',
   },
   inviteTextWrap: {
     flex: 1,
-    gap: 2,
+    gap: 4,
   },
   inviteTitle: {
-    ...KBODiaGothicTextStyle.bold({
-      fontSize: 20,
+    ...KBODiaGothicTextStyle.medium({
+      fontSize: 16,
       color: AppColorStyles.black,
-      lineHeight: 24,
-    }),
-  },
-  inviteDescription: {
-    ...PretendardTextStyle.medium({
-      fontSize: 14,
-      color: AppColorStyles.gray1,
       lineHeight: 20,
     }),
   },
+  inviteDescription: {
+    ...KBODiaGothicTextStyle.light({
+      fontSize: 13,
+      color: AppColorStyles.gray1,
+      lineHeight: 18,
+    }),
+  },
   footer: {
-    paddingHorizontal: 32,
+    alignItems: 'center',
+    paddingHorizontal: 48,
     paddingTop: 12,
     paddingBottom: 20,
     backgroundColor: AppColorStyles.background,
   },
   submitButtonText: {
     ...KBODiaGothicTextStyle.bold({
-      fontSize: 22,
+      fontSize: 20,
       color: AppColorStyles.black,
       lineHeight: 28,
     }),

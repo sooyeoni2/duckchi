@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 
 import { AppColorStyles } from '@core/theme/colors';
-import { KBODiaGothicTextStyle, PretendardTextStyle } from '@core/theme/typography';
+import { KBODiaGothicTextStyle } from '@core/theme/typography';
 import type { MeetingRoomInviteLink } from '../models/roomMockData';
 
 interface MeetingRoomLinkSheetProps {
@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
   },
   linkText: {
     flex: 1,
-    ...PretendardTextStyle.medium({
+    ...KBODiaGothicTextStyle.medium({
       fontSize: 16,
       color: AppColorStyles.gray1,
       lineHeight: 22,
