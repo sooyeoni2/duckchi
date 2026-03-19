@@ -250,7 +250,6 @@ export function usePaymentListViewModel(roomId: number) {
     syncRoom(roomId);
   }, [roomId, syncRoom]);
 
-<<<<<<< HEAD
   /**
    * loaded 상태에서만 실제 필터링이 일어난다.
    * 나머지 상태에서는 빈 배열을 반환해 Screen 조건문을 단순화한다.
@@ -266,16 +265,6 @@ export function usePaymentListViewModel(roomId: number) {
         : [],
     [state],
   );
-=======
-  const filteredExpenses =
-    state.status === 'loaded'
-      ? state.selectedStatus === 'ALL'
-        ? state.expenses
-        : state.expenses.filter(
-            (expense) => expense.status === state.selectedStatus,
-          )
-      : [];
->>>>>>> b09b1b7708c904081a0e8e569921b0441eff29ea
 
   const summary = React.useMemo(
     () => (state.status === 'loaded' ? buildSummary(state.expenses) : emptySummary),

@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { RoomStackParamList } from '@core/navigation/types';
 import { AppColorStyles } from '@core/theme/colors';
-import { KBODiaGothicTextStyle } from '@core/theme/typography';
+import { KBODiaGothicTextStyle, PretendardTextStyle } from '@core/theme/typography';
 import { CustomAppBar } from '@shared/components/app_bar/CustomAppBar';
 
 import {
@@ -47,14 +47,10 @@ type Route = RouteProp<RoomStackParamList, 'RoomDetail'>;
 export function RoomScreen() {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
-<<<<<<< HEAD
+  const paymentTabRef = React.useRef<PaymentTabContentHandle | null>(null);
   const [viewMode, setViewMode] = useState<RoomViewMode>(
     route.params.showTransfer === true ? 'TRANSFER' : 'SUMMARY',
   );
-=======
-  const paymentTabRef = React.useRef<PaymentTabContentHandle | null>(null);
-  const [viewMode, setViewMode] = useState<RoomViewMode>('SUMMARY');
->>>>>>> b09b1b7708c904081a0e8e569921b0441eff29ea
   const [selectedRoomTab, setSelectedRoomTab] =
     useState<RoomMainTab>('SETTLEMENT');
   const [roomTabHistory, setRoomTabHistory] = useState<RoomMainTab[]>([]);
@@ -193,7 +189,9 @@ export function RoomScreen() {
             <Text style={styles.expectedAmount}>{toWon(expectedAmount)}</Text>
             <View style={styles.expectedBottomRow}>
               <Text style={styles.expectedHint}>금액이 변동될 수 있어요</Text>
-              <Text style={styles.expectedAction}>탭하여 정산하기 →</Text>
+              <View style={styles.expectedActionBadge}>
+                <Text style={styles.expectedAction}>탭하여 정산하기 →</Text>
+              </View>
             </View>
           </TouchableOpacity>
 
@@ -314,103 +312,98 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 21 * s,
-    paddingTop: 25 * s,
-    paddingBottom: 20 * s,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 32,
   },
   placeholderContainer: {
     flex: 1,
-    paddingHorizontal: 21 * s,
-    paddingTop: 25 * s,
+    paddingHorizontal: 20,
+    paddingTop: 20,
   },
   placeholderCard: {
-    borderRadius: 10 * s,
+    borderRadius: 18,
     backgroundColor: AppColorStyles.surface,
-    paddingHorizontal: 16 * s,
-    paddingVertical: 24 * s,
-    shadowColor: '#676767',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
-    elevation: 2,
+    paddingHorizontal: 16,
+    paddingVertical: 24,
+    borderWidth: 1,
+    borderColor: AppColorStyles.divider,
   },
   placeholderDescription: {
-    marginTop: 10 * s,
-    ...KBODiaGothicTextStyle.medium({
-      fontSize: 14 * s,
-      lineHeight: 20 * s,
-      color: AppColorStyles.gray2,
+    marginTop: 10,
+    ...PretendardTextStyle.medium({
+      fontSize: 13,
+      lineHeight: 20,
+      color: AppColorStyles.textSecondary,
     }),
   },
   expectedCard: {
-    height: 128 * s,
-    backgroundColor: AppColorStyles.gray1,
-    borderRadius: 10 * s,
-    paddingHorizontal: 14 * s,
-    paddingTop: 21 * s,
-    paddingBottom: 12 * s,
-    marginBottom: 16 * s,
-    shadowColor: '#676767',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
-    elevation: 2,
+    backgroundColor: AppColorStyles.surface,
+    borderRadius: 18,
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 16,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: AppColorStyles.divider,
   },
   expectedLabel: {
     ...KBODiaGothicTextStyle.medium({
-      fontSize: 16 * s,
-      lineHeight: 16 * s,
-      color: AppColorStyles.gray3,
+      fontSize: 14 * s,
+      lineHeight: 14 * s,
+      color: AppColorStyles.textSecondary,
     }),
   },
   expectedAmount: {
-    marginTop: 11 * s,
+    marginTop: 10,
     ...KBODiaGothicTextStyle.bold({
-      fontSize: 24 * s,
-      lineHeight: 24 * s,
-      color: AppColorStyles.white,
+      fontSize: 26 * s,
+      lineHeight: 26 * s,
+      color: AppColorStyles.black,
     }),
   },
   expectedBottomRow: {
-    marginTop: 21 * s,
+    marginTop: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   expectedHint: {
-    ...KBODiaGothicTextStyle.medium({
-      fontSize: 12 * s,
-      lineHeight: 12 * s,
-      color: AppColorStyles.gray3,
+    ...PretendardTextStyle.medium({
+      fontSize: 12,
+      color: AppColorStyles.textHint,
     }),
+  },
+  expectedActionBadge: {
+    backgroundColor: AppColorStyles.yellow,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
   },
   expectedAction: {
     ...KBODiaGothicTextStyle.medium({
       fontSize: 12 * s,
-      lineHeight: 12 * s,
-      color: AppColorStyles.white,
+      lineHeight: 14 * s,
+      color: AppColorStyles.black,
     }),
   },
   sectionCard: {
     backgroundColor: AppColorStyles.surface,
-    borderRadius: 10 * s,
-    paddingHorizontal: 12 * s,
-    paddingTop: 14 * s,
-    paddingBottom: 12 * s,
-    shadowColor: '#676767',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
-    elevation: 2,
+    borderRadius: 18,
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 16,
+    borderWidth: 1,
+    borderColor: AppColorStyles.divider,
   },
   sectionCardSpacing: {
-    marginBottom: 12 * s,
+    marginBottom: 8,
   },
   sectionCardBottomSpacing: {
-    marginBottom: 8 * s,
+    marginBottom: 8,
   },
   sectionTitle: {
-    marginBottom: 10 * s,
+    marginBottom: 12,
     ...KBODiaGothicTextStyle.medium({
       fontSize: 16 * s,
       lineHeight: 16 * s,
@@ -418,35 +411,33 @@ const styles = StyleSheet.create({
     }),
   },
   sectionEmptyBox: {
-    paddingVertical: 20 * s,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    backgroundColor: AppColorStyles.gray5,
     alignItems: 'center',
     justifyContent: 'center',
   },
   emptyText: {
-    ...KBODiaGothicTextStyle.medium({
-      fontSize: 18 * s,
-      color: AppColorStyles.gray2,
+    ...PretendardTextStyle.medium({
+      fontSize: 13,
+      color: AppColorStyles.textSecondary,
     }),
   },
   totalCard: {
-    height: 73 * s,
+    height: 72,
     backgroundColor: AppColorStyles.gray1,
-    borderRadius: 10 * s,
-    paddingHorizontal: 14 * s,
+    borderRadius: 18,
+    paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    shadowColor: '#676767',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
-    elevation: 2,
   },
   totalLabel: {
     ...KBODiaGothicTextStyle.medium({
       fontSize: 16 * s,
       lineHeight: 16 * s,
-      color: AppColorStyles.gray3,
+      color: AppColorStyles.white,
     }),
   },
   totalAmount: {
