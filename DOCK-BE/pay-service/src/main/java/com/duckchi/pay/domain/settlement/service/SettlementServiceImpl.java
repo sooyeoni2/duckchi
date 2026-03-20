@@ -8,6 +8,7 @@ import com.duckchi.pay.domain.room.entity.Room;
 import com.duckchi.pay.domain.room.repository.RoomParticipantRepository;
 import com.duckchi.pay.domain.room.repository.RoomRepository;
 import com.duckchi.pay.domain.settlement.dto.request.SettlementRequestCreateRequest;
+import com.duckchi.pay.domain.settlement.dto.request.SettlementTransferRequest;
 import com.duckchi.pay.domain.settlement.entity.Settlement;
 import com.duckchi.pay.domain.settlement.repository.SettlementRepository;
 import com.duckchi.pay.global.error.CustomException;
@@ -20,16 +21,21 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class SettlementServiceImpl implements SettlementService {
 
     private static final String EXPENSE_STATUS_PENDING = "PENDING";
+    private static final String SETTLEMENT_PENDING_STATUS = "PENDING";
+    private static final int TRANSFER_BATCH_MAX_SIZE = 30;
     private static final String UK_SETTLEMENTS_EXPENSE_PAYER = "UK_SETTLEMENTS_EXPENSE_PAYER";
     private static final String UK_SETTLEMENTS_BANK_TRANSACTION_ID = "UK_SETTLEMENTS_BANK_TRANSACTION_ID";
 
@@ -38,6 +44,7 @@ public class SettlementServiceImpl implements SettlementService {
     private final SettlementRepository settlementRepository;
     private final RoomRepository roomRepository;
     private final RoomParticipantRepository roomParticipantRepository;
+    private final SettlementTransferExecutor settlementTransferExecutor;
 
     @Override
     @Transactional
@@ -88,6 +95,70 @@ public class SettlementServiceImpl implements SettlementService {
 
         // settlement 생성이 확정된 뒤에만 expense 상태를 REQUESTED로 전이한다.
         expenses.forEach(Expense::markRequested);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public void transferSettlements(Long currentUserId, SettlementTransferRequest request) {
+        if (currentUserId == null) {
+            throw new CustomException(ErrorCode.COMMON_UNAUTHORIZED);
+        }
+
+        List<Long> settlementIds = validateAndNormalizeIds(request.settlementIds());
+        validateTransferBatchSize(settlementIds);
+
+        // 송금 실행 전 선검증으로 입력 오류/권한 오류를 조기 차단해 외부 금융망 오호출을 줄인다.
+        List<Settlement> settlements = settlementRepository.findAllByIdIn(settlementIds);
+        validateAllSettlementsExist(settlementIds, settlements);
+        validateSettlementPayerAuthorization(currentUserId, settlements);
+        validateSettlementPendingStatus(settlements);
+
+        List<Long> sortedSettlementIds = settlementIds.stream().sorted().toList();
+        List<Long> failedSettlementIds = new ArrayList<>();
+
+        for (Long settlementId : sortedSettlementIds) {
+            try {
+                settlementTransferExecutor.transferOne(currentUserId, settlementId);
+            } catch (CustomException ex) {
+                // 다건 송금은 외부망/DB 완전 원자성이 불가능하므로 건별 실패를 수집해 최종 partial 오류로 응답한다.
+                failedSettlementIds.add(settlementId);
+                log.warn("정산 송금 실패. settlementId={}, errorCode={}", settlementId, ex.getErrorCode().getCode());
+            }
+        }
+
+        if (!failedSettlementIds.isEmpty()) {
+            throw new CustomException(ErrorCode.SETTLEMENT_TRANSFER_PARTIAL, failedSettlementIds);
+        }
+    }
+
+    private void validateTransferBatchSize(List<Long> settlementIds) {
+        if (settlementIds.size() > TRANSFER_BATCH_MAX_SIZE) {
+            throw new CustomException(ErrorCode.COMMON_INVALID_INPUT);
+        }
+    }
+
+    private void validateAllSettlementsExist(List<Long> requestedIds, List<Settlement> settlements) {
+        if (settlements.size() != requestedIds.size()) {
+            throw new CustomException(ErrorCode.SETTLEMENT_NOT_FOUND);
+        }
+    }
+
+    private void validateSettlementPayerAuthorization(Long currentUserId, List<Settlement> settlements) {
+        boolean hasForbiddenSettlement = settlements.stream()
+                .anyMatch(settlement -> !currentUserId.equals(settlement.getPayerUserId()));
+
+        if (hasForbiddenSettlement) {
+            throw new CustomException(ErrorCode.SETTLEMENT_FORBIDDEN_PAYER);
+        }
+    }
+
+    private void validateSettlementPendingStatus(List<Settlement> settlements) {
+        boolean hasCompletedSettlement = settlements.stream()
+                .anyMatch(settlement -> !SETTLEMENT_PENDING_STATUS.equals(settlement.getStatus()));
+
+        if (hasCompletedSettlement) {
+            throw new CustomException(ErrorCode.SETTLEMENT_ALREADY_COMPLETED);
+        }
     }
 
     private List<Long> validateAndNormalizeIds(List<Long> requestedExpenseIds) {
