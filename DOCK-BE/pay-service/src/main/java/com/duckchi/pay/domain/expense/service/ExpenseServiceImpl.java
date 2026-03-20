@@ -272,7 +272,8 @@ public class ExpenseServiceImpl implements ExpenseService {
     private void validateRoomAndSession(Long roomId, ExpenseUpsertRequest request) {
         RoomSession session = roomSessionRepository.findById(request.getRoomSessionId())
                 .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
-        if (!session.getRoomId().equals(roomId)) {
+        // Room 객체와 Long을 직접 비교하면 항상 false이므로, ID끼리 비교해야 한다.
+        if (!session.getRoom().getId().equals(roomId)) {
             throw new CustomException(ErrorCode.ROOM_SESSION_MISMATCH);
         }
     }
@@ -487,6 +488,11 @@ public class ExpenseServiceImpl implements ExpenseService {
             throw new CustomException(ErrorCode.COMMON_INTERNAL_ERROR);
         }
     }
+
+
+
+
+
 
     private List<Long> collectReferencedUserIds(Long payerUserId, ExpenseUpsertRequest request) {
         Set<Long> referencedUserIds = new LinkedHashSet<>();

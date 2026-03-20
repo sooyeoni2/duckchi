@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { AppColorStyles } from '@core/theme/colors';
 import { KBODiaGothicTextStyle } from '@core/theme/typography';
 import { MeetingRoom } from '../models/roomMockData';
@@ -15,58 +15,122 @@ interface MeetingCardGroupProps {
   onActionPress: (meeting: MeetingRoom) => void;
 }
 
+interface RoomCardProps {
+  meeting: MeetingRoom;
+  onPress?: (meeting: MeetingRoom) => void;
+  onActionPress: (meeting: MeetingRoom) => void;
+}
+
+function RoomCard({ meeting, onPress, onActionPress }: RoomCardProps) {
+  const scale = React.useRef(new Animated.Value(1)).current;
+  const actionScale = React.useRef(new Animated.Value(1)).current;
+  const highlightedButton = meeting.status === 'ENDED';
+
+  const handlePressIn = () => {
+    Animated.spring(scale, {
+      toValue: 0.97,
+      useNativeDriver: true,
+      speed: 50,
+      bounciness: 0,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scale, {
+      toValue: 1,
+      useNativeDriver: true,
+      speed: 30,
+      bounciness: 4,
+    }).start();
+  };
+
+  const handleActionPressIn = () => {
+    Animated.spring(actionScale, {
+      toValue: 0.93,
+      useNativeDriver: true,
+      speed: 50,
+      bounciness: 0,
+    }).start();
+  };
+
+  const handleActionPressOut = () => {
+    Animated.spring(actionScale, {
+      toValue: 1,
+      useNativeDriver: true,
+      speed: 30,
+      bounciness: 4,
+    }).start();
+  };
+
+  return (
+    <Animated.View style={{ transform: [{ scale }] }}>
+      <Pressable
+        style={styles.card}
+        onPress={() => onPress?.(meeting)}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+      >
+        <View style={styles.titleRow}>
+          <View style={styles.titleWrap}>
+            <Text style={styles.title}>{meeting.roomName}</Text>
+            <Text style={styles.subtitle}>{meeting.description}</Text>
+          </View>
+        </View>
+
+        <Text style={styles.metaText}>
+          {meeting.memberCount}명 · {currency.format(meeting.totalPay)}원 · 결제 {meeting.payCount}건
+        </Text>
+
+        <View style={styles.progressSection}>
+          <ProgressBar value={meeting.percent} />
+          <View style={styles.progressFooter}>
+            <Text style={styles.progressText}>
+              {meeting.completedCount}/{meeting.totalCount}명 완료
+            </Text>
+            <Text style={styles.progressText}>{meeting.percent}%</Text>
+          </View>
+        </View>
+
+        <ParticipantAvatarGroup
+          participants={meeting.participants}
+          extraCount={meeting.extraMemberCount}
+          style={styles.avatarGroup}
+        />
+
+        <Animated.View style={[styles.actionButton, { transform: [{ scale: actionScale }] }]}>
+          <Pressable
+            onPress={(event) => {
+              event.stopPropagation();
+              onActionPress(meeting);
+            }}
+            onPressIn={handleActionPressIn}
+            onPressOut={handleActionPressOut}
+            style={[
+              styles.actionButton,
+              highlightedButton ? styles.actionButtonHighlighted : styles.actionButtonMuted,
+            ]}
+          >
+            <Text style={styles.actionButtonText}>{meeting.actionLabel}</Text>
+          </Pressable>
+        </Animated.View>
+      </Pressable>
+    </Animated.View>
+  );
+}
+
 export function MeetingCard({ category, rooms, onPress, onActionPress }: MeetingCardGroupProps) {
   return (
     <View style={styles.cardShell}>
       <Text style={styles.shellCategory}>{category}</Text>
 
-      {rooms.map((meeting) => {
-        const highlightedButton = meeting.status === 'ENDED';
-        return (
-          <Pressable key={meeting.roomId} style={styles.card} onPress={() => onPress?.(meeting)}>
-            <View style={styles.titleRow}>
-              <View style={styles.titleWrap}>
-                <Text style={styles.title}>{meeting.roomName}</Text>
-                <Text style={styles.subtitle}>{meeting.description}</Text>
-              </View>
-
-            </View>
-
-            <Text style={styles.metaText}>
-              {meeting.memberCount}명 · {currency.format(meeting.totalPay)}원 · 결제 {meeting.payCount}건
-            </Text>
-
-            <View style={styles.progressSection}>
-              <ProgressBar value={meeting.percent} />
-              <View style={styles.progressFooter}>
-                <Text style={styles.progressText}>
-                  {meeting.completedCount}/{meeting.totalCount}명 완료
-                </Text>
-                <Text style={styles.progressText}>{meeting.percent}%</Text>
-              </View>
-            </View>
-
-            <ParticipantAvatarGroup
-              participants={meeting.participants}
-              extraCount={meeting.extraMemberCount}
-              style={styles.avatarGroup}
-            />
-
-            <Pressable
-              onPress={(event) => {
-                event.stopPropagation();
-                onActionPress(meeting);
-              }}
-              style={[
-                styles.actionButton,
-                highlightedButton ? styles.actionButtonHighlighted : styles.actionButtonMuted,
-              ]}
-            >
-              <Text style={styles.actionButtonText}>{meeting.actionLabel}</Text>
-            </Pressable>
-          </Pressable>
-        );
-      })}
+      {rooms.map((meeting) => (
+        <RoomCard
+          key={meeting.roomId}
+          meeting={meeting}
+          onPress={onPress}
+          onActionPress={onActionPress}
+        />
+      ))}
     </View>
   );
 }
@@ -74,30 +138,27 @@ export function MeetingCard({ category, rooms, onPress, onActionPress }: Meeting
 const styles = StyleSheet.create({
   cardShell: {
     width: '100%',
-    borderRadius: 10,
+    borderRadius: 18,
     backgroundColor: AppColorStyles.surface,
-    shadowColor: '#676767',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: AppColorStyles.divider,
     paddingTop: 15,
     paddingBottom: 18,
-    gap: 16,
+    gap: 12,
   },
   shellCategory: {
     ...KBODiaGothicTextStyle.medium({
       fontSize: 16,
-      color: AppColorStyles.gray2,
+      color: AppColorStyles.textHint,
       lineHeight: 16,
     }),
-    marginLeft: 14,
+    marginLeft: 16,
   },
   card: {
     height: 181,
-    marginHorizontal: 14,
+    marginHorizontal: 16,
     position: 'relative',
-    borderRadius: 10,
+    borderRadius: 14,
     backgroundColor: AppColorStyles.white,
     shadowColor: '#676767',
     shadowOffset: { width: 0, height: 2 },
@@ -187,8 +248,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 6,
     bottom: 10,
-    width: 130,
-    height: 44,
+    width: 110,
+    height: 36,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
@@ -197,7 +258,7 @@ const styles = StyleSheet.create({
     backgroundColor: AppColorStyles.yellow,
   },
   actionButtonMuted: {
-    backgroundColor: '#D9D9D9',
+    backgroundColor: AppColorStyles.divider,
   },
   actionButtonText: {
     ...KBODiaGothicTextStyle.medium({

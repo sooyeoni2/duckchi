@@ -1,0 +1,126 @@
+version: "3.8"
+
+services:
+  redis:
+    image: redis:7
+    container_name: duckchi-redis
+    restart: always
+    volumes:
+      - redis-data:/data
+    expose:
+      - "6379"
+    networks:
+      - duckchi-net
+
+  discovery-service:
+    image: ${REGISTRY_NAMESPACE}/duckchi-discovery-service:${IMAGE_TAG}
+    container_name: discovery-service
+    restart: always
+    env_file:
+      - .env
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SERVER_PORT: "8761"
+      EUREKA_SERVER_URL: http://discovery-service:8761/eureka
+    expose:
+      - "8761"
+    networks:
+      - duckchi-net
+
+  gateway-service:
+    image: ${REGISTRY_NAMESPACE}/duckchi-gateway-service:${IMAGE_TAG}
+    container_name: gateway-service
+    restart: always
+    env_file:
+      - .env
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      EUREKA_SERVER_URL: http://discovery-service:8761/eureka
+      SERVER_PORT: "8080"
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      - discovery-service
+    networks:
+      - duckchi-net
+
+  core-service:
+    image: ${REGISTRY_NAMESPACE}/duckchi-core-service:${IMAGE_TAG}
+    container_name: core-service
+    restart: always
+    env_file:
+      - .env
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${CORE_DB_NAME}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      EUREKA_SERVER_URL: ${EUREKA_SERVER_URL}
+      SERVER_PORT: "8081"
+    expose:
+      - "8081"
+    depends_on:
+      - discovery-service
+      - redis
+    networks:
+      - duckchi-net
+
+  pay-service:
+    image: ${REGISTRY_NAMESPACE}/duckchi-pay-service:${IMAGE_TAG}
+    container_name: pay-service
+    restart: always
+    env_file:
+      - .env
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${PAY_DB_NAME}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      EUREKA_SERVER_URL: ${EUREKA_SERVER_URL}
+      SERVER_PORT: "8082"
+    expose:
+      - "8082"
+    depends_on:
+      - discovery-service
+      - redis
+    networks:
+      - duckchi-net
+
+  insight-service:
+    image: ${REGISTRY_NAMESPACE}/duckchi-insight-service:${IMAGE_TAG}
+    container_name: insight-service
+    restart: always
+    env_file:
+      - .env
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${INSIGHT_DB_NAME}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      EUREKA_SERVER_URL: ${EUREKA_SERVER_URL}
+      SERVER_PORT: "8083"
+    expose:
+      - "8083"
+    depends_on:
+      - discovery-service
+      - redis
+    networks:
+      - duckchi-net
+
+networks:
+  duckchi-net:
+
+volumes:
+  redis-data:

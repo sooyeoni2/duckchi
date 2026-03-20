@@ -8,7 +8,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 /**
- * 결제안 조회에 필요한 JPA 저장소이다.
+ * 결제 내역 레포지토리
+ * JPA 기반의 데이터 액세스 계층임.
  */
 public interface ExpenseRepository extends JpaRepository<Expense, Long> {
 
@@ -34,4 +35,6 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
             group by e.roomId
             """)
     List<RoomExpenseSummaryProjection> findRoomExpenseSummaries(@Param("roomIds") List<Long> roomIds);
+
+    long countByRoomIdAndStatus(Long roomId, String status);
 }

@@ -30,13 +30,14 @@ export type ProfileStackParamList = {
 
 export type RoomStackParamList = {
   RoomList: undefined;
-  RoomDetail: { roomId: number };
+  RoomDetail: { roomId: number; showTransfer?: boolean };
   RoomCreate: undefined;
   RoomRestart: { roomId: number };
   RoomMoreOptions: { roomId: number };
   AutoTransferAgree: { roomId: number };
   AdminDelegation: { roomId: number };
   RoomEdit: { roomId: number };
+  SettlementRequestList: { roomId: number };
 };
 
 export type AuthStackParamList = {

@@ -29,16 +29,17 @@ public class RoomSession {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "room_id", nullable = false)
     private Room room;
 
-    @Column(nullable = false, updatable = false)
+    @Column(name = "started_at", nullable = false)
     private LocalDateTime startedAt;
 
+    @Column(name = "ended_at")
     private LocalDateTime endedAt;
 
-    @Column(length = 50)
+    @Column(name = "final_category", length = 50)
     private String finalCategory;
 
     public Long getRoomId() {
@@ -46,7 +47,14 @@ public class RoomSession {
     }
 
     @PrePersist
-    protected void onCreate() {
-        this.startedAt = LocalDateTime.now();
+    void onCreate() {
+        if (startedAt == null) {
+            startedAt = LocalDateTime.now();
+        }
+    }
+
+    public void endSession(String finalCategory) {
+        this.endedAt = LocalDateTime.now();
+        this.finalCategory = finalCategory;
     }
 }

@@ -44,7 +44,7 @@ export const FilledButton: React.FC<FilledButtonProps> = ({
   isFullWidth = true,
   width,
   height = 60,
-  borderRadius = 10,
+  borderRadius = 12,
   prefixIcon,
   suffixIcon,
   style,
@@ -75,7 +75,7 @@ export const FilledButton: React.FC<FilledButtonProps> = ({
           {prefixIcon != null && <View style={styles.iconPrefix}>{prefixIcon}</View>}
           <Text
             style={[
-              KBODiaGothicTextStyle.bold({ fontSize: 20 }),
+              KBODiaGothicTextStyle.bold({ fontSize: 16 }),
               { color: disabled ? AppColorStyles.textHint : AppColorStyles.black },
               textStyle,
             ]}

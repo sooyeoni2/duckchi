@@ -41,7 +41,7 @@ export const useRoomMembersViewModel = () => {
   const fetchMembers = useCallback(async (roomId: number) => {
     updateState({ isLoading: true });
     // TODO: ROOM-16 API 연동 (GET /api/v1/rooms/{roomId}/participants-lists)
-    await new Promise(resolve => setTimeout(resolve, 800));
+    await new Promise<void>((resolve) => setTimeout(() => resolve(), 800));
     updateState({ members: mockMembers, isLoading: false });
   }, [updateState]);
 
