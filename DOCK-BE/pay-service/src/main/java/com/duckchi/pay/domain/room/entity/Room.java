@@ -81,6 +81,13 @@ public class Room {
         }
     }
 
+    public void updateRoomDetails(String category, String description) {
+        if (category != null && !category.isBlank()) {
+            this.category = category.trim();
+        }
+        this.description = description; // 세부 내용은 null이나 빈 값이어도 덮어쓰기 허용 (UI에서 지울 수 있으므로)
+    }
+
     public void deleteRoom() {
         this.deletedAt = LocalDateTime.now();
     }

@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   AccountHistoryEntryDraft,
   AccountHistoryItem,
   AccountHistoryListResponse,
@@ -300,20 +300,68 @@ const MOCK_EXPENSE_DETAILS: Record<
         quantity: 3,
         amount: 18000,
         assignedParticipants: ['류병선', '박성환', '정우주'],
+        assignmentDetails: [
+          {
+            userId: 1,
+            userName: '박성환',
+            quantity: 1,
+            amount: 6000,
+          },
+          {
+            userId: 2,
+            userName: '정우주',
+            quantity: 1,
+            amount: 6000,
+          },
+          {
+            userId: 3,
+            userName: '류병선',
+            quantity: 1,
+            amount: 6000,
+          },
+        ],
       },
       {
         itemId: 202,
         name: '카페라떼',
         quantity: 1,
-        amount: 6500,
+        amount: 6000,
         assignedParticipants: ['김수연'],
+        assignmentDetails: [
+          {
+            userId: 4,
+            userName: '김수연',
+            quantity: 1,
+            amount: 6000,
+          },
+        ],
       },
       {
         itemId: 203,
         name: '치즈케이크',
-        quantity: 2,
-        amount: 35500,
+        quantity: 0,
+        amount: 36000,
         assignedParticipants: ['류병선', '정우주', '김수연'],
+        assignmentDetails: [
+          {
+            userId: 1,
+            userName: '박성환',
+            quantity: 0,
+            amount: 12000,
+          },
+          {
+            userId: 3,
+            userName: '류병선',
+            quantity: 0,
+            amount: 12000,
+          },
+          {
+            userId: 4,
+            userName: '김수연',
+            quantity: 0,
+            amount: 12000,
+          },
+        ],
       },
     ],
   },
@@ -545,3 +593,5 @@ export const getManualEntryDraft = async (
   await wait(MOCK_NETWORK_DELAY_MS);
   return buildManualEntryDraft();
 };
+
+

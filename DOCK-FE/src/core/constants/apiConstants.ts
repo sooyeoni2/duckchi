@@ -1,6 +1,9 @@
 import Constants from 'expo-constants';
 
-export const API_BASE_URL = 'http://j14c102.p.ssafy.io';
+const expoConfig = Constants.expoConfig ?? (Constants as any).manifest ?? {};
+const extra = expoConfig?.extra ?? {};
+
+export const API_BASE_URL = extra.apiBaseUrl ?? 'http://10.0.2.2:8080';
 export const API_TIMEOUT = 10000;
 
 export const ENDPOINTS = {
@@ -11,9 +14,6 @@ export const ENDPOINTS = {
     refresh: '/api/v1/auth/refresh',
   },
 };
-
-const expoConfig = Constants.expoConfig ?? (Constants as any).manifest ?? {};
-const extra = expoConfig?.extra ?? {};
 
 export const KAKAO_CLIENT_ID: string = extra.kakaoClientId ?? '';
 export const KAKAO_WEB_REDIRECT_URI: string = extra.kakaoRedirectUri ?? '';

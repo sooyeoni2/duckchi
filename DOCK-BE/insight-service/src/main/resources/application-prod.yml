@@ -22,7 +22,7 @@ spring:
     show-sql: false
 
 swagger:
-  server-url: http://j14c102.p.ssafy.io
+  server-url: ${SWAGGER_SERVER_URL:http://j14c102.p.ssafy.io}
 
 springdoc:
   swagger-ui:

@@ -1,11 +1,12 @@
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { AppColorStyles } from '@core/theme/colors';
 import {
   KBODiaGothicTextStyle,
   PretendardTextStyle,
 } from '@core/theme/typography';
 import type { AccountHistoryItem } from '../../models/paymentTypes';
+import { PaymentAnimatedTouchable } from './PaymentAnimatedTouchable';
 
 interface PaymentAccountHistoryCardProps {
   history: AccountHistoryItem;
@@ -65,7 +66,7 @@ export function PaymentAccountHistoryCard({
           {formatDateTime(history.transactionAt)}
         </Text>
 
-        <TouchableOpacity
+        <PaymentAnimatedTouchable
           activeOpacity={0.85}
           onPress={onAddToCart}
           style={styles.primaryButton}
@@ -78,7 +79,7 @@ export function PaymentAccountHistoryCard({
           >
             장바구니 담기
           </Text>
-        </TouchableOpacity>
+        </PaymentAnimatedTouchable>
       </View>
     </View>
   );

@@ -5,7 +5,6 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { AppColorStyles } from '@core/theme/colors';
@@ -14,6 +13,7 @@ import {
   PretendardTextStyle,
 } from '@core/theme/typography';
 import type { PaymentAccountHistoryDraftState } from '../../viewmodels/usePaymentAccountHistoryViewModel';
+import { PaymentAnimatedTouchable } from './PaymentAnimatedTouchable';
 
 interface PaymentAccountHistorySplitViewProps {
   draftState: PaymentAccountHistoryDraftState;
@@ -79,7 +79,7 @@ export function PaymentAccountHistorySplitView({
         >
           {draftState.message}
         </Text>
-        <TouchableOpacity
+        <PaymentAnimatedTouchable
           activeOpacity={0.85}
           onPress={() => onRetry(draftState.historyId)}
           style={styles.retryButton}
@@ -92,7 +92,7 @@ export function PaymentAccountHistorySplitView({
           >
             다시 불러오기
           </Text>
-        </TouchableOpacity>
+        </PaymentAnimatedTouchable>
       </View>
     );
   }
@@ -305,11 +305,14 @@ export function PaymentAccountHistorySplitView({
         </Text>
       )}
 
-      <TouchableOpacity
+      <PaymentAnimatedTouchable
         activeOpacity={0.85}
         disabled={isSubmitDisabled}
         onPress={onSubmit}
-        style={[styles.primaryButton, isSubmitDisabled && styles.primaryButtonDisabled]}
+        style={[
+          styles.primaryButton,
+          isSubmitDisabled && styles.primaryButtonDisabled,
+        ]}
       >
         <Text
           style={KBODiaGothicTextStyle.bold({
@@ -319,7 +322,7 @@ export function PaymentAccountHistorySplitView({
         >
           장바구니에 담기
         </Text>
-      </TouchableOpacity>
+      </PaymentAnimatedTouchable>
     </View>
   );
 }
