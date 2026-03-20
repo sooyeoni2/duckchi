@@ -41,8 +41,11 @@ security:
     pepper: ${PAY_PASSWORD_PEPPER}
     bcrypt-strength: 12
 
+firebase:
+  admin-sdk-path: ${FIREBASE_PROD_ACCOUNT_PATH}
+
 swagger:
-  server-url: http://j14c102.p.ssafy.io
+  server-url: ${SWAGGER_SERVER_URL:http://j14c102.p.ssafy.io}
 
 springdoc:
   swagger-ui:

@@ -8,6 +8,7 @@ export interface KakaoLoginRequest {
 
 export interface AuthUser {
   userId: number;
+  email: string;
   name: string;
   tag: string;
   profileImageUrl?: string;

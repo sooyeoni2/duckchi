@@ -6,7 +6,6 @@ import {
   Switch,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { AppColorStyles } from '@core/theme/colors';
@@ -15,6 +14,7 @@ import {
   PretendardTextStyle,
 } from '@core/theme/typography';
 import type { PaymentAccountHistoryDraftState } from '../../viewmodels/usePaymentAccountHistoryViewModel';
+import { PaymentAnimatedTouchable } from './PaymentAnimatedTouchable';
 
 interface PaymentAccountHistoryFormViewProps {
   draftState: PaymentAccountHistoryDraftState;
@@ -84,7 +84,7 @@ export function PaymentAccountHistoryFormView({
         >
           {draftState.message}
         </Text>
-        <TouchableOpacity
+        <PaymentAnimatedTouchable
           activeOpacity={0.85}
           onPress={() => onRetry(draftState.historyId)}
           style={styles.retryButton}
@@ -97,7 +97,7 @@ export function PaymentAccountHistoryFormView({
           >
             다시 불러오기
           </Text>
-        </TouchableOpacity>
+        </PaymentAnimatedTouchable>
       </View>
     );
   }
@@ -268,11 +268,14 @@ export function PaymentAccountHistoryFormView({
         ))}
       </View>
 
-      <TouchableOpacity
+      <PaymentAnimatedTouchable
         activeOpacity={0.85}
         disabled={isNextDisabled}
         onPress={onNext}
-        style={[styles.primaryButton, isNextDisabled && styles.primaryButtonDisabled]}
+        style={[
+          styles.primaryButton,
+          isNextDisabled && styles.primaryButtonDisabled,
+        ]}
       >
         <Text
           style={KBODiaGothicTextStyle.bold({
@@ -282,7 +285,7 @@ export function PaymentAccountHistoryFormView({
         >
           다음
         </Text>
-      </TouchableOpacity>
+      </PaymentAnimatedTouchable>
     </View>
   );
 }

@@ -25,7 +25,7 @@ import { SettlementTabHeader } from './SettlementTabHeader';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const s = SCREEN_WIDTH / 412;
-const CTA_HEIGHT = 60;
+const CTA_HEIGHT = 60 * s;
 
 interface RoomSettlementTransferViewProps {
   onBack: () => void;
@@ -91,7 +91,13 @@ export function RoomSettlementTransferView({ onBack }: RoomSettlementTransferVie
     return (
       <View style={styles.centered}>
         <Text style={styles.errorMessage}>{state.message}</Text>
-        <FilledButton text="다시 시도" onPress={reload} isFullWidth={false} width={160} height={52} />
+        <FilledButton
+          text="다시 시도"
+          onPress={reload}
+          isFullWidth={false}
+          width={160 * s}
+          height={52 * s}
+        />
       </View>
     );
   }
@@ -143,7 +149,7 @@ export function RoomSettlementTransferView({ onBack }: RoomSettlementTransferVie
             <FilledButton
               text="전체 송금하기"
               onPress={hasPending ? () => goToPayPasswordInput({ type: 'all' }) : undefined}
-              height={CTA_HEIGHT * s}
+              height={CTA_HEIGHT}
             />
           </View>
         )}
@@ -173,23 +179,27 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 32,
+    paddingHorizontal: 21 * s,
+    paddingTop: 20 * s,
+    paddingBottom: 32 * s,
   },
   emptyBox: {
-    paddingVertical: 20,
-    paddingHorizontal: 16,
-    borderRadius: 14,
+    paddingVertical: 20 * s,
+    paddingHorizontal: 16 * s,
+    borderRadius: 14 * s,
     backgroundColor: AppColorStyles.gray5,
     alignItems: 'center',
     justifyContent: 'center',
   },
   emptyText: {
-    ...PretendardTextStyle.medium({ fontSize: 13, color: AppColorStyles.textSecondary }),
+    ...PretendardTextStyle.medium({
+      fontSize: 13 * s,
+      lineHeight: 20 * s,
+      color: AppColorStyles.textSecondary,
+    }),
   },
   footer: {
-    marginTop: 20,
-    paddingBottom: 12,
+    marginTop: 20 * s,
+    paddingBottom: 12 * s,
   },
 });
