@@ -20,19 +20,33 @@ public class RoomSession {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private Long roomId;             // 소속된 모임방 식별자임.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "room_id", nullable = false)
+    private Room room;
 
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime startedAt; // 회차 시작 일시임.
+    @Column(name = "started_at", nullable = false)
+    private LocalDateTime startedAt;
 
-    private LocalDateTime endedAt;   // 회차 종료(정산 완료) 일시임.
+    @Column(name = "ended_at")
+    private LocalDateTime endedAt;
 
-    @Column(length = 50)
-    private String finalCategory;    // 종료 시점의 최종 카테고리임.
+    @Column(name = "final_category", length = 50)
+    private String finalCategory;
+
+    @Builder
+    private RoomSession(Room room) {
+        this.room = room;
+    }
 
     @PrePersist
-    protected void onCreate() {
-        this.startedAt = LocalDateTime.now();
+    void onCreate() {
+        if (startedAt == null) {
+            startedAt = LocalDateTime.now();
+        }
+    }
+
+    public void endSession(String finalCategory) {
+        this.endedAt = LocalDateTime.now();
+        this.finalCategory = finalCategory;
     }
 }
