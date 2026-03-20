@@ -1,6 +1,7 @@
 package com.duckchi.pay.domain.settlement.controller;
 
 import com.duckchi.pay.domain.settlement.dto.request.SettlementRequestCreateRequest;
+import com.duckchi.pay.domain.settlement.dto.request.SettlementTransferRequest;
 import com.duckchi.pay.domain.settlement.service.SettlementService;
 import com.duckchi.pay.global.error.CustomException;
 import com.duckchi.pay.global.error.ErrorCode;
@@ -36,6 +37,17 @@ public class SettlementController {
         Long currentUserId = resolveRequiredUserId(userIdHeader);
         settlementService.requestSettlements(currentUserId, request);
         return ResponseEntity.ok(ApiResponseDto.successMsg("성공적으로 정산 요청이 완료되었습니다."));
+    }
+
+    @PostMapping("/transfer")
+    @Operation(summary = "SET-02: 정산 송금 API")
+    public ResponseEntity<ApiResponseDto<Void>> transferSettlements(
+            @RequestHeader(value = USER_ID_HEADER, required = false) String userIdHeader,
+            @Valid @RequestBody SettlementTransferRequest request
+    ) {
+        Long currentUserId = resolveRequiredUserId(userIdHeader);
+        settlementService.transferSettlements(currentUserId, request);
+        return ResponseEntity.ok(ApiResponseDto.successMsg("성공적으로 정산이 완료되었습니다."));
     }
 
     private Long resolveRequiredUserId(String userIdHeader) {
