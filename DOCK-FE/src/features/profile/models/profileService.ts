@@ -179,9 +179,10 @@ export const fetchProfile = async (): Promise<Profile> => {
     const authUser = useAuthStore.getState().user;
     return {
       ...mockProfile,
+      email: authUser?.email ?? mockProfile.email,
       name: authUser?.name ?? mockProfile.name,
       tag: authUser?.tag ?? mockProfile.tag,
-      profileImageUrl: authUser?.profileImageUrl ?? mockProfile.profileImageUrl,
+      profileImageUrl: authUser?.profileImageUrl ?? null,
       createdAt: toDate(mockProfile.createdAt),
       accounts: mockProfile.accounts.map(toAccount),
       badges: mockProfile.badges.map(toProfileBadge),

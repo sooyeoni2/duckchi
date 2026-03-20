@@ -21,6 +21,7 @@ import { AppColorStyles } from '../../../core/theme/colors';
 import { KBODiaGothicTextStyle } from '../../../core/theme/typography';
 import { FilledButton } from '../../../shared/components/buttons/FilledButton';
 import { useAuthStore } from '../../auth/models/authStore';
+import { updateTransferLimit } from '../../profile/models/profileService';
 
 const { height: H } = Dimensions.get('window');
 
@@ -47,8 +48,11 @@ export function BankAccountCompleteScreen() {
 
   const isNewUserFlow = returnTo === 'NewUser';
 
-  const handleNext = () => {
-    // TODO: 한도 저장 API 연동
+  const handleNext = async () => {
+    if (isNewUserFlow && transferLimit) {
+      const amount = Number(transferLimit.replace(/,/g, ''));
+      await updateTransferLimit(amount);
+    }
     setHasBankAccount();
     navigation.replace('PayPasswordSetup', { bankName, maskedAccountNo, returnTo });
   };

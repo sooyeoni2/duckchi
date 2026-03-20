@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { MaterialCommunityIcons as MaterialDesignIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 
 import { AppColorStyles } from '../../../../core/theme/colors';
 import { KBODiaGothicTextStyle } from '../../../../core/theme/typography';
@@ -19,7 +20,9 @@ export function ProfileHeader({ profile }: ProfileHeaderProps) {
         {profile.profileImageUrl ? (
           <Image source={{ uri: profile.profileImageUrl }} style={styles.image} />
         ) : (
-          <View style={styles.imagePlaceholder} />
+          <View style={styles.imagePlaceholder}>
+            <Ionicons name="person" size={60} color="#CCCCCC" />
+          </View>
         )}
         <View style={styles.cameraButton}>
           <MaterialDesignIcons name="camera-outline" size={16} color={AppColorStyles.gray1} />
@@ -61,7 +64,9 @@ const styles = StyleSheet.create({
     width: 126,
     height: 126,
     borderRadius: 63,
-    backgroundColor: AppColorStyles.gray4,
+    backgroundColor: '#F9F9F9',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   cameraButton: {
     position: 'absolute',
