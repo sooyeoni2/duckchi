@@ -224,6 +224,110 @@ export interface ManualEntryDraft {
 }
 
 /**
+ * OCR 이미지 입력 경로.
+ * 실제 기기에서는 카메라 촬영과 갤러리 선택 둘 다 지원한다.
+ */
+export type OcrImageSource = 'CAMERA' | 'LIBRARY';
+
+/**
+ * OCR 결과 이후 분배 방식.
+ * TOTAL은 전체 N빵, ITEM은 메뉴별 나누기 흐름이다.
+ */
+export type OcrSplitMode = 'TOTAL' | 'ITEM';
+
+/**
+ * 메뉴 배정 bottom sheet에서 사용하는 분배 방식.
+ * PERSON은 선택한 인원끼리 균등, QUANTITY는 수량 기준 분배다.
+ */
+export type OcrAssignMode = 'PERSON' | 'QUANTITY';
+
+/**
+ * OCR 실패 케이스.
+ * - RECEIPT_UNREADABLE: 영수증 전체를 읽지 못함
+ * - ITEMS_UNREADABLE: 총액은 읽었지만 세부 항목은 읽지 못함
+ */
+export type OcrFailureType = 'RECEIPT_UNREADABLE' | 'ITEMS_UNREADABLE';
+
+/**
+ * OCR 공통 요약 정보.
+ * 성공/부분 성공 케이스 모두 같은 기본 정보를 사용한다.
+ */
+export interface OcrReceiptSummary {
+  imageUri: string;
+  storeName: string;
+  paidAt: Date | null;
+  totalAmount: number;
+}
+
+/**
+ * OCR 흐름에서 참여자 초안.
+ * splitAmount는 전체 N빵 미리보기나 최종 계산 결과를 담는다.
+ */
+export interface OcrParticipantDraft {
+  userId: number;
+  userName: string;
+  isSelected: boolean;
+  isMe: boolean;
+  splitAmount: number;
+}
+
+/**
+ * 수량별 나누기에서 사용자별 배정 수량.
+ */
+export interface OcrItemQuantityAllocation {
+  userId: number;
+  quantity: number;
+}
+
+/**
+ * 특정 메뉴가 어떤 방식으로 배정됐는지 나타낸다.
+ */
+export interface OcrItemAssignmentDraft {
+  mode: OcrAssignMode;
+  participantUserIds: number[];
+  quantityAllocations: OcrItemQuantityAllocation[];
+}
+
+/**
+ * OCR이 읽어낸 메뉴 한 줄.
+ * 단가/수량 수정 시 amount는 FE에서 다시 계산한다.
+ */
+export interface OcrLineItemDraft {
+  itemId: number;
+  name: string;
+  unitPrice: number;
+  quantity: number;
+  amount: number;
+  assignment: OcrItemAssignmentDraft | null;
+}
+
+/**
+ * OCR 성공 시 편집/분배 화면에서 사용하는 전체 draft.
+ */
+export interface OcrReceiptDraft extends OcrReceiptSummary {
+  splitMode: OcrSplitMode;
+  participants: OcrParticipantDraft[];
+  items: OcrLineItemDraft[];
+}
+
+/**
+ * OCR mock 인식 결과.
+ * 현재는 FE에서 mock 분기를 먼저 다루고, 이후 실제 API 응답으로 교체한다.
+ */
+export type OcrRecognitionResult =
+  | {
+      kind: 'SUCCESS';
+      draft: OcrReceiptDraft;
+    }
+  | {
+      kind: 'ITEMS_UNREADABLE';
+      summary: OcrReceiptSummary;
+    }
+  | {
+      kind: 'RECEIPT_UNREADABLE';
+    };
+
+/**
  * 결제 등록/수정 화면에서 참여자별 분담값을 담기 위한 draft 타입.
  * 지금은 목록 skeleton 단계지만, 이후 PAY-04 등록 화면으로 확장할 것을 대비해 같이 정리했다.
  */

@@ -84,18 +84,11 @@ export function PaymentExpenseDetailView({
     expense.inputType === 'OCR' && expense.lineItems.length > 0;
   const shouldShowSourceInfo =
     expense.sourceInfoRows != null && expense.sourceInfoRows.length > 0;
+  const canShowAnyAction = !editDisabled || !cancelDisabled;
 
   return (
     <View>
       <View style={styles.heroCard}>
-        <Text
-          style={PretendardTextStyle.semiBold({
-            fontSize: 13,
-            color: AppColorStyles.textSecondary,
-          })}
-        >
-          상세 내역
-        </Text>
         <Text
           style={KBODiaGothicTextStyle.bold({
             fontSize: 24,
@@ -292,47 +285,47 @@ export function PaymentExpenseDetailView({
         </View>
       </View>
 
-      <View style={styles.actionRow}>
-        <TouchableOpacity
-          activeOpacity={0.85}
-          disabled={editDisabled}
-          onPress={onEdit}
-          style={[
-            styles.actionButton,
-            styles.editButton,
-            editDisabled && styles.disabledButton,
-          ]}
-        >
-          <Text
-            style={KBODiaGothicTextStyle.bold({
-              fontSize: 18,
-              color: AppColorStyles.black,
-            })}
-          >
-            수정하기
-          </Text>
-        </TouchableOpacity>
+      {canShowAnyAction && (
+        <View style={styles.actionRow}>
+          {!editDisabled && (
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={onEdit}
+              style={[styles.actionButton, styles.editButton]}
+            >
+              <Text
+                style={KBODiaGothicTextStyle.bold({
+                  fontSize: 18,
+                  color: AppColorStyles.black,
+                })}
+              >
+                수정하기
+              </Text>
+            </TouchableOpacity>
+          )}
 
-        <TouchableOpacity
-          activeOpacity={0.85}
-          disabled={cancelDisabled}
-          onPress={onCancel}
-          style={[
-            styles.actionButton,
-            styles.cancelButton,
-            cancelDisabled && styles.disabledOutlineButton,
-          ]}
-        >
-          <Text
-            style={KBODiaGothicTextStyle.bold({
-              fontSize: 18,
-              color: AppColorStyles.black,
-            })}
-          >
-            취소하기
-          </Text>
-        </TouchableOpacity>
-      </View>
+          {!cancelDisabled && (
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={onCancel}
+              style={[
+                styles.actionButton,
+                styles.cancelButton,
+                !editDisabled && styles.cancelButtonSpacing,
+              ]}
+            >
+              <Text
+                style={KBODiaGothicTextStyle.bold({
+                  fontSize: 18,
+                  color: AppColorStyles.black,
+                })}
+              >
+                취소하기
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
 
       {actionHelperMessage != null && (
         <Text
@@ -426,18 +419,13 @@ const styles = StyleSheet.create({
   },
   editButton: {
     backgroundColor: AppColorStyles.yellow,
-    marginRight: 12,
+  },
+  cancelButtonSpacing: {
+    marginLeft: 12,
   },
   cancelButton: {
     backgroundColor: AppColorStyles.white,
     borderWidth: 2,
     borderColor: AppColorStyles.yellow,
-  },
-  disabledButton: {
-    backgroundColor: AppColorStyles.gray3,
-  },
-  disabledOutlineButton: {
-    backgroundColor: AppColorStyles.gray5,
-    borderColor: AppColorStyles.gray3,
   },
 });

@@ -22,6 +22,11 @@ import {
   PaymentTabContent,
   type PaymentTabContentHandle,
 } from '../../payment/views/components/PaymentTabContent';
+import { PaymentEntryMethodTabs } from '../../payment/views/components/PaymentEntryMethodTabs';
+import {
+  defaultPaymentContentLayoutState,
+  type PaymentContentLayoutState,
+} from '../../payment/models/paymentContentLayout';
 import { roomParticipatedPaymentsMock, roomSettlementRequestsMock } from '../models/roomDetailMockData';
 import { meetingRoomMockData } from '../models/roomMockData';
 import { useRoomStore } from '../models/roomStore';
@@ -51,6 +56,8 @@ export function RoomScreen() {
   const [viewMode, setViewMode] = useState<RoomViewMode>('SUMMARY');
   const [selectedRoomTab, setSelectedRoomTab] =
     useState<RoomMainTab>('SETTLEMENT');
+  const [paymentLayoutState, setPaymentLayoutState] =
+    useState<PaymentContentLayoutState>(defaultPaymentContentLayoutState);
   const [roomTabHistory, setRoomTabHistory] = useState<RoomMainTab[]>([]);
   const rooms = useRoomStore((state) => state.rooms);
   const room =
@@ -64,16 +71,21 @@ export function RoomScreen() {
     (tab) => tab.key === selectedRoomTab,
   );
 
-  const handleSelectRoomTab = React.useCallback((nextTab: RoomMainTab) => {
-    setSelectedRoomTab((currentTab) => {
-      if (currentTab === nextTab) {
-        return currentTab;
+  const handleSelectRoomTab = React.useCallback(
+    (nextTab: RoomMainTab) => {
+      if (selectedRoomTab === nextTab) {
+        return;
       }
 
-      setRoomTabHistory((previousHistory) => [...previousHistory, currentTab]);
-      return nextTab;
-    });
-  }, []);
+      if (selectedRoomTab === 'PAYMENT' || nextTab === 'PAYMENT') {
+        setPaymentLayoutState(defaultPaymentContentLayoutState);
+      }
+
+      setRoomTabHistory((previousHistory) => [...previousHistory, selectedRoomTab]);
+      setSelectedRoomTab(nextTab);
+    },
+    [selectedRoomTab],
+  );
 
   const handleBack = React.useCallback(() => {
     if (
@@ -109,69 +121,92 @@ export function RoomScreen() {
     return <RoomSettlementTransferView onBack={() => setViewMode('SUMMARY')} />;
   }
 
+  const shouldUsePaymentAppBar =
+    selectedRoomTab === 'PAYMENT' && paymentLayoutState.headerTitle != null;
+  const appBarTitle = shouldUsePaymentAppBar
+    ? paymentLayoutState.headerTitle
+    : room?.roomName ?? '모임 상세';
+  const showRoomActions =
+    selectedRoomTab !== 'PAYMENT' || paymentLayoutState.showRoomActions;
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <CustomAppBar
         titleWidget={
-          <Text style={styles.summaryRoomTitle}>{room?.roomName ?? '모임 상세'}</Text>
+          <Text style={styles.summaryRoomTitle}>{appBarTitle}</Text>
         }
         centerTitle={false}
         showDivider
         backgroundColor={AppColorStyles.background}
         onBackPress={handleBack}
-        actions={[
-          <TouchableOpacity
-            key="more"
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            style={styles.moreButton}
-            activeOpacity={0.8}
-            onPress={() =>
-              navigation.navigate('RoomMoreOptions', { roomId: room.roomId })
-            }
-          >
-            <MaterialDesignIcons
-              name="dots-horizontal"
-              size={24 * s}
-              color={AppColorStyles.black}
-            />
-          </TouchableOpacity>,
-        ]}
+        actions={
+          showRoomActions
+            ? [
+                <TouchableOpacity
+                  key="more"
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  style={styles.moreButton}
+                  activeOpacity={0.8}
+                  onPress={() =>
+                    navigation.navigate('RoomMoreOptions', { roomId: room.roomId })
+                  }
+                >
+                  <MaterialDesignIcons
+                    name="dots-horizontal"
+                    size={24 * s}
+                    color={AppColorStyles.black}
+                  />
+                </TouchableOpacity>,
+              ]
+            : undefined
+        }
       />
 
-      <View style={styles.roomTabContainer}>
-        {ROOM_TABS.map((tab) => (
-          <TouchableOpacity
-            key={tab.key}
-            style={styles.roomTabButton}
-            activeOpacity={0.85}
-            onPress={() => handleSelectRoomTab(tab.key)}
-          >
-            <Text
-              style={
-                selectedRoomTab === tab.key
-                  ? styles.roomTabActive
-                  : styles.roomTabInactive
-              }
-            >
-              {tab.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-
-        <View style={styles.roomTabTrack} />
-        <View
-          style={[
-            styles.roomTabIndicator,
-            {
-              width: `${100 / ROOM_TABS.length}%`,
-              left: `${(100 / ROOM_TABS.length) * selectedRoomTabIndex}%`,
-            },
-          ]}
+      {selectedRoomTab === 'PAYMENT' && paymentLayoutState.topTabMode === 'ENTRY' ? (
+        <PaymentEntryMethodTabs
+          activeTab={paymentLayoutState.activeEntryTab ?? 'ACCOUNT_HISTORY'}
+          onChange={(nextTab) => paymentTabRef.current?.selectEntryTab(nextTab)}
         />
-      </View>
+      ) : selectedRoomTab !== 'PAYMENT' || paymentLayoutState.topTabMode === 'ROOM' ? (
+        <View style={styles.roomTabContainer}>
+          {ROOM_TABS.map((tab) => (
+            <TouchableOpacity
+              key={tab.key}
+              style={styles.roomTabButton}
+              activeOpacity={0.85}
+              onPress={() => handleSelectRoomTab(tab.key)}
+            >
+              <Text
+                style={
+                  selectedRoomTab === tab.key
+                    ? styles.roomTabActive
+                    : styles.roomTabInactive
+                }
+              >
+                {tab.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+
+          <View style={styles.roomTabTrack} />
+          <View
+            style={[
+              styles.roomTabIndicator,
+              {
+                width: `${100 / ROOM_TABS.length}%`,
+                left: `${(100 / ROOM_TABS.length) * selectedRoomTabIndex}%`,
+              },
+            ]}
+          />
+        </View>
+      ) : null}
 
       {selectedRoomTab === 'PAYMENT' ? (
-        <PaymentTabContent ref={paymentTabRef} roomId={room.roomId} />
+        <PaymentTabContent
+          ref={paymentTabRef}
+          roomId={room.roomId}
+          onLayoutChange={setPaymentLayoutState}
+        />
       ) : selectedRoomTab === 'SETTLEMENT' ? (
         <ScrollView
           style={styles.scrollArea}

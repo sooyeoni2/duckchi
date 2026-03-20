@@ -1,4 +1,3 @@
-import { MaterialCommunityIcons as MaterialDesignIcons } from '@expo/vector-icons';
 import React from 'react';
 import {
   ActivityIndicator,
@@ -15,13 +14,13 @@ import {
   PretendardTextStyle,
 } from '@core/theme/typography';
 import {
-  getExpenseDetail,
-  getPaymentEntryPreview,
-} from '../../models/paymentService';
+  defaultPaymentContentLayoutState,
+  type PaymentContentLayoutState,
+} from '../../models/paymentContentLayout';
+import { getExpenseDetail } from '../../models/paymentService';
 import type {
   ExpenseInputType,
   MyExpenseDetail,
-  MyExpenseItem,
 } from '../../models/paymentTypes';
 import { usePaymentAccountHistoryViewModel } from '../../viewmodels/usePaymentAccountHistoryViewModel';
 import { usePaymentListViewModel } from '../../viewmodels/usePaymentListViewModel';
@@ -29,20 +28,21 @@ import { usePaymentManualEntryViewModel } from '../../viewmodels/usePaymentManua
 import { PaymentAccountHistoryFormView } from './PaymentAccountHistoryFormView';
 import { PaymentAccountHistoryListView } from './PaymentAccountHistoryListView';
 import { PaymentAccountHistorySplitView } from './PaymentAccountHistorySplitView';
-import { PaymentEntryPreviewScreen } from './PaymentEntryPreviewScreen';
 import { PaymentExpenseDetailView } from './PaymentExpenseDetailView';
-import { PaymentExpenseSelectionCard } from './PaymentExpenseSelectionCard';
 import { PaymentManualEntrySetupView } from './PaymentManualEntrySetupView';
 import { PaymentManualEntrySplitView } from './PaymentManualEntrySplitView';
-import { PaymentRequestActionButton } from './PaymentRequestActionButton';
+import { PaymentOcrFlow, PaymentOcrFlowHandle } from './PaymentOcrFlow';
+import { PaymentOverviewView } from './PaymentOverviewView';
 
 interface PaymentTabContentProps {
   roomId: number;
+  onLayoutChange?: (layout: PaymentContentLayoutState) => void;
 }
 
 export interface PaymentTabContentHandle {
   canGoBack: () => boolean;
   goBack: () => void;
+  selectEntryTab: (inputType: ExpenseInputType) => void;
 }
 
 interface FeedbackMessage {
@@ -58,7 +58,12 @@ type PaymentScene =
   | { kind: 'accountHistorySplit' }
   | { kind: 'manualSetup' }
   | { kind: 'manualSplit' }
-  | { kind: 'entry'; inputType: ExpenseInputType };
+  | {
+      kind: 'ocr';
+      mode: 'create' | 'edit';
+      expenseId?: number;
+      origin: 'overview' | 'detail';
+    };
 
 type PaymentDetailState =
   | { status: 'idle' }
@@ -66,91 +71,58 @@ type PaymentDetailState =
   | { status: 'loaded'; expenseId: number; detail: MyExpenseDetail }
   | { status: 'error'; expenseId: number; message: string };
 
-const REQUEST_ACTIONS: Array<{
-  key: ExpenseInputType;
-  label: string;
-}> = [
-  { key: 'ACCOUNT_HISTORY', label: '계좌 내역' },
-  { key: 'OCR', label: '영수증 스캔' },
-  { key: 'MANUAL', label: '직접 입력' },
-];
-
-interface PaymentExpenseGroupSectionProps {
-  title: string;
-  caption?: string;
-  expenses: MyExpenseItem[];
-  emptyMessage: string;
-  selectedExpenseIds: number[];
-  onToggleExpense: (expenseId: number) => void;
-  onOpenDetail: (expenseId: number) => void;
-}
-
-function PaymentExpenseGroupSection({
-  title,
-  caption,
-  expenses,
-  emptyMessage,
-  selectedExpenseIds,
-  onToggleExpense,
-  onOpenDetail,
-}: PaymentExpenseGroupSectionProps) {
-  return (
-    <View style={styles.groupSection}>
-      <View style={styles.groupHeader}>
-        <Text
-          style={KBODiaGothicTextStyle.medium({
-            fontSize: 16,
-            color: AppColorStyles.black,
-          })}
-        >
-          {title}
-        </Text>
-        {caption != null && (
-          <Text
-            style={PretendardTextStyle.medium({
-              fontSize: 12,
-              color: AppColorStyles.textSecondary,
-            })}
-          >
-            {caption}
-          </Text>
-        )}
-      </View>
-
-      {expenses.length === 0 ? (
-        <View style={styles.emptyGroupBox}>
-          <Text
-            style={PretendardTextStyle.medium({
-              fontSize: 13,
-              color: AppColorStyles.textSecondary,
-            })}
-          >
-            {emptyMessage}
-          </Text>
-        </View>
-      ) : (
-        expenses.map((expense) => (
-          <PaymentExpenseSelectionCard
-            key={expense.expenseId}
-            expense={expense}
-            selected={selectedExpenseIds.includes(expense.expenseId)}
-            onToggle={() => onToggleExpense(expense.expenseId)}
-            onDetailPress={() => onOpenDetail(expense.expenseId)}
-          />
-        ))
-      )}
-    </View>
-  );
-}
-
 function getAccountHistoryIdFromExpenseId(expenseId: number): string {
   return `account-history-${expenseId}`;
+}
+
+function buildLayoutState(scene: PaymentScene): PaymentContentLayoutState {
+  if (scene.kind === 'overview') {
+    return defaultPaymentContentLayoutState;
+  }
+
+  if (scene.kind === 'detail') {
+    return {
+      headerTitle: '상세 내역',
+      topTabMode: 'NONE',
+      activeEntryTab: null,
+      showRoomActions: false,
+    };
+  }
+
+  if (
+    scene.kind === 'accountHistoryList' ||
+    scene.kind === 'accountHistoryForm' ||
+    scene.kind === 'accountHistorySplit'
+  ) {
+    return {
+      headerTitle: '정산 요청 추가',
+      topTabMode: 'ENTRY',
+      activeEntryTab: 'ACCOUNT_HISTORY',
+      showRoomActions: false,
+    };
+  }
+
+  if (scene.kind === 'manualSetup' || scene.kind === 'manualSplit') {
+    return {
+      headerTitle: '정산 요청 추가',
+      topTabMode: 'ENTRY',
+      activeEntryTab: 'MANUAL',
+      showRoomActions: false,
+    };
+  }
+
+  return {
+    headerTitle: '정산 요청 추가',
+    topTabMode: 'ENTRY',
+    activeEntryTab: 'OCR',
+    showRoomActions: false,
+  };
 }
 
 export const PaymentTabContent = React.forwardRef<
   PaymentTabContentHandle,
   PaymentTabContentProps
->(function PaymentTabContent({ roomId }, ref) {
+>(function PaymentTabContent({ roomId, onLayoutChange }, ref) {
   const [scene, setScene] = React.useState<PaymentScene>({ kind: 'overview' });
   const [selectedExpenseIds, setSelectedExpenseIds] = React.useState<number[]>([]);
   const [feedbackMessage, setFeedbackMessage] =
@@ -158,6 +130,7 @@ export const PaymentTabContent = React.forwardRef<
   const [detailState, setDetailState] = React.useState<PaymentDetailState>({
     status: 'idle',
   });
+  const ocrFlowRef = React.useRef<PaymentOcrFlowHandle | null>(null);
 
   const {
     state,
@@ -269,6 +242,10 @@ export const PaymentTabContent = React.forwardRef<
     }
   }, [loadManualDraft, manualState.status, scene.kind]);
 
+  React.useEffect(() => {
+    onLayoutChange?.(buildLayoutState(scene));
+  }, [onLayoutChange, scene]);
+
   const expenses = state.status === 'loaded' ? state.expenses : [];
   const pendingExpenses = React.useMemo(
     () => expenses.filter((expense) => expense.status === 'PENDING'),
@@ -291,14 +268,6 @@ export const PaymentTabContent = React.forwardRef<
     );
   }, [pendingExpenses]);
 
-  const selectedExpenseTitles = React.useMemo(
-    () =>
-      expenses
-        .filter((expense) => selectedExpenseIds.includes(expense.expenseId))
-        .map((expense) => expense.title),
-    [expenses, selectedExpenseIds],
-  );
-
   const showFeedback = React.useCallback((title: string, description: string) => {
     setFeedbackMessage({ title, description });
   }, []);
@@ -307,10 +276,26 @@ export const PaymentTabContent = React.forwardRef<
     setFeedbackMessage(null);
   }, []);
 
-  const moveToOverview = React.useCallback(() => {
-    clearFeedback();
-    setScene({ kind: 'overview' });
-  }, [clearFeedback]);
+  const openEntryScene = React.useCallback(
+    (inputType: ExpenseInputType) => {
+      clearFeedback();
+
+      if (inputType === 'ACCOUNT_HISTORY') {
+        resetDraft();
+        setScene({ kind: 'accountHistoryList' });
+        return;
+      }
+
+      if (inputType === 'MANUAL') {
+        resetManualDraft();
+        setScene({ kind: 'manualSetup' });
+        return;
+      }
+
+      setScene({ kind: 'ocr', mode: 'create', origin: 'overview' });
+    },
+    [clearFeedback, resetDraft, resetManualDraft],
+  );
 
   const handleSelectExpense = React.useCallback(
     (expenseId: number) => {
@@ -334,23 +319,9 @@ export const PaymentTabContent = React.forwardRef<
 
   const handleOpenEntry = React.useCallback(
     (inputType: ExpenseInputType) => {
-      clearFeedback();
-
-      if (inputType === 'ACCOUNT_HISTORY') {
-        resetDraft();
-        setScene({ kind: 'accountHistoryList' });
-        return;
-      }
-
-      if (inputType === 'MANUAL') {
-        resetManualDraft();
-        setScene({ kind: 'manualSetup' });
-        return;
-      }
-
-      setScene({ kind: 'entry', inputType });
+      openEntryScene(inputType);
     },
-    [clearFeedback, resetDraft, resetManualDraft],
+    [openEntryScene],
   );
 
   const handleOpenAccountHistoryDraft = React.useCallback(
@@ -361,34 +332,35 @@ export const PaymentTabContent = React.forwardRef<
     [clearFeedback],
   );
 
-  const handleBackFromEntryFlow = React.useCallback(() => {
+  const handleOcrBack = React.useCallback(() => {
     clearFeedback();
 
-    if (scene.kind === 'accountHistoryForm') {
-      setScene({ kind: 'accountHistoryList' });
+    if (ocrFlowRef.current?.canGoBack()) {
+      ocrFlowRef.current.goBack();
       return;
     }
 
-    if (scene.kind === 'accountHistorySplit') {
-      if (draftState.status === 'loaded') {
-        setScene({
-          kind: 'accountHistoryForm',
-          historyId: draftState.draft.historyId,
-        });
-        return;
-      }
-
-      setScene({ kind: 'accountHistoryList' });
-      return;
-    }
-
-    if (scene.kind === 'manualSplit') {
-      setScene({ kind: 'manualSetup' });
+    if (scene.kind === 'ocr' && scene.origin === 'detail' && scene.expenseId != null) {
+      setScene({ kind: 'detail', expenseId: scene.expenseId });
       return;
     }
 
     setScene({ kind: 'overview' });
-  }, [clearFeedback, draftState, scene.kind]);
+  }, [clearFeedback, scene]);
+
+  const handleOcrComplete = React.useCallback(
+    (title: string, description: string) => {
+      setScene({ kind: 'overview' });
+      showFeedback(title, description);
+    },
+    [showFeedback],
+  );
+
+  const handleOpenManualFallbackFromOcr = React.useCallback(() => {
+    clearFeedback();
+    resetManualDraft();
+    setScene({ kind: 'manualSetup' });
+  }, [clearFeedback, resetManualDraft]);
 
   React.useImperativeHandle(
     ref,
@@ -400,6 +372,11 @@ export const PaymentTabContent = React.forwardRef<
         }
 
         clearFeedback();
+
+        if (scene.kind === 'ocr') {
+          handleOcrBack();
+          return;
+        }
 
         if (scene.kind === 'detail') {
           setScene({ kind: 'overview' });
@@ -431,8 +408,11 @@ export const PaymentTabContent = React.forwardRef<
 
         setScene({ kind: 'overview' });
       },
+      selectEntryTab: (inputType: ExpenseInputType) => {
+        openEntryScene(inputType);
+      },
     }),
-    [clearFeedback, draftState, scene.kind],
+    [clearFeedback, draftState, handleOcrBack, openEntryScene, scene.kind],
   );
 
   const handleAccountHistoryNext = React.useCallback(() => {
@@ -591,7 +571,12 @@ export const PaymentTabContent = React.forwardRef<
       return;
     }
 
-    setScene({ kind: 'entry', inputType: 'OCR' });
+    setScene({
+      kind: 'ocr',
+      mode: 'edit',
+      expenseId: detailState.detail.expenseId,
+      origin: 'detail',
+    });
   }, [clearFeedback, detailState, resetManualDraft, showFeedback]);
 
   const handleCancelDetail = React.useCallback(() => {
@@ -632,9 +617,6 @@ export const PaymentTabContent = React.forwardRef<
     );
   }, [markExpensesRequested, selectedExpenseIds, showFeedback]);
 
-  const activeEntryPreview =
-    scene.kind === 'entry' ? getPaymentEntryPreview(scene.inputType) : null;
-
   const renderLoadingCard = (message: string) => (
     <View style={styles.sceneCenterCard}>
       <ActivityIndicator size="small" color={AppColorStyles.black} />
@@ -653,158 +635,19 @@ export const PaymentTabContent = React.forwardRef<
     </View>
   );
 
-  const renderOverviewListBody = () => {
-    if (state.status === 'idle' || state.status === 'loading') {
-      return renderLoadingCard('내 결제 목록을 불러오는 중입니다.');
-    }
-
-    if (state.status === 'error') {
-      return (
-        <View style={styles.centerContent}>
-          <Text
-            style={PretendardTextStyle.medium({
-              fontSize: 14,
-              lineHeight: 20,
-              color: AppColorStyles.textSecondary,
-            })}
-          >
-            {state.message}
-          </Text>
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={refresh}
-            style={styles.retryButton}
-          >
-            <Text
-              style={KBODiaGothicTextStyle.medium({
-                fontSize: 14,
-                color: AppColorStyles.black,
-              })}
-            >
-              다시 시도하기
-            </Text>
-          </TouchableOpacity>
-        </View>
-      );
-    }
-
-    if (state.status === 'empty') {
-      return (
-        <PaymentExpenseGroupSection
-          title="정산 가능"
-          caption="체크 후 요청할 수 있어요"
-          expenses={[]}
-          emptyMessage="등록된 결제 항목이 아직 없습니다."
-          selectedExpenseIds={selectedExpenseIds}
-          onToggleExpense={handleSelectExpense}
-          onOpenDetail={handleOpenDetail}
-        />
-      );
-    }
-
-    return (
-      <>
-        <PaymentExpenseGroupSection
-          title="정산 가능"
-          caption="체크 후 요청할 수 있어요"
-          expenses={pendingExpenses}
-          emptyMessage="지금 요청 가능한 결제가 없습니다."
-          selectedExpenseIds={selectedExpenseIds}
-          onToggleExpense={handleSelectExpense}
-          onOpenDetail={handleOpenDetail}
-        />
-
-        {(requestedExpenses.length > 0 || settledExpenses.length > 0) && (
-          <View style={styles.historyDivider} />
-        )}
-
-        {requestedExpenses.length > 0 && (
-          <PaymentExpenseGroupSection
-            title="진행 중"
-            expenses={requestedExpenses}
-            emptyMessage=""
-            selectedExpenseIds={selectedExpenseIds}
-            onToggleExpense={handleSelectExpense}
-            onOpenDetail={handleOpenDetail}
-          />
-        )}
-
-        {settledExpenses.length > 0 && (
-          <PaymentExpenseGroupSection
-            title="완료 내역"
-            expenses={settledExpenses}
-            emptyMessage=""
-            selectedExpenseIds={selectedExpenseIds}
-            onToggleExpense={handleSelectExpense}
-            onOpenDetail={handleOpenDetail}
-          />
-        )}
-      </>
-    );
-  };
-
   const renderOverviewContent = () => (
-    <>
-      <View style={styles.listSection}>
-        <Text
-          style={KBODiaGothicTextStyle.medium({
-            fontSize: 18,
-            color: AppColorStyles.black,
-          })}
-        >
-          내 결제 목록
-        </Text>
-
-        <View style={styles.listBody}>{renderOverviewListBody()}</View>
-
-        <TouchableOpacity
-          activeOpacity={0.9}
-          disabled={state.status !== 'loaded' || selectedExpenseIds.length === 0}
-          onPress={handleRequestPress}
-          style={[
-            styles.primaryButton,
-            (state.status !== 'loaded' || selectedExpenseIds.length === 0) &&
-              styles.primaryButtonDisabled,
-          ]}
-        >
-          <Text
-            style={KBODiaGothicTextStyle.bold({
-              fontSize: 20,
-              color: AppColorStyles.black,
-            })}
-          >
-            요청하기
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.actionSection}>
-        <Text
-          style={KBODiaGothicTextStyle.medium({
-            fontSize: 18,
-            color: AppColorStyles.black,
-          })}
-        >
-          정산 요청 추가
-        </Text>
-        <View style={styles.actionRow}>
-          {REQUEST_ACTIONS.map((action, index) => (
-            <View
-              key={action.key}
-              style={[
-                styles.actionButtonWrap,
-                index < REQUEST_ACTIONS.length - 1 && styles.actionButtonSpacing,
-              ]}
-            >
-              <PaymentRequestActionButton
-                label={action.label}
-                onPress={() => handleOpenEntry(action.key)}
-              />
-            </View>
-          ))}
-        </View>
-      </View>
-    </>
+    <PaymentOverviewView
+      state={state}
+      pendingExpenses={pendingExpenses}
+      requestedExpenses={requestedExpenses}
+      settledExpenses={settledExpenses}
+      selectedExpenseIds={selectedExpenseIds}
+      onRefresh={refresh}
+      onToggleExpense={handleSelectExpense}
+      onOpenDetail={handleOpenDetail}
+      onOpenEntry={handleOpenEntry}
+      onRequestPress={handleRequestPress}
+    />
   );
 
   const renderDetailContent = () => {
@@ -858,84 +701,27 @@ export const PaymentTabContent = React.forwardRef<
     );
   };
 
-  const renderEntryPreviewContent = () => {
-    if (activeEntryPreview == null) {
-      return null;
-    }
-
-    return (
-      <PaymentEntryPreviewScreen
-        preview={activeEntryPreview}
-        selectedExpenseTitles={selectedExpenseTitles}
-        onBack={moveToOverview}
-        onPrimaryAction={() =>
-          showFeedback(
-            activeEntryPreview.title,
-            `${activeEntryPreview.primaryActionLabel} 흐름은 다음 단계에서 실제 폼으로 연결합니다.`,
-          )
-        }
-      />
-    );
-  };
-
-  const renderSceneFrame = (
-    title: string,
-    onBack: () => void,
-    content: React.ReactNode,
-  ) => (
-    <View>
-      <View style={styles.entryHeaderRow}>
-        <TouchableOpacity
-          activeOpacity={0.85}
-          onPress={onBack}
-          style={styles.entryBackButton}
-        >
-          <MaterialDesignIcons
-            name="chevron-left"
-            size={28}
-            color={AppColorStyles.black}
-          />
-        </TouchableOpacity>
-
-        <Text
-          style={KBODiaGothicTextStyle.medium({
-            fontSize: 20,
-            color: AppColorStyles.black,
-          })}
-        >
-          {title}
-        </Text>
-      </View>
-
-      {content}
-    </View>
-  );
-
   const renderSceneContent = () => {
     if (scene.kind === 'overview') {
       return renderOverviewContent();
     }
 
     if (scene.kind === 'detail') {
-      return renderSceneFrame('상세 내역', moveToOverview, renderDetailContent());
+      return renderDetailContent();
     }
 
     if (scene.kind === 'accountHistoryList') {
-      return renderSceneFrame(
-        '정산 요청 추가',
-        moveToOverview,
+      return (
         <PaymentAccountHistoryListView
           state={historyState}
           onRetry={refreshHistories}
           onSelectHistory={handleOpenAccountHistoryDraft}
-        />,
+        />
       );
     }
 
     if (scene.kind === 'accountHistoryForm') {
-      return renderSceneFrame(
-        '정산 요청 추가',
-        handleBackFromEntryFlow,
+      return (
         <PaymentAccountHistoryFormView
           draftState={draftState}
           selectedParticipantCount={selectedParticipantCount}
@@ -945,14 +731,12 @@ export const PaymentTabContent = React.forwardRef<
           onItemNameChange={updateItemName}
           onToggleParticipant={toggleParticipant}
           onNext={handleAccountHistoryNext}
-        />,
+        />
       );
     }
 
     if (scene.kind === 'accountHistorySplit') {
-      return renderSceneFrame(
-        '정산 요청 추가',
-        handleBackFromEntryFlow,
+      return (
         <PaymentAccountHistorySplitView
           draftState={draftState}
           splitAmountTotal={accountHistorySplitAmountTotal}
@@ -961,14 +745,12 @@ export const PaymentTabContent = React.forwardRef<
           }}
           onParticipantAmountChange={updateAccountHistoryParticipantSplitAmount}
           onSubmit={handleAccountHistorySubmit}
-        />,
+        />
       );
     }
 
     if (scene.kind === 'manualSetup') {
-      return renderSceneFrame(
-        '정산 요청 추가',
-        handleBackFromEntryFlow,
+      return (
         <PaymentManualEntrySetupView
           state={manualState}
           selectedParticipantCount={manualSelectedParticipantCount}
@@ -979,14 +761,12 @@ export const PaymentTabContent = React.forwardRef<
           onTotalAmountChange={updateManualTotalAmount}
           onToggleParticipant={toggleManualParticipant}
           onNext={handleManualNext}
-        />,
+        />
       );
     }
 
     if (scene.kind === 'manualSplit') {
-      return renderSceneFrame(
-        '정산 요청 추가',
-        handleBackFromEntryFlow,
+      return (
         <PaymentManualEntrySplitView
           state={manualState}
           splitAmountTotal={manualSplitAmountTotal}
@@ -995,15 +775,26 @@ export const PaymentTabContent = React.forwardRef<
           }}
           onParticipantAmountChange={updateParticipantSplitAmount}
           onSubmit={handleManualSubmit}
-        />,
+        />
       );
     }
 
-    return renderSceneFrame(
-      '정산 요청 추가',
-      handleBackFromEntryFlow,
-      renderEntryPreviewContent(),
-    );
+    if (scene.kind === 'ocr') {
+      return (
+        <PaymentOcrFlow
+          ref={ocrFlowRef}
+          roomId={roomId}
+          mode={scene.mode}
+          expenseId={scene.expenseId}
+          onOpenManualFallback={handleOpenManualFallbackFromOcr}
+          onFeedback={showFeedback}
+          onClearFeedback={clearFeedback}
+          onComplete={handleOcrComplete}
+        />
+      );
+    }
+
+    return null;
   };
 
   return (
@@ -1085,45 +876,6 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 32,
   },
-  listSection: {
-    backgroundColor: AppColorStyles.surface,
-    borderRadius: 18,
-    paddingHorizontal: 16,
-    paddingTop: 20,
-    paddingBottom: 16,
-    borderWidth: 1,
-    borderColor: AppColorStyles.divider,
-    marginBottom: 24,
-  },
-  listBody: {
-    marginTop: 16,
-  },
-  groupSection: {
-    marginBottom: 12,
-  },
-  groupHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  emptyGroupBox: {
-    paddingVertical: 20,
-    paddingHorizontal: 16,
-    borderRadius: 14,
-    backgroundColor: AppColorStyles.gray5,
-    marginBottom: 12,
-  },
-  historyDivider: {
-    height: 1,
-    backgroundColor: AppColorStyles.divider,
-    marginVertical: 6,
-  },
-  centerContent: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 28,
-  },
   sceneCenterCard: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -1143,42 +895,5 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 10,
     backgroundColor: AppColorStyles.yellow,
-  },
-  actionSection: {
-    marginBottom: 20,
-  },
-  actionRow: {
-    flexDirection: 'row',
-    marginTop: 14,
-  },
-  actionButtonWrap: {
-    flex: 1,
-  },
-  actionButtonSpacing: {
-    marginRight: 12,
-  },
-  entryHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 14,
-  },
-  entryBackButton: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: -6,
-    marginRight: 4,
-  },
-  primaryButton: {
-    height: 60,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: AppColorStyles.yellow,
-    marginTop: 8,
-  },
-  primaryButtonDisabled: {
-    backgroundColor: AppColorStyles.gray3,
   },
 });
