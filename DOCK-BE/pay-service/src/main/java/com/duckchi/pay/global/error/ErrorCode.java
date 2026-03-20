@@ -49,8 +49,11 @@ public enum ErrorCode {
     ROOM_NOT_ADMIN("ROOM-403-4", HttpStatus.FORBIDDEN, "모임 정보 수정 권한이 없습니다."),
     ROOM_CANNOT_UPDATE_STATUS("ROOM-409-4", HttpStatus.CONFLICT, "정산이 진행 중 인 모임은 정보를 수정할 수 없습니다."),
     ROOM_ADMIN_DELEGATION_REQUIRED("ROOM-409-5", HttpStatus.CONFLICT, "방장은 방장 권한을 위임한 후 모임을 나갈 수 있습니다."),
-    ROOM_CANNOT_LEAVE_PROGRESS("ROOM-409-6", HttpStatus.CONFLICT, "정산이 진행 중인 모임은 나갈 수 없습니다."),
-    ROOM_CANNOT_DELETE_PROGRESS("ROOM-409-7", HttpStatus.CONFLICT, "정산이 진행 중인 모임은 삭제할 수 없습니다.");
+    ROOM_CANNOT_LEAVE_PROGRESS("ROOM-409-6", HttpStatus.CONFLICT, "모임이 진행 중에는 나갈 수 없습니다."),
+    ROOM_CANNOT_DELETE_PROGRESS("ROOM-409-7", HttpStatus.CONFLICT, "모임이 진행 중에는 삭제할 수 없습니다."),
+    ROOM_ALREADY_IN_PROGRESS("ROOM-409-9", HttpStatus.CONFLICT, "이미 진행 중인 모임입니다."),
+    ROOM_NOT_IN_PROGRESS("ROOM-409-10", HttpStatus.CONFLICT, "현재 진행 중인 모임이 아닙니다."),
+    ROOM_HAS_REQUESTED_EXPENSE("ROOM-409-8", HttpStatus.CONFLICT, "정산 요청 중인 결제가 있어 해당 작업을 수행할 수 없습니다.");
 
     private final String code; //에러코드
     private final HttpStatus httpStatus; //http상태코드

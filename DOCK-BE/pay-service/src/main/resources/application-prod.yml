@@ -18,7 +18,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     show-sql: false
 
 # [External API] 외부 금융망 연동 설정
@@ -31,3 +31,11 @@ ocr:
   naver:
     invoke-url: ${OCR_INVOKE_URL}
     secret: ${OCR_SECRET_KEY}
+
+swagger:
+  server-url: ${SWAGGER_SERVER_URL:http://j14c102.p.ssafy.io}
+
+springdoc:
+  swagger-ui:
+    config-url: /api/payment/v3/api-docs/swagger-config
+    url: /api/payment/v3/api-docs

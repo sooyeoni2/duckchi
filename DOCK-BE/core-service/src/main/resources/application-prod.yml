@@ -18,7 +18,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     show-sql: false
 
 jwt:
@@ -40,3 +40,14 @@ security:
   pay-password:
     pepper: ${PAY_PASSWORD_PEPPER}
     bcrypt-strength: 12
+
+firebase:
+  admin-sdk-path: ${FIREBASE_PROD_ACCOUNT_PATH}
+
+swagger:
+  server-url: ${SWAGGER_SERVER_URL:http://j14c102.p.ssafy.io}
+
+springdoc:
+  swagger-ui:
+    config-url: /api/auth/v3/api-docs/swagger-config
+    url: /api/auth/v3/api-docs

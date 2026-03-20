@@ -76,6 +76,7 @@ public class AuthService {
                     .refreshToken(refreshToken)
                     .user(LoginResponse.UserResponse.builder()
                             .userId(user.getId())
+                            .email(user.getEmail())
                             .name(user.getName())
                             .tag(user.getTag())
                             .hasBankAccount(hasBankAccount)

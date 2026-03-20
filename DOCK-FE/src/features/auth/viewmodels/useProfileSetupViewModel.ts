@@ -25,6 +25,7 @@ export const useProfileSetupViewModel = (navigation: Navigation) => {
       // 업데이트된 유저 정보 저장
       setAuth(accessToken!, refreshToken!, {
         userId: result.userId,
+        email: user.email,
         name: result.name,
         tag: result.tag,
         profileImageUrl: result.profileImageUrl,

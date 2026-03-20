@@ -35,3 +35,6 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### firebase 서비스 계정 JSON 경로
+DOCK-BE/core-service/secrets/firebase/*.json

@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.util.StringUtils;
 
 @Configuration
 public class SwaggerConfig {
@@ -20,9 +21,16 @@ public class SwaggerConfig {
     @Value("${spring.application.name}")
     private String serviceName;
 
+    @Value("${swagger.server-url:}")
+    private String swaggerServerUrl;
+
     @Bean
     @Primary
     public OpenAPI openAPI() {
+        String serverUrl = StringUtils.hasText(swaggerServerUrl)
+                ? swaggerServerUrl
+                : "http://localhost:" + port;
+
         return new OpenAPI()
                 .components(new Components()
                         .addSecuritySchemes("bearerAuth", new SecurityScheme()
@@ -35,7 +43,7 @@ public class SwaggerConfig {
                         .title("Duckchi swagger : " + serviceName)
                         .description("Duckchi REST API")
                         .version("1.0.0"))
-                .addServersItem(new Server().url("http://localhost:"+port).description("Duckchi Local Server"));
+                .addServersItem(new Server().url(serverUrl).description("Duckchi Server"));
     }
 
 }

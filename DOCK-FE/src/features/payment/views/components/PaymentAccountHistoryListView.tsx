@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { AppColorStyles } from '@core/theme/colors';
@@ -12,6 +11,7 @@ import {
   PretendardTextStyle,
 } from '@core/theme/typography';
 import type { PaymentAccountHistoryState } from '../../viewmodels/usePaymentAccountHistoryViewModel';
+import { PaymentAnimatedTouchable } from './PaymentAnimatedTouchable';
 import { PaymentAccountHistoryCard } from './PaymentAccountHistoryCard';
 
 interface PaymentAccountHistoryListViewProps {
@@ -81,7 +81,7 @@ export function PaymentAccountHistoryListView({
           >
             {state.message}
           </Text>
-          <TouchableOpacity
+          <PaymentAnimatedTouchable
             activeOpacity={0.85}
             onPress={onRetry}
             style={styles.retryButton}
@@ -94,7 +94,7 @@ export function PaymentAccountHistoryListView({
             >
               다시 불러오기
             </Text>
-          </TouchableOpacity>
+          </PaymentAnimatedTouchable>
         </View>
       ) : state.status === 'empty' ? (
         <View style={styles.centerCard}>

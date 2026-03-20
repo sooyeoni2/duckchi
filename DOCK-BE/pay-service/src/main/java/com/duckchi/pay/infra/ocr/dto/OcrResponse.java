@@ -35,6 +35,7 @@ public class OcrResponse {
         private StoreInfo storeInfo;
         private PaymentInfo paymentInfo;
         private List<SubResult> subResults;
+        private PriceInfo totalPrice;
     }
 
     @Getter @NoArgsConstructor @AllArgsConstructor
