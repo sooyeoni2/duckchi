@@ -1,10 +1,11 @@
 import { MaterialCommunityIcons as MaterialDesignIcons } from '@expo/vector-icons';
 import React from 'react';
 import {
+  Animated,
   Dimensions,
+  Pressable,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 
@@ -28,6 +29,26 @@ export function SettlementRowCard({
   isLast,
   onPress,
 }: SettlementRowCardProps) {
+  const scale = React.useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    Animated.spring(scale, {
+      toValue: 0.97,
+      useNativeDriver: true,
+      speed: 50,
+      bounciness: 0,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scale, {
+      toValue: 1,
+      useNativeDriver: true,
+      speed: 30,
+      bounciness: 4,
+    }).start();
+  };
+
   const content = (
     <>
       <View style={styles.textArea}>
@@ -53,31 +74,38 @@ export function SettlementRowCard({
   }
 
   return (
-    <TouchableOpacity
-      activeOpacity={0.85}
-      onPress={onPress}
-      style={[styles.rowCard, isLast && styles.rowCardLast]}
+    <Animated.View
+      style={[{ transform: [{ scale }] }, isLast && styles.rowCardLast]}
     >
-      {content}
-    </TouchableOpacity>
+      <Pressable
+        style={styles.rowCard}
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+      >
+        {content}
+      </Pressable>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   rowCard: {
     minHeight: 87 * s,
-    borderRadius: 10 * s,
+    borderRadius: 14,
     backgroundColor: AppColorStyles.white,
     paddingHorizontal: 14 * s,
-    marginBottom: 16 * s,
+    marginBottom: 8,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: AppColorStyles.divider,
     shadowColor: '#676767',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
-    elevation: 1,
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 2,
   },
   rowCardLast: {
     marginBottom: 0,

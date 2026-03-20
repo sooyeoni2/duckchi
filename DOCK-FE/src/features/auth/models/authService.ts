@@ -17,7 +17,7 @@ export const kakaoLogin = async (req: KakaoLoginRequest): Promise<KakaoLoginResp
     ENDPOINTS.auth.kakaoLogin,
     req,
   );
-  return data.data;
+  return data.data ?? (data as unknown as KakaoLoginResponse);
 };
 
 export const setupProfile = async (req: ProfileSetupRequest): Promise<ProfileSetupResponse> => {

@@ -1,7 +1,7 @@
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { Animated, Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { RoomStackParamList } from '@core/navigation/types';
@@ -18,6 +18,15 @@ type Nav = NativeStackNavigationProp<RoomStackParamList, 'RoomList'>;
 export function RoomListScreen() {
   const navigation = useNavigation<Nav>();
   const rooms = useRoomStore((s) => s.rooms);
+  const createScale = React.useRef(new Animated.Value(1)).current;
+
+  const handleCreatePressIn = () => {
+    Animated.spring(createScale, { toValue: 0.93, useNativeDriver: true, speed: 50, bounciness: 0 }).start();
+  };
+
+  const handleCreatePressOut = () => {
+    Animated.spring(createScale, { toValue: 1, useNativeDriver: true, speed: 30, bounciness: 4 }).start();
+  };
 
   const handleCardPress = (meeting: MeetingRoom) => {
     navigation.navigate('RoomDetail', { roomId: meeting.roomId });
@@ -51,14 +60,16 @@ export function RoomListScreen() {
         showDivider
         backgroundColor={AppColorStyles.background}
         actions={[
-          <TouchableOpacity
-            key="create-room"
-            style={styles.createButton}
-            activeOpacity={0.85}
-            onPress={() => navigation.navigate('RoomCreate')}
-          >
-            <Text style={styles.createButtonText}>+ 새 모임</Text>
-          </TouchableOpacity>,
+          <Animated.View key="create-room" style={{ transform: [{ scale: createScale }] }}>
+            <Pressable
+              style={styles.createButton}
+              onPress={() => navigation.navigate('RoomCreate')}
+              onPressIn={handleCreatePressIn}
+              onPressOut={handleCreatePressOut}
+            >
+              <Text style={styles.createButtonText}>+ 새 모임</Text>
+            </Pressable>
+          </Animated.View>,
         ]}
       />
 

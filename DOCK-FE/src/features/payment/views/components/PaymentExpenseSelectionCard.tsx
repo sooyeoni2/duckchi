@@ -12,7 +12,6 @@ import {
   getExpensePrimaryDisplayDate,
 } from '../../models/paymentDisplay';
 import type { MyExpenseItem } from '../../models/paymentTypes';
-import { usePressScaleAnimation } from '../hooks/usePressScaleAnimation';
 import { PaymentExpenseStatusBadge } from './PaymentExpenseStatusBadge';
 
 interface PaymentExpenseSelectionCardProps {
@@ -33,8 +32,15 @@ export function PaymentExpenseSelectionCard({
   const displayTime = formatExpenseListDate(
     getExpensePrimaryDisplayDate(expense),
   );
-  const { animatedStyle, handlePressIn, handlePressOut } =
-    usePressScaleAnimation(0.97);
+  const scale = React.useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    Animated.spring(scale, { toValue: 0.97, useNativeDriver: true, speed: 50, bounciness: 0 }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 30, bounciness: 4 }).start();
+  };
 
   return (
     <Animated.View
@@ -42,7 +48,7 @@ export function PaymentExpenseSelectionCard({
         styles.card,
         selected && styles.cardSelected,
         isSettled && styles.cardSettled,
-        animatedStyle,
+        { transform: [{ scale }] },
       ]}
     >
       <View style={styles.row}>
@@ -51,8 +57,6 @@ export function PaymentExpenseSelectionCard({
             <TouchableOpacity
               activeOpacity={0.85}
               onPress={onToggle}
-              onPressIn={handlePressIn}
-              onPressOut={handlePressOut}
               style={styles.checkboxButton}
             >
               <MaterialDesignIcons

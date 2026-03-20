@@ -5,6 +5,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
 import {
   Dimensions,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -81,7 +82,14 @@ export function RoomScreen() {
     useState<SettlementDetailState>({
       status: 'idle',
     });
+  const [settlementRefreshing, setSettlementRefreshing] = useState(false);
 
+  const handleSettlementRefresh = React.useCallback(async () => {
+    setSettlementRefreshing(true);
+    // TODO: 실제 API 연동 시 여기서 데이터 재요청
+    await new Promise<void>((resolve) => setTimeout(resolve, 500));
+    setSettlementRefreshing(false);
+  }, []);
   const rooms = useRoomStore((state) => state.rooms);
   const room =
     rooms.find((item) => item.roomId === route.params.roomId) ??
@@ -219,6 +227,13 @@ export function RoomScreen() {
       style={styles.scrollArea}
       contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl
+          refreshing={settlementRefreshing}
+          onRefresh={handleSettlementRefresh}
+          tintColor={AppColorStyles.black}
+        />
+      }
     >
       <TouchableOpacity
         style={styles.expectedCard}
