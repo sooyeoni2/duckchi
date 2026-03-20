@@ -12,15 +12,57 @@ spring:
           predicates:
             - Path=/api/v1/auth/**, /api/v1/home/**, /api/v1/profiles/**
 
+        - id: core-service-swagger-ui
+          uri: lb://core-service
+          predicates:
+            - Path=/swagger-ui/core-service/**
+          filters:
+            - RewritePath=/swagger-ui/core-service(?<segment>/?.*), /swagger-ui${segment}
+
+        - id: core-service-api-docs
+          uri: lb://core-service
+          predicates:
+            - Path=/v3/api-docs/core-service/**
+          filters:
+            - RewritePath=/v3/api-docs/core-service(?<segment>/?.*), /v3/api-docs${segment}
+
         - id: pay-service
           uri: lb://pay-service
           predicates:
             - Path=/api/v1/rooms/**, /api/v1/payments/**, /api/v1/settlements/**, /api/v1/expenses/**
 
+        - id: pay-service-swagger-ui
+          uri: lb://pay-service
+          predicates:
+            - Path=/swagger-ui/pay-service/**
+          filters:
+            - RewritePath=/swagger-ui/pay-service(?<segment>/?.*), /swagger-ui${segment}
+
+        - id: pay-service-api-docs
+          uri: lb://pay-service
+          predicates:
+            - Path=/v3/api-docs/pay-service/**
+          filters:
+            - RewritePath=/v3/api-docs/pay-service(?<segment>/?.*), /v3/api-docs${segment}
+
         - id: insight-service
           uri: lb://insight-service
           predicates:
             - Path=/api/v1/analytics/**, /api/v1/games/**
+
+        - id: insight-service-swagger-ui
+          uri: lb://insight-service
+          predicates:
+            - Path=/swagger-ui/insight-service/**
+          filters:
+            - RewritePath=/swagger-ui/insight-service(?<segment>/?.*), /swagger-ui${segment}
+
+        - id: insight-service-api-docs
+          uri: lb://insight-service
+          predicates:
+            - Path=/v3/api-docs/insight-service/**
+          filters:
+            - RewritePath=/v3/api-docs/insight-service(?<segment>/?.*), /v3/api-docs${segment}
 
 jwt:
   secret: ${JWT_SECRET}
