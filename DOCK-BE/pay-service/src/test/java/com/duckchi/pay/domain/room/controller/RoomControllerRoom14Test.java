@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.jpa.mapping.JpaMetamodelMappingContext;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -26,6 +27,9 @@ class RoomControllerRoom14Test {
 
     @MockitoBean
     private RoomService roomService;
+
+    @MockitoBean
+    private JpaMetamodelMappingContext jpaMetamodelMappingContext;
 
     @Test
     void toggleAutoDebitConsent_success_returns200() throws Exception {

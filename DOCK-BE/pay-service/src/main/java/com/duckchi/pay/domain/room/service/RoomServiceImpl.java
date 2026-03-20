@@ -1,6 +1,6 @@
 package com.duckchi.pay.domain.room.service;
 
-import com.duckchi.pay.domain.expenses.repository.ExpenseRepository;
+import com.duckchi.pay.domain.expense.repository.ExpenseRepository;
 import com.duckchi.pay.domain.room.dto.request.CreateRoomRequest;
 import com.duckchi.pay.domain.room.dto.request.StartRoomRequest;
 import com.duckchi.pay.domain.room.dto.request.UpdateRoomRequest;
@@ -71,8 +71,7 @@ public class RoomServiceImpl implements RoomService {
     public UpdateAutoDebitConsentResponse updateAutoDebitConsent(
             Long roomId,
             Long currentUserId,
-            AutoDebitConsentStatus status
-    ) {
+            AutoDebitConsentStatus status) {
         if (currentUserId == null) {
             throw new CustomException(ErrorCode.COMMON_UNAUTHORIZED);
         }
@@ -83,8 +82,7 @@ public class RoomServiceImpl implements RoomService {
         RoomParticipant participant = roomParticipantRepository.findByRoom_IdAndUserId(roomId, currentUserId)
                 .orElseThrow(() -> new CustomException(
                         "해당 모임의 멤버만 자동이체 동의/거절을 변경할 수 있습니다.",
-                        ErrorCode.ROOM_MEMBER_ONLY
-                ));
+                        ErrorCode.ROOM_MEMBER_ONLY));
 
         participant.updateAgreement(status.toAgreement());
 
@@ -100,8 +98,7 @@ public class RoomServiceImpl implements RoomService {
     @Transactional
     public UpdateAutoDebitConsentResponse toggleAutoDebitConsent(
             Long roomId,
-            Long currentUserId
-    ) {
+            Long currentUserId) {
         if (currentUserId == null) {
             throw new CustomException(ErrorCode.COMMON_UNAUTHORIZED);
         }
@@ -116,8 +113,7 @@ public class RoomServiceImpl implements RoomService {
         RoomParticipant participant = roomParticipantRepository.findByRoom_IdAndUserId(roomId, currentUserId)
                 .orElseThrow(() -> new CustomException(
                         "해당 모임의 멤버만 자동이체 동의 여부를 변경할 수 있습니다.",
-                        ErrorCode.ROOM_MEMBER_ONLY
-                ));
+                        ErrorCode.ROOM_MEMBER_ONLY));
 
         participant.updateAgreement(!participant.isAgreed());
 
@@ -142,23 +138,26 @@ public class RoomServiceImpl implements RoomService {
 
         List<Long> roomIds = rooms.stream().map(Room::getId).toList();
 
-        Map<Long, List<Long>> participantsByRoomId = roomParticipantRepository.findParticipantUserMappingsByRoomIds(roomIds)
+        Map<Long, List<Long>> participantsByRoomId = roomParticipantRepository
+                .findParticipantUserMappingsByRoomIds(roomIds)
                 .stream()
                 .collect(Collectors.groupingBy(
                         RoomParticipantUserProjection::getRoomId,
-                        Collectors.mapping(RoomParticipantUserProjection::getUserId, Collectors.toList())
-                ));
+                        Collectors.mapping(RoomParticipantUserProjection::getUserId, Collectors.toList())));
 
-        Map<Long, RoomExpenseSummaryProjection> expenseSummaryByRoomId = expenseRepository.findRoomExpenseSummaries(roomIds)
+        Map<Long, RoomExpenseSummaryProjection> expenseSummaryByRoomId = expenseRepository
+                .findRoomExpenseSummaries(roomIds)
                 .stream()
                 .collect(Collectors.toMap(RoomExpenseSummaryProjection::getRoomId, Function.identity()));
 
-        Map<Long, RoomSettlementSummaryProjection> settlementSummaryByRoomId = roomRepository.findRoomSettlementSummaries(roomIds)
+        Map<Long, RoomSettlementSummaryProjection> settlementSummaryByRoomId = roomRepository
+                .findRoomSettlementSummaries(roomIds)
                 .stream()
                 .collect(Collectors.toMap(RoomSettlementSummaryProjection::getRoomId, Function.identity()));
 
         return rooms.stream()
-                .map(room -> buildRoomListResponse(room, participantsByRoomId, expenseSummaryByRoomId, settlementSummaryByRoomId))
+                .map(room -> buildRoomListResponse(room, participantsByRoomId, expenseSummaryByRoomId,
+                        settlementSummaryByRoomId))
                 .toList();
     }
 
@@ -166,8 +165,7 @@ public class RoomServiceImpl implements RoomService {
             Room room,
             Map<Long, List<Long>> participantsByRoomId,
             Map<Long, RoomExpenseSummaryProjection> expenseSummaryByRoomId,
-            Map<Long, RoomSettlementSummaryProjection> settlementSummaryByRoomId
-    ) {
+            Map<Long, RoomSettlementSummaryProjection> settlementSummaryByRoomId) {
         List<Long> participants = participantsByRoomId.getOrDefault(room.getId(), List.of());
 
         RoomExpenseSummaryProjection expenseSummary = expenseSummaryByRoomId.get(room.getId());
@@ -309,9 +307,12 @@ public class RoomServiceImpl implements RoomService {
 
     /*
      * [ROOM-17] 모임을 시작한다.
-     * @param roomId        모임방 ID
+     * 
+     * @param roomId 모임방 ID
+     * 
      * @param currentUserId 현재 인증된 사용자 ID
-     * @param request       카테고리와 세부 내용이 담긴 요청 DTO
+     * 
+     * @param request 카테고리와 세부 내용이 담긴 요청 DTO
      */
     @Override
     @Transactional
@@ -332,12 +333,11 @@ public class RoomServiceImpl implements RoomService {
         roomParticipantRepository.findByRoom_IdAndUserId(roomId, currentUserId)
                 .orElseThrow(() -> new CustomException(
                         "해당 모임의 멤버만 모임을 시작할 수 있습니다.",
-                        ErrorCode.ROOM_MEMBER_ONLY
-                ));
+                        ErrorCode.ROOM_MEMBER_ONLY));
 
         // 이미 진행 중인 모임은 다시 시작할 수 없다.
         if (room.isProgress()) {
-            throw new CustomException(ErrorCode.ROOM_HAS_REQUESTED_EXPENSE);
+            throw new CustomException(ErrorCode.ROOM_ALREADY_IN_PROGRESS);
         }
 
         // 이전 회차에서 정산 요청 중(REQUESTED)인 결제가 남아 있으면
@@ -361,7 +361,9 @@ public class RoomServiceImpl implements RoomService {
 
     /*
      * [ROOM-18] 모임을 종료한다.
-     * @param roomId        모임방 ID
+     * 
+     * @param roomId 모임방 ID
+     * 
      * @param currentUserId 현재 인증된 사용자 ID
      */
     @Override
@@ -383,12 +385,11 @@ public class RoomServiceImpl implements RoomService {
         roomParticipantRepository.findByRoom_IdAndUserId(roomId, currentUserId)
                 .orElseThrow(() -> new CustomException(
                         "해당 모임의 멤버만 모임을 종료할 수 있습니다.",
-                        ErrorCode.ROOM_MEMBER_ONLY
-                ));
+                        ErrorCode.ROOM_MEMBER_ONLY));
 
         // 이미 종료된(대기 중인) 모임은 다시 종료할 수 없다.
         if (!room.isProgress()) {
-            throw new CustomException(ErrorCode.ROOM_HAS_REQUESTED_EXPENSE);
+            throw new CustomException(ErrorCode.ROOM_NOT_IN_PROGRESS);
         }
 
         // 정산 요청 중(REQUESTED)인 결제가 남아 있으면 종료할 수 없다.
@@ -411,7 +412,7 @@ public class RoomServiceImpl implements RoomService {
     /*
      * 해당 모임방에 정산 요청 중(REQUESTED) 상태인 결제가 존재하는지 검증한다.
      * 존재하면 409 Conflict 예외를 던져 모임 시작/종료를 차단한다.
-
+     * 
      */
     private void validateNoRequestedExpenses(Long roomId) {
         long requestedCount = expenseRepository.countByRoomIdAndStatus(roomId, "REQUESTED");

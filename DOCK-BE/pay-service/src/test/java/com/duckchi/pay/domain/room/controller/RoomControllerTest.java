@@ -31,7 +31,7 @@ class RoomControllerTest {
     @MockitoBean
     private RoomService roomService;
 
-    @MockBean
+    @MockitoBean
     private JpaMetamodelMappingContext jpaMetamodelMappingContext;
 
     @Test

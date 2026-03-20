@@ -34,7 +34,7 @@ class InviteLinkControllerTest {
     @MockitoBean
     private InviteLinkService inviteLinkService;
 
-    @MockBean
+    @MockitoBean
     private JpaMetamodelMappingContext jpaMetamodelMappingContext;
 
     @Test
