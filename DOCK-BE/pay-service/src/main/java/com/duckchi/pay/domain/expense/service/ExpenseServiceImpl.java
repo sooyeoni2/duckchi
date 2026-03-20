@@ -160,7 +160,8 @@ public class ExpenseServiceImpl implements ExpenseService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ExpenseResponse> getExpensesByRoom(Long roomId) {
+    public List<ExpenseResponse> getExpensesByRoom(Long userId, Long roomId) {
+        validateRoomMember(roomId, userId);
         return expenseRepository.findAllByRoomIdOrderByCreatedAtDesc(roomId).stream()
                 .map(this::toExpenseResponse)
                 .toList();
@@ -169,6 +170,7 @@ public class ExpenseServiceImpl implements ExpenseService {
     @Override
     @Transactional(readOnly = true)
     public List<ExpenseResponse> getMyExpensesByRoom(Long userId, Long roomId) {
+        validateRoomMember(roomId, userId);
         return expenseRepository.findAllByRoomIdAndPayerUserIdOrderByCreatedAtDesc(roomId, userId).stream()
                 .map(this::toExpenseResponse)
                 .toList();
@@ -176,7 +178,8 @@ public class ExpenseServiceImpl implements ExpenseService {
 
     @Override
     @Transactional(readOnly = true)
-    public ExpenseDetailResponse getExpenseDetail(Long roomId, Long expenseId) {
+    public ExpenseDetailResponse getExpenseDetail(Long userId, Long roomId, Long expenseId) {
+        validateRoomMember(roomId, userId);
         Expense expense = findExpenseWithRoomCheck(roomId, expenseId);
         return ExpenseDetailResponse.builder()
                 .expenseId(expense.getId())

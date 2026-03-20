@@ -16,11 +16,11 @@ public interface ExpenseService {
 
     Long registerExpense(Long userId, Long roomId, ExpenseUpsertRequest request);
 
-    List<ExpenseResponse> getExpensesByRoom(Long roomId);
+    List<ExpenseResponse> getExpensesByRoom(Long userId, Long roomId);
 
     List<ExpenseResponse> getMyExpensesByRoom(Long userId, Long roomId);
 
-    ExpenseDetailResponse getExpenseDetail(Long roomId, Long expenseId);
+    ExpenseDetailResponse getExpenseDetail(Long userId, Long roomId, Long expenseId);
 
     void deleteExpense(Long userId, Long roomId, Long expenseId);
 

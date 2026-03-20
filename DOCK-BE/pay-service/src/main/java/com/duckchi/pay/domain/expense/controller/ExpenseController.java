@@ -81,7 +81,7 @@ public class ExpenseController {
             @RequestHeader(USER_ID_HEADER) Long userId,
             @PathVariable Long roomId
     ) {
-        return ApiResponseDto.success(expenseService.getExpensesByRoom(roomId));
+        return ApiResponseDto.success(expenseService.getExpensesByRoom(userId, roomId));
     }
 
     @Operation(summary = "내가 생성한 결제안 목록 조회", description = "특정 모임방에서 로그인 사용자가 생성한 결제안만 최신순으로 조회합니다.")
@@ -100,7 +100,7 @@ public class ExpenseController {
             @PathVariable Long roomId,
             @PathVariable Long expenseId
     ) {
-        return ApiResponseDto.success(expenseService.getExpenseDetail(roomId, expenseId));
+        return ApiResponseDto.success(expenseService.getExpenseDetail(userId, roomId, expenseId));
     }
 
     @Operation(summary = "결제안 삭제", description = "로그인 사용자가 생성한 결제안을 삭제합니다.")

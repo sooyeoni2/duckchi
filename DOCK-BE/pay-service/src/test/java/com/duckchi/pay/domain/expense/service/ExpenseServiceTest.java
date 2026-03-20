@@ -5,6 +5,7 @@ import com.duckchi.pay.domain.expense.dto.external.UserProfileSnapshotResponse;
 import com.duckchi.pay.domain.expense.dto.request.AccountHistoryRequest;
 import com.duckchi.pay.domain.expense.dto.request.ExpenseUpsertRequest;
 import com.duckchi.pay.domain.expense.dto.response.AccountHistoryResponse;
+import com.duckchi.pay.domain.expense.dto.response.ExpenseDetailResponse;
 import com.duckchi.pay.domain.expense.dto.response.ExpenseParticipantOptionResponse;
 import com.duckchi.pay.domain.expense.dto.response.ExpenseResponse;
 import com.duckchi.pay.domain.expense.entity.Expense;
@@ -212,6 +213,16 @@ class ExpenseServiceTest {
     }
 
     @Test
+    @DisplayName("Rejects room expense list lookup by non-member")
+    void getExpensesByRoomForbidden() {
+        when(roomParticipantRepository.existsByRoom_IdAndUserId(ROOM_ID, TEST_USER_ID)).thenReturn(false);
+
+        assertThatThrownBy(() -> expenseService.getExpensesByRoom(TEST_USER_ID, ROOM_ID))
+                .isInstanceOf(CustomException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ROOM_MEMBER_ONLY);
+    }
+
+    @Test
     @DisplayName("Loads only my expenses inside a room")
     void getMyExpensesByRoomSuccess() {
         Expense expense = Expense.builder()
@@ -228,6 +239,7 @@ class ExpenseServiceTest {
                 .createdAt(LocalDateTime.of(2026, 3, 13, 10, 0))
                 .build();
 
+        when(roomParticipantRepository.existsByRoom_IdAndUserId(ROOM_ID, TEST_USER_ID)).thenReturn(true);
         when(expenseRepository.findAllByRoomIdAndPayerUserIdOrderByCreatedAtDesc(ROOM_ID, TEST_USER_ID))
                 .thenReturn(List.of(expense));
 
@@ -237,6 +249,43 @@ class ExpenseServiceTest {
             assertThat(response.getExpenseId()).isEqualTo(10L);
             assertThat(response.getTitle()).isEqualTo("my-expense");
         });
+    }
+
+    @Test
+    @DisplayName("Rejects expense detail lookup by non-member")
+    void getExpenseDetailForbidden() {
+        when(roomParticipantRepository.existsByRoom_IdAndUserId(ROOM_ID, TEST_USER_ID)).thenReturn(false);
+
+        assertThatThrownBy(() -> expenseService.getExpenseDetail(TEST_USER_ID, ROOM_ID, 1L))
+                .isInstanceOf(CustomException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ROOM_MEMBER_ONLY);
+    }
+
+    @Test
+    @DisplayName("Loads expense detail for room member")
+    void getExpenseDetailSuccess() {
+        Expense expense = Expense.builder()
+                .id(1L)
+                .roomId(ROOM_ID)
+                .roomSessionId(2L)
+                .payerUserId(TEST_USER_ID)
+                .payerUserName("payer")
+                .title("detail-expense")
+                .totalAmount(10000)
+                .inputType("MANUAL")
+                .status("PENDING")
+                .paidAt(LocalDateTime.of(2026, 3, 12, 14, 30))
+                .build();
+
+        when(roomParticipantRepository.existsByRoom_IdAndUserId(ROOM_ID, TEST_USER_ID)).thenReturn(true);
+        when(expenseRepository.findById(1L)).thenReturn(Optional.of(expense));
+
+        ExpenseDetailResponse result = expenseService.getExpenseDetail(TEST_USER_ID, ROOM_ID, 1L);
+
+        assertThat(result.getExpenseId()).isEqualTo(1L);
+        assertThat(result.getTitle()).isEqualTo("detail-expense");
+        assertThat(result.getParticipants()).isEmpty();
+        assertThat(result.getItems()).isEmpty();
     }
 
     private UserProfileSnapshotResponse userProfile(Long userId, String userName, String userTag) {
