@@ -63,10 +63,10 @@ export function SettlementCard({ item, onPressTransfer }: SettlementCardProps) {
 const styles = StyleSheet.create({
   cardContainer: {
     backgroundColor: AppColorStyles.surface,
-    borderRadius: 18,
-    paddingTop: 16,
-    paddingBottom: 16,
-    marginBottom: 8,
+    borderRadius: 18 * s,
+    paddingTop: 16 * s,
+    paddingBottom: 16 * s,
+    marginBottom: 8 * s,
     borderWidth: 1,
     borderColor: AppColorStyles.divider,
   },
@@ -81,11 +81,11 @@ const styles = StyleSheet.create({
     ...KBODiaGothicTextStyle.bold({ fontSize: 24 * s, lineHeight: 24 * s }),
   },
   innerCard: {
-    marginHorizontal: 16,
+    marginHorizontal: 16 * s,
     height: 95 * s,
     backgroundColor: AppColorStyles.white,
-    borderRadius: 14,
-    paddingHorizontal: 14,
+    borderRadius: 14 * s,
+    paddingHorizontal: 14 * s,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
   amountSection: {
     alignItems: 'flex-end',
     justifyContent: 'center',
-    gap: 8,
+    gap: 8 * s,
   },
   amountText: {
     ...KBODiaGothicTextStyle.bold({ fontSize: 22 * s, color: AppColorStyles.black, lineHeight: 22 * s }),
@@ -121,10 +121,10 @@ const styles = StyleSheet.create({
     color: AppColorStyles.textHint,
   },
   transferButton: {
-    paddingHorizontal: 12,
-    height: 28,
+    paddingHorizontal: 12 * s,
+    height: 28 * s,
     backgroundColor: AppColorStyles.yellow,
-    borderRadius: 10,
+    borderRadius: 10 * s,
     alignItems: 'center',
     justifyContent: 'center',
   },
