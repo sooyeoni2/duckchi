@@ -74,10 +74,10 @@ class ExpenseServiceTest {
     }
 
     @Test
-    @DisplayName("Uses finance profile from core-service for account history")
+    @DisplayName("코어 서비스 금융 프로필 기준으로 계좌 내역을 조회함")
     void getAccountHistorySuccess() {
         TransactionHistoryResponse.TransactionDetail detail = new TransactionHistoryResponse.TransactionDetail(
-                "1", "20260312", "143000", "D", "withdrawal", "987-654-321", "50000", "100000", "starbucks", ""
+                "1", "20260312", "143000", "D", "withdrawal", "987-654-321", "50000", "100000", "덕치정육식당", ""
         );
         TransactionHistoryResponse.TransactionResultBody body = new TransactionHistoryResponse.TransactionResultBody(
                 "1", List.of(detail)
@@ -101,7 +101,7 @@ class ExpenseServiceTest {
         List<AccountHistoryResponse> result = expenseService.getAccountHistory(TEST_USER_ID, request);
 
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).getTransactionMemo()).isEqualTo("starbucks");
+        assertThat(result.get(0).getTransactionMemo()).isEqualTo("덕치정육식당");
         verify(coreClient).getUserFinanceProfile(TEST_USER_ID);
         verify(financeClient).fetchTransactionHistory(argThat(argument ->
                 "1234567890123456".equals(argument.getAccountNo())
@@ -109,24 +109,24 @@ class ExpenseServiceTest {
     }
 
     @Test
-    @DisplayName("Loads participant options for expense registration")
+    @DisplayName("결제안 등록용 참여자 선택 목록을 조회함")
     void getExpenseParticipantsSuccess() {
         when(roomParticipantRepository.existsByRoom_IdAndUserId(ROOM_ID, TEST_USER_ID)).thenReturn(true);
         when(roomParticipantRepository.findUserIdsByRoomId(ROOM_ID)).thenReturn(List.of(1L, 2L));
         when(coreClient.getUserProfiles(any())).thenReturn(ApiResponseDto.success(List.of(
-                userProfile(1L, "payer", "#1A3"),
-                userProfile(2L, "friend", "#2B4")
+                userProfile(1L, "강산천", "#1A3"),
+                userProfile(2L, "이정민", "#2B4")
         )));
 
         List<ExpenseParticipantOptionResponse> result = expenseService.getExpenseParticipants(TEST_USER_ID, ROOM_ID);
 
         assertThat(result).hasSize(2);
-        assertThat(result.get(0).getUserName()).isEqualTo("payer");
+        assertThat(result.get(0).getUserName()).isEqualTo("강산천");
         assertThat(result.get(1).getUserTag()).isEqualTo("#2B4");
     }
 
     @Test
-    @DisplayName("Registers an expense using snapshots fetched from core-service")
+    @DisplayName("코어 서비스 사용자 스냅샷을 반영해 결제안을 등록함")
     void registerExpenseSuccess() {
         ExpenseUpsertRequest.ParticipantSplitRequest payer = ExpenseUpsertRequest.ParticipantSplitRequest.builder()
                 .userId(TEST_USER_ID)
@@ -135,7 +135,7 @@ class ExpenseServiceTest {
 
         ExpenseUpsertRequest request = ExpenseUpsertRequest.builder()
                 .roomSessionId(1L)
-                .title("expense")
+                .title("강남 저녁 회식")
                 .totalAmount(5000)
                 .inputType("MANUAL")
                 .participants(List.of(payer))
@@ -145,7 +145,7 @@ class ExpenseServiceTest {
         when(roomParticipantRepository.existsByRoom_IdAndUserId(ROOM_ID, TEST_USER_ID)).thenReturn(true);
         when(roomParticipantRepository.findUserIdsByRoomId(ROOM_ID)).thenReturn(List.of(TEST_USER_ID));
         when(coreClient.getUserProfiles(any())).thenReturn(ApiResponseDto.success(List.of(
-                userProfile(TEST_USER_ID, "payer", "#1A3")
+                userProfile(TEST_USER_ID, "강산천", "#1A3")
         )));
         when(expenseRepository.save(any(Expense.class))).thenReturn(Expense.builder().id(100L).build());
 
@@ -154,13 +154,13 @@ class ExpenseServiceTest {
         assertThat(savedId).isEqualTo(100L);
         verify(expenseRepository).save(argThat(expense ->
                 expense.getPayerUserId().equals(TEST_USER_ID)
-                        && expense.getPayerUserName().equals("payer")
+                        && expense.getPayerUserName().equals("강산천")
                         && expense.getParticipants().get(0).getUserTag().equals("#1A3")
         ));
     }
 
     @Test
-    @DisplayName("Rejects deleting an expense created by another user")
+    @DisplayName("다른 사용자가 생성한 결제안은 삭제할 수 없음")
     void deleteExpenseForbidden() {
         Expense existingExpense = Expense.builder()
                 .id(1L)
@@ -177,7 +177,7 @@ class ExpenseServiceTest {
     }
 
     @Test
-    @DisplayName("Updates a pending expense and refreshes snapshots from core-service")
+    @DisplayName("대기 상태 결제안을 수정하고 사용자 스냅샷을 갱신함")
     void updateExpenseSuccess() {
         Expense existingExpense = Expense.builder()
                 .id(1L)
@@ -193,7 +193,7 @@ class ExpenseServiceTest {
                 .build();
         ExpenseUpsertRequest request = ExpenseUpsertRequest.builder()
                 .roomSessionId(1L)
-                .title("updated")
+                .title("수정된 저녁 회식")
                 .totalAmount(5000)
                 .inputType("MANUAL")
                 .participants(List.of(payer))
@@ -204,7 +204,7 @@ class ExpenseServiceTest {
         when(roomParticipantRepository.existsByRoom_IdAndUserId(ROOM_ID, TEST_USER_ID)).thenReturn(true);
         when(roomParticipantRepository.findUserIdsByRoomId(ROOM_ID)).thenReturn(List.of(TEST_USER_ID));
         when(coreClient.getUserProfiles(any())).thenReturn(ApiResponseDto.success(List.of(
-                userProfile(TEST_USER_ID, "payer-updated", "#9Z9")
+                userProfile(TEST_USER_ID, "강산천", "#9Z9")
         )));
 
         expenseService.updateExpense(TEST_USER_ID, ROOM_ID, 1L, request);
@@ -214,7 +214,7 @@ class ExpenseServiceTest {
     }
 
     @Test
-    @DisplayName("Rejects room expense list lookup by non-member")
+    @DisplayName("방 멤버가 아니면 결제안 목록 조회를 거부함")
     void getExpensesByRoomForbidden() {
         when(roomParticipantRepository.existsByRoom_IdAndUserId(ROOM_ID, TEST_USER_ID)).thenReturn(false);
 
@@ -224,15 +224,15 @@ class ExpenseServiceTest {
     }
 
     @Test
-    @DisplayName("Loads only my expenses inside a room")
+    @DisplayName("내가 생성한 결제안 목록만 조회함")
     void getMyExpensesByRoomSuccess() {
         Expense expense = Expense.builder()
                 .id(10L)
                 .roomId(ROOM_ID)
                 .roomSessionId(2L)
                 .payerUserId(TEST_USER_ID)
-                .payerUserName("payer")
-                .title("my-expense")
+                .payerUserName("강산천")
+                .title("내가 만든 저녁 회식")
                 .totalAmount(10000)
                 .inputType("MANUAL")
                 .status("PENDING")
@@ -248,12 +248,12 @@ class ExpenseServiceTest {
 
         assertThat(result).singleElement().satisfies(response -> {
             assertThat(response.getExpenseId()).isEqualTo(10L);
-            assertThat(response.getTitle()).isEqualTo("my-expense");
+            assertThat(response.getTitle()).isEqualTo("내가 만든 저녁 회식");
         });
     }
 
     @Test
-    @DisplayName("Rejects expense detail lookup by non-member")
+    @DisplayName("방 멤버가 아니면 결제안 상세 조회를 거부함")
     void getExpenseDetailForbidden() {
         when(roomParticipantRepository.existsByRoom_IdAndUserId(ROOM_ID, TEST_USER_ID)).thenReturn(false);
 
@@ -263,15 +263,15 @@ class ExpenseServiceTest {
     }
 
     @Test
-    @DisplayName("Loads expense detail for room member")
+    @DisplayName("방 멤버는 결제안 상세를 조회할 수 있음")
     void getExpenseDetailSuccess() {
         Expense expense = Expense.builder()
                 .id(1L)
                 .roomId(ROOM_ID)
                 .roomSessionId(2L)
                 .payerUserId(TEST_USER_ID)
-                .payerUserName("payer")
-                .title("detail-expense")
+                .payerUserName("강산천")
+                .title("상세 조회용 결제안")
                 .totalAmount(10000)
                 .inputType("MANUAL")
                 .status("PENDING")
@@ -284,7 +284,7 @@ class ExpenseServiceTest {
         ExpenseDetailResponse result = expenseService.getExpenseDetail(TEST_USER_ID, ROOM_ID, 1L);
 
         assertThat(result.getExpenseId()).isEqualTo(1L);
-        assertThat(result.getTitle()).isEqualTo("detail-expense");
+        assertThat(result.getTitle()).isEqualTo("상세 조회용 결제안");
         assertThat(result.getParticipants()).isEmpty();
         assertThat(result.getItems()).isEmpty();
     }
@@ -307,9 +307,9 @@ class ExpenseServiceTest {
 
     private Room room(Long roomId) {
         Room room = Room.builder()
-                .name("test-room")
-                .category("ETC")
-                .description("test")
+                .name("테스트 모임")
+                .category("식비")
+                .description("테스트 설명")
                 .isProgress(false)
                 .build();
         ReflectionTestUtils.setField(room, "id", roomId);

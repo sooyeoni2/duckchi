@@ -42,7 +42,7 @@ class ExpenseOcrServiceTest {
     }
 
     @Test
-    @DisplayName("OCR response is converted to expense draft")
+    @DisplayName("OCR 성공 응답을 결제 초안으로 변환함")
     void analyzeReceiptSuccess() {
         MockMultipartFile image = new MockMultipartFile(
                 "image",
@@ -55,17 +55,17 @@ class ExpenseOcrServiceTest {
 
         ExpenseOcrDraftResponse result = expenseOcrService.analyzeReceipt(image);
 
-        assertThat(result.getTitle()).isEqualTo("Sample Store");
+        assertThat(result.getTitle()).isEqualTo("덕치정육식당");
         assertThat(result.getTotalAmount()).isEqualTo(150000);
         assertThat(result.getPaidAt()).isEqualTo(LocalDateTime.of(2026, 3, 18, 14, 15, 0));
         assertThat(result.getItems()).hasSize(2);
-        assertThat(result.getItems().get(0).getName()).isEqualTo("Pasta");
+        assertThat(result.getItems().get(0).getName()).isEqualTo("삼겹살");
         assertThat(result.getItems().get(0).getTotalAmount()).isEqualTo(60000);
         assertThat(result.getItems().get(0).getQuantity()).isEqualTo(2);
     }
 
     @Test
-    @DisplayName("OCR failure response throws analysis error")
+    @DisplayName("OCR 실패 응답이면 분석 실패 예외를 던짐")
     void analyzeReceiptFailure() {
         MockMultipartFile image = new MockMultipartFile(
                 "image",
@@ -92,7 +92,7 @@ class ExpenseOcrServiceTest {
     }
 
     @Test
-    @DisplayName("Raw OCR response is returned as-is")
+    @DisplayName("OCR 원본 응답을 그대로 반환함")
     void analyzeReceiptRawSuccess() {
         MockMultipartFile image = new MockMultipartFile(
                 "image",
@@ -128,7 +128,7 @@ class ExpenseOcrServiceTest {
                         "ok",
                         new OcrResponse.Receipt(
                                 new OcrResponse.Result(
-                                        new OcrResponse.StoreInfo(new OcrResponse.TextInfo("Sample Store")),
+                                        new OcrResponse.StoreInfo(new OcrResponse.TextInfo("덕치정육식당")),
                                         new OcrResponse.PaymentInfo(
                                                 new OcrResponse.TextInfo("2026-03-18"),
                                                 new OcrResponse.TextInfo("14:15"),
@@ -136,12 +136,12 @@ class ExpenseOcrServiceTest {
                                         ),
                                         List.of(new OcrResponse.SubResult(List.of(
                                                 new OcrResponse.Item(
-                                                        new OcrResponse.TextInfo("Pasta"),
+                                                        new OcrResponse.TextInfo("삼겹살"),
                                                         new OcrResponse.TextInfo("2"),
                                                         new OcrResponse.PriceInfo(new OcrResponse.PriceDetails("60000"))
                                                 ),
                                                 new OcrResponse.Item(
-                                                        new OcrResponse.TextInfo("Drink"),
+                                                        new OcrResponse.TextInfo("음료"),
                                                         new OcrResponse.TextInfo("5"),
                                                         new OcrResponse.PriceInfo(new OcrResponse.PriceDetails("15000"))
                                                 )

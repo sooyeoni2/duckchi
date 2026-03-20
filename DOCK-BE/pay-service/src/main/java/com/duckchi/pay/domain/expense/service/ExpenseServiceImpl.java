@@ -46,6 +46,10 @@ import org.springframework.util.StringUtils;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+/**
+ * 결제안 서비스 구현체.
+ * 외부 금융 조회, 방 멤버 검증, 결제안 생성/수정/조회 조합 역할.
+ */
 public class ExpenseServiceImpl implements ExpenseService {
 
     private final FinanceClient financeClient;
@@ -62,6 +66,10 @@ public class ExpenseServiceImpl implements ExpenseService {
 
     @Override
     @Transactional(readOnly = true)
+    /**
+     * 대표 계좌 기준 거래 내역 조회 로직.
+     * 코어 서비스 금융 프로필 검증 후 금융망 조회 수행 역할.
+     */
     public List<AccountHistoryResponse> getAccountHistory(Long userId, AccountHistoryRequest request) {
         UserFinanceProfileResponse financeProfile = getUserFinanceProfile(userId);
 
@@ -118,6 +126,10 @@ public class ExpenseServiceImpl implements ExpenseService {
 
     @Override
     @Transactional(readOnly = true)
+    /**
+     * 결제 참여자 선택 목록 조회 로직.
+     * 방 멤버 검증 후 코어 서비스 사용자 스냅샷 매핑 역할.
+     */
     public List<ExpenseParticipantOptionResponse> getExpenseParticipants(Long userId, Long roomId) {
         validateRoomMember(roomId, userId);
 
@@ -138,6 +150,10 @@ public class ExpenseServiceImpl implements ExpenseService {
 
     @Override
     @Transactional
+    /**
+     * 결제안 등록 로직.
+     * 회차/참여자 정합성 검증 후 참여자 및 품목 하위 엔티티 구성 역할.
+     */
     public Long registerExpense(Long userId, Long roomId, ExpenseUpsertRequest request) {
         validateRegistration(userId, roomId, request);
         Map<Long, UserProfileSnapshotResponse> profileMap = getUserProfiles(collectReferencedUserIds(userId, request));
@@ -160,6 +176,10 @@ public class ExpenseServiceImpl implements ExpenseService {
 
     @Override
     @Transactional(readOnly = true)
+    /**
+     * 모임방 전체 결제안 목록 조회 로직.
+     * 방 멤버만 조회 가능하도록 보호 역할.
+     */
     public List<ExpenseResponse> getExpensesByRoom(Long userId, Long roomId) {
         validateRoomMember(roomId, userId);
         return expenseRepository.findAllByRoomIdOrderByCreatedAtDesc(roomId).stream()
@@ -169,6 +189,10 @@ public class ExpenseServiceImpl implements ExpenseService {
 
     @Override
     @Transactional(readOnly = true)
+    /**
+     * 내가 만든 결제안 목록 조회 로직.
+     * 방 멤버 검증 후 결제자 기준 필터링 역할.
+     */
     public List<ExpenseResponse> getMyExpensesByRoom(Long userId, Long roomId) {
         validateRoomMember(roomId, userId);
         return expenseRepository.findAllByRoomIdAndPayerUserIdOrderByCreatedAtDesc(roomId, userId).stream()
@@ -178,6 +202,10 @@ public class ExpenseServiceImpl implements ExpenseService {
 
     @Override
     @Transactional(readOnly = true)
+    /**
+     * 결제안 상세 조회 로직.
+     * 방 멤버 검증 후 참여자/품목 분담 상세 조립 역할.
+     */
     public ExpenseDetailResponse getExpenseDetail(Long userId, Long roomId, Long expenseId) {
         validateRoomMember(roomId, userId);
         Expense expense = findExpenseWithRoomCheck(roomId, expenseId);
@@ -220,6 +248,10 @@ public class ExpenseServiceImpl implements ExpenseService {
 
     @Override
     @Transactional
+    /**
+     * 결제안 삭제 로직.
+     * 생성자 권한과 수정 가능 상태 확인 역할.
+     */
     public void deleteExpense(Long userId, Long roomId, Long expenseId) {
         Expense expense = findExpenseWithRoomCheck(roomId, expenseId);
         validateEditableByRequester(userId, expense);
@@ -228,6 +260,10 @@ public class ExpenseServiceImpl implements ExpenseService {
 
     @Override
     @Transactional
+    /**
+     * 결제안 수정 로직.
+     * 기존 하위 분담 제거 후 새 요청 기준 재구성 역할.
+     */
     public void updateExpense(Long userId, Long roomId, Long expenseId, ExpenseUpsertRequest request) {
         Expense expense = findExpenseWithRoomCheck(roomId, expenseId);
         validateEditableByRequester(userId, expense);
@@ -258,6 +294,10 @@ public class ExpenseServiceImpl implements ExpenseService {
         }
     }
 
+    /**
+     * 등록/수정 공통 사전 검증 로직.
+     * 회차, 방 멤버, 참여자 합계, 품목 정합성 확인 역할.
+     */
     private void validateRegistration(Long userId, Long roomId, ExpenseUpsertRequest request) {
         validateRoomAndSession(roomId, request);
         validateRoomMember(roomId, userId);
@@ -269,6 +309,10 @@ public class ExpenseServiceImpl implements ExpenseService {
         }
     }
 
+    /**
+     * 모임방과 회차 일치 여부 검증 로직.
+     * 잘못된 회차 식별자 조합 차단 역할.
+     */
     private void validateRoomAndSession(Long roomId, ExpenseUpsertRequest request) {
         RoomSession session = roomSessionRepository.findById(request.getRoomSessionId())
                 .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
@@ -278,6 +322,10 @@ public class ExpenseServiceImpl implements ExpenseService {
         }
     }
 
+    /**
+     * 참여자 분담 정합성 검증 로직.
+     * 분담 합계와 방 멤버 포함 여부 확인 역할.
+     */
     private Set<Long> validateParticipantsIntegrity(Long roomId, ExpenseUpsertRequest request) {
         validateUniqueParticipantIds(request);
 
@@ -302,6 +350,10 @@ public class ExpenseServiceImpl implements ExpenseService {
         return participantUserIds;
     }
 
+    /**
+     * 품목별 분담 정합성 검증 로직.
+     * 품목 합계와 품목 참여자 유효성 확인 역할.
+     */
     private void validateItemsIntegrity(
             Long roomId,
             List<ExpenseUpsertRequest.ItemUpsertRequest> items,
@@ -351,6 +403,10 @@ public class ExpenseServiceImpl implements ExpenseService {
         });
     }
 
+    /**
+     * 방 멤버 권한 검증 로직.
+     * 방 외부 사용자 접근 차단 역할.
+     */
     private void validateRoomMember(Long roomId, Long userId) {
         if (!roomParticipantRepository.existsByRoom_IdAndUserId(roomId, userId)) {
             throw new CustomException(ErrorCode.ROOM_MEMBER_ONLY);
@@ -366,6 +422,10 @@ public class ExpenseServiceImpl implements ExpenseService {
         });
     }
 
+    /**
+     * 참여자/품목 하위 엔티티 조립 로직.
+     * 요청 DTO를 JPA 저장 구조로 변환하는 역할.
+     */
     private void addParticipantsAndItems(
             ExpenseUpsertRequest request,
             Expense expense,
@@ -452,6 +512,10 @@ public class ExpenseServiceImpl implements ExpenseService {
         }
     }
 
+    /**
+     * 코어 서비스 사용자 프로필 배치 조회 로직.
+     * 참여자 이름, 태그, 프로필 이미지 보강 역할.
+     */
     private Map<Long, UserProfileSnapshotResponse> getUserProfiles(List<Long> userIds) {
         List<Long> distinctUserIds = userIds.stream()
                 .filter(Objects::nonNull)
@@ -521,6 +585,10 @@ public class ExpenseServiceImpl implements ExpenseService {
         return profile;
     }
 
+    /**
+     * 결제안 목록 응답 변환 로직.
+     * 화면 표시용 요약 DTO 생성 역할.
+     */
     private ExpenseResponse toExpenseResponse(Expense expense) {
         return ExpenseResponse.builder()
                 .expenseId(expense.getId())
