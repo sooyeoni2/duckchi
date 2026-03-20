@@ -1,12 +1,24 @@
 package com.duckchi.pay.domain.expense.entity;
 
-import jakarta.persistence.*;
-import lombok.*;
-
 import static jakarta.persistence.FetchType.LAZY;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
 /**
- * 품목별 참여자 엔티티.
+ * 품목 참여자 엔티티.
+ * 품목 기준 분담 금액과 수량 보관 역할.
  */
 @Entity
 @Table(name = "expense_item_participants")
@@ -37,7 +49,7 @@ public class ExpenseItemParticipant {
     private String profileImageUrl;
 
     @Column(nullable = false)
-    private Integer quantity; // N빵 시 0 저장함.
+    private Integer quantity;
 
     @Column(nullable = false)
     private Integer splitAmount;

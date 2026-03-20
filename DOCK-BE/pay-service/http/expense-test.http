@@ -77,3 +77,14 @@ X-User-Id: {{myUserId}}
 GET {{pay-url}}/api/v1/rooms/{{roomId}}/expenses/me
 Content-Type: application/json
 X-User-Id: {{myUserId}}
+
+### 7. OCR 원본 응답 확인
+POST {{pay-url}}/api/v1/expenses/ocr/raw
+Content-Type: multipart/form-data; boundary=Boundary
+
+--Boundary
+Content-Disposition: form-data; name="image"; filename="receipt.jpg"
+Content-Type: image/jpeg
+
+< ./receipt.jpg
+--Boundary--
