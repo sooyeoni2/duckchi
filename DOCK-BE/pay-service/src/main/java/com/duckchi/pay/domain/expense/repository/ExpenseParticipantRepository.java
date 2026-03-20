@@ -1,0 +1,25 @@
+package com.duckchi.pay.domain.expense.repository;
+
+import com.duckchi.pay.domain.expense.entity.ExpenseParticipant;
+import jakarta.persistence.LockModeType;
+import java.util.List;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+public interface ExpenseParticipantRepository extends JpaRepository<ExpenseParticipant, Long> {
+
+    /**
+     * SET-01 정산 요청 시점의 금액 정합성을 보장하기 위해,
+     * 참여자 행을 비관적 락으로 조회해 동일 트랜잭션 스냅샷을 고정한다.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            select ep
+            from ExpenseParticipant ep
+            where ep.expense.id in :expenseIds
+            order by ep.expense.id asc, ep.id asc
+            """)
+    List<ExpenseParticipant> findByExpense_IdInForUpdate(@Param("expenseIds") List<Long> expenseIds);
+}
