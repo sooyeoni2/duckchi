@@ -20,6 +20,7 @@ public class NotificationTokenServiceImpl implements NotificationTokenService {
 
     private final UserFcmTokenRepository userFcmTokenRepository;
     private final UserRepository userRepository;
+    private final NotificationMessageService notificationMessageService;
 
     @Override
     @Transactional
@@ -79,6 +80,8 @@ public class NotificationTokenServiceImpl implements NotificationTokenService {
             }
 
             // 응답에는 token 자체는 포함X
+            notificationMessageService.sendNotificationEnabledMessage(request.token());
+
             return new NotificationTokenResponse(
                     savedToken.getId(),
                     savedToken.getDeviceId(),
