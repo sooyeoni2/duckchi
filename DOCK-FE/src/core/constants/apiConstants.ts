@@ -1,6 +1,6 @@
 import Constants from 'expo-constants';
 
-export const API_BASE_URL = 'http://192.168.100.139:8081';
+export const API_BASE_URL = 'http://j14c102.p.ssafy.io';
 export const API_TIMEOUT = 10000;
 
 export const ENDPOINTS = {

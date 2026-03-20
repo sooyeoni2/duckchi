@@ -31,3 +31,6 @@ ocr:
   naver:
     invoke-url: ${OCR_INVOKE_URL}
     secret: ${OCR_SECRET_KEY}
+
+swagger:
+  server-url: http://j14c102.p.ssafy.io

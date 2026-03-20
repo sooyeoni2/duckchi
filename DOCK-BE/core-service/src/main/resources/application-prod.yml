@@ -40,3 +40,6 @@ security:
   pay-password:
     pepper: ${PAY_PASSWORD_PEPPER}
     bcrypt-strength: 12
+
+swagger:
+  server-url: http://j14c102.p.ssafy.io
