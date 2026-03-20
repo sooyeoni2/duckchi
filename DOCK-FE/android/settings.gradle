@@ -25,7 +25,7 @@ extensions.configure(com.facebook.react.ReactSettingsExtension) { ex ->
 }
 expoAutolinking.useExpoModules()
 
-rootProject.name = 'FrontEnd'
+rootProject.name = '덕치'
 
 include ':app'
 includeBuild('../node_modules/@react-native/gradle-plugin')
