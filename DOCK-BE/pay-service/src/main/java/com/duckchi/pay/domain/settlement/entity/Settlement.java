@@ -30,6 +30,7 @@ import lombok.NoArgsConstructor;
 public class Settlement {
 
     private static final String STATUS_PENDING = "PENDING";
+    private static final String STATUS_COMPLETED = "COMPLETED";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -104,5 +105,14 @@ public class Settlement {
                 .payableAmount(payableAmount)
                 .status(STATUS_PENDING)
                 .build();
+    }
+
+    /**
+     * 금융 송금 성공이 확인된 이후에만 정산 상태를 COMPLETED로 전이한다.
+     */
+    public void markCompleted(String bankTransactionId, LocalDateTime completedAt) {
+        this.status = STATUS_COMPLETED;
+        this.bankTransactionId = bankTransactionId;
+        this.completedAt = completedAt;
     }
 }
