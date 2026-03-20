@@ -105,4 +105,25 @@ class NotificationTokenControllerTest {
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.errorCode").value(ErrorCode.NOTIFICATION_TOKEN_CONFLICT.getCode()));
     }
+    @Test
+    void upsertNotificationToken_whenServiceThrowsUnauthorized_returnsMappedErrorResponse() throws Exception {
+        // given: 서비스가 인증 예외를 던진다.
+        UpsertNotificationTokenRequest request = new UpsertNotificationTokenRequest(
+                "device-1",
+                "token-1",
+                true
+        );
+
+        when(notificationTokenService.upsert(eq(1L), any(UpsertNotificationTokenRequest.class)))
+                .thenThrow(new CustomException(ErrorCode.AUTH_UNAUTHORIZED));
+
+        // when & then: 401 에러 응답으로 매핑된다.
+        mockMvc.perform(post("/api/v1/notifications/token")
+                        .header("X-User-Id", "1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.errorCode").value(ErrorCode.AUTH_UNAUTHORIZED.getCode()));
+    }
 }

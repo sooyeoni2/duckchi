@@ -20,7 +20,6 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -49,7 +48,7 @@ class NotificationTokenServiceImplTest {
         UserFcmToken savedToken = createToken(10L, userId, "device-1", "token-1", true, true);
 
         when(userRepository.existsById(userId)).thenReturn(true);
-        when(userFcmTokenRepository.findByUserIdAndDeviceId(userId, "device-1")).thenReturn(Optional.empty());
+        when(userFcmTokenRepository.findByDeviceId("device-1")).thenReturn(Optional.empty());
         when(userFcmTokenRepository.findByFcmToken("token-1")).thenReturn(Optional.empty());
         when(userFcmTokenRepository.save(any(UserFcmToken.class))).thenReturn(savedToken);
 
@@ -79,7 +78,7 @@ class NotificationTokenServiceImplTest {
         UserFcmToken staleToken = createToken(99L, 2L, "device-old", "token-new", true, true);
 
         when(userRepository.existsById(userId)).thenReturn(true);
-        when(userFcmTokenRepository.findByUserIdAndDeviceId(userId, "device-1")).thenReturn(Optional.of(currentToken));
+        when(userFcmTokenRepository.findByDeviceId("device-1")).thenReturn(Optional.of(currentToken));
         when(userFcmTokenRepository.findByFcmToken("token-new")).thenReturn(Optional.of(staleToken));
         when(userFcmTokenRepository.save(currentToken)).thenReturn(currentToken);
 
@@ -101,6 +100,67 @@ class NotificationTokenServiceImplTest {
     }
 
     @Test
+    void upsert_whenSameDeviceBelongsToDifferentUser_remapsOwnershipToCurrentUser() {
+        Long userId = 2L;
+        UpsertNotificationTokenRequest request = new UpsertNotificationTokenRequest(
+                "device-1",
+                "token-same",
+                false
+        );
+        UserFcmToken currentToken = createToken(11L, 1L, "device-1", "token-old", true, false);
+
+        when(userRepository.existsById(userId)).thenReturn(true);
+        when(userFcmTokenRepository.findByDeviceId("device-1")).thenReturn(Optional.of(currentToken));
+        when(userFcmTokenRepository.findByFcmToken("token-same")).thenReturn(Optional.empty());
+        when(userFcmTokenRepository.save(currentToken)).thenReturn(currentToken);
+
+        NotificationTokenResponse response = notificationTokenService.upsert(userId, request);
+
+        assertThat(currentToken.getUserId()).isEqualTo(2L);
+        assertThat(currentToken.getFcmToken()).isEqualTo("token-same");
+        assertThat(currentToken.isNotificationEnabled()).isFalse();
+        assertThat(currentToken.isActive()).isTrue();
+        assertThat(response.id()).isEqualTo(11L);
+        assertThat(response.deviceId()).isEqualTo("device-1");
+        assertThat(response.notificationEnabled()).isFalse();
+        assertThat(response.is_active()).isTrue();
+
+        verify(userFcmTokenRepository, never()).delete(any(UserFcmToken.class));
+        verify(userFcmTokenRepository).save(currentToken);
+    }
+
+    @Test
+    void upsert_whenSameTokenAlreadyBelongsToCurrentDeviceRow_doesNotDeleteCurrentRow() {
+        Long userId = 1L;
+        UpsertNotificationTokenRequest request = new UpsertNotificationTokenRequest(
+                "device-1",
+                "token-same",
+                true
+        );
+        UserFcmToken currentToken = createToken(11L, userId, "device-1", "token-same", false, false);
+
+        when(userRepository.existsById(userId)).thenReturn(true);
+        when(userFcmTokenRepository.findByDeviceId("device-1")).thenReturn(Optional.of(currentToken));
+        when(userFcmTokenRepository.findByFcmToken("token-same")).thenReturn(Optional.of(currentToken));
+        when(userFcmTokenRepository.save(currentToken)).thenReturn(currentToken);
+
+        NotificationTokenResponse response = notificationTokenService.upsert(userId, request);
+
+        assertThat(currentToken.getUserId()).isEqualTo(1L);
+        assertThat(currentToken.getFcmToken()).isEqualTo("token-same");
+        assertThat(currentToken.isNotificationEnabled()).isTrue();
+        assertThat(currentToken.isActive()).isTrue();
+        assertThat(response.id()).isEqualTo(11L);
+        assertThat(response.deviceId()).isEqualTo("device-1");
+        assertThat(response.notificationEnabled()).isTrue();
+        assertThat(response.is_active()).isTrue();
+
+        verify(userFcmTokenRepository, never()).delete(any(UserFcmToken.class));
+        verify(userFcmTokenRepository, never()).flush();
+        verify(userFcmTokenRepository).save(currentToken);
+    }
+
+    @Test
     void upsert_whenUserDoesNotExist_throwsUnauthorizedException() {
         // given: 요청 userId에 해당하는 사용자가 존재하지 않는다.
         Long userId = 1L;
@@ -116,7 +176,7 @@ class NotificationTokenServiceImplTest {
                     assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.AUTH_UNAUTHORIZED);
                 });
 
-        verify(userFcmTokenRepository, never()).findByUserIdAndDeviceId(any(), any());
+        verify(userFcmTokenRepository, never()).findByDeviceId(any());
         verify(userFcmTokenRepository, never()).save(any(UserFcmToken.class));
     }
 
@@ -127,7 +187,7 @@ class NotificationTokenServiceImplTest {
         UpsertNotificationTokenRequest request = new UpsertNotificationTokenRequest("device-1", "token-1", true);
 
         when(userRepository.existsById(userId)).thenReturn(true);
-        when(userFcmTokenRepository.findByUserIdAndDeviceId(userId, "device-1")).thenReturn(Optional.empty());
+        when(userFcmTokenRepository.findByDeviceId("device-1")).thenReturn(Optional.empty());
         when(userFcmTokenRepository.findByFcmToken("token-1")).thenReturn(Optional.empty());
         when(userFcmTokenRepository.save(any(UserFcmToken.class))).thenThrow(new DataIntegrityViolationException("unique"));
 
