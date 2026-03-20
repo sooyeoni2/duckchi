@@ -27,4 +27,9 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long> {
     Optional<Settlement> findByIdForUpdate(@Param("settlementId") Long settlementId);
 
     boolean existsByExpenseIdAndStatus(Long expenseId, String status);
+
+    /**
+     * SET-04 조회 시 UI 표시에 필요한 안정적인 정렬 순서(createdAt -> id)를 보장한다.
+     */
+    List<Settlement> findByExpenseIdOrderByCreatedAtAscIdAsc(Long expenseId);
 }
