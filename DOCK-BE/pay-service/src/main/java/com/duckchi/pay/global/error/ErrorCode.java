@@ -27,6 +27,14 @@ public enum ErrorCode {
     EXPENSE_AMOUNT_MISMATCH("EXPENSE-400-1", HttpStatus.BAD_REQUEST, "결제 총액과 참여자별 분담 금액 합계가 일치하지 않습니다."),
     EXPENSE_CANNOT_MODIFY("EXPENSE-403-1", HttpStatus.FORBIDDEN, "이미 정산 요청된 결제안은 수정하거나 삭제할 수 없습니다."),
 
+    // SETTLEMENT
+    SETTLEMENT_EXPENSE_NOT_FOUND("SET-404-1", HttpStatus.NOT_FOUND, "요청한 결제를 찾을 수 없습니다."),
+    SETTLEMENT_ALREADY_REQUESTED("SET-409-1", HttpStatus.CONFLICT, "이미 정산 요청된 결제가 포함되어 있습니다."),
+    SETTLEMENT_FORBIDDEN_REQUESTER("SET-403-1", HttpStatus.FORBIDDEN, "해당 결제의 요청 권한이 없습니다."),
+    SETTLEMENT_REQUEST_TARGET_EMPTY("SET-409-2", HttpStatus.CONFLICT, "정산 요청 대상이 없습니다."),
+    SETTLEMENT_AMOUNT_MISMATCH("SET-409-3", HttpStatus.CONFLICT, "정산 금액 정합성이 맞지 않습니다."),
+    SETTLEMENT_PARTICIPANTS_INVALID("SET-409-4", HttpStatus.CONFLICT, "정산 참여자 데이터가 유효하지 않습니다."),
+
     //ROOM
     ROOM_SESSION_MISMATCH("ROOM-400-4", HttpStatus.BAD_REQUEST, "해당 회차는 요청된 모임방에 속해있지 않습니다."),
     ROOM_PARTICIPANT_NOT_FOUND("ROOM-404-2", HttpStatus.NOT_FOUND, "모임에 참여하지 않은 사용자가 포함되어 있습니다."),

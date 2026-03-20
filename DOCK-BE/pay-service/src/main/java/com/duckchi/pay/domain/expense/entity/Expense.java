@@ -21,6 +21,8 @@ import java.util.List;
 @EntityListeners(AuditingEntityListener.class)
 public class Expense {
 
+    private static final String STATUS_REQUESTED = "REQUESTED";
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -88,5 +90,12 @@ public class Expense {
         this.totalAmount = totalAmount;
         this.paidAt = paidAt;
         this.receiptImageUrl = receiptImageUrl;
+    }
+
+    /**
+     * 정산 요청 시 결제안 상태를 REQUESTED로 전이함.
+     */
+    public void markRequested() {
+        this.status = STATUS_REQUESTED;
     }
 }
