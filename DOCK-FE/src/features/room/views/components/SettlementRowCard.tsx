@@ -1,5 +1,5 @@
 import React from 'react';
-import { Dimensions, StyleSheet, Text, View } from 'react-native';
+import { Animated, Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AppColorStyles } from '@core/theme/colors';
 import { KBODiaGothicTextStyle } from '@core/theme/typography';
@@ -16,32 +16,60 @@ interface SettlementRowCardProps {
 }
 
 export function SettlementRowCard({ item, isLast }: SettlementRowCardProps) {
+  const scale = React.useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    Animated.spring(scale, {
+      toValue: 0.97,
+      useNativeDriver: true,
+      speed: 50,
+      bounciness: 0,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scale, {
+      toValue: 1,
+      useNativeDriver: true,
+      speed: 30,
+      bounciness: 4,
+    }).start();
+  };
+
   return (
-    <View style={[styles.rowCard, isLast && styles.rowCardLast]}>
-      <View>
-        <Text style={styles.rowTitle}>{item.title}</Text>
-        <Text style={styles.rowSubtitle}>{item.subtitle}</Text>
-      </View>
-      <Text style={styles.rowAmount}>{toWon(item.amount)}</Text>
-    </View>
+    <Animated.View style={[{ transform: [{ scale }] }, isLast && styles.rowCardLast]}>
+      <Pressable
+        style={styles.rowCard}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+      >
+        <View>
+          <Text style={styles.rowTitle}>{item.title}</Text>
+          <Text style={styles.rowSubtitle}>{item.subtitle}</Text>
+        </View>
+        <Text style={styles.rowAmount}>{toWon(item.amount)}</Text>
+      </Pressable>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   rowCard: {
     height: 87 * s,
-    borderRadius: 10 * s,
+    borderRadius: 14,
     backgroundColor: AppColorStyles.white,
     paddingHorizontal: 14 * s,
-    marginBottom: 16 * s,
+    marginBottom: 8,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: AppColorStyles.divider,
     shadowColor: '#676767',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
-    elevation: 1,
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 2,
   },
   rowCardLast: {
     marginBottom: 0,
