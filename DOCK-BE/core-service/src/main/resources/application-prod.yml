@@ -40,3 +40,6 @@ security:
   pay-password:
     pepper: ${PAY_PASSWORD_PEPPER}
     bcrypt-strength: 12
+
+firebase:
+  admin-sdk-path: ${FIREBASE_PROD_ACCOUNT_PATH}
