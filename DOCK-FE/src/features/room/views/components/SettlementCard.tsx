@@ -71,13 +71,13 @@ const styles = StyleSheet.create({
     borderColor: AppColorStyles.divider,
   },
   timeLabel: {
-    marginLeft: 16,
+    marginLeft: 16 * s,
     ...KBODiaGothicTextStyle.medium({ fontSize: 13 * s, color: AppColorStyles.textHint, lineHeight: 13 * s }),
   },
   timeText: {
-    marginTop: 10,
-    marginBottom: 10,
-    marginLeft: 16,
+    marginTop: 10 * s,
+    marginBottom: 10 * s,
+    marginLeft: 16 * s,
     ...KBODiaGothicTextStyle.bold({ fontSize: 24 * s, lineHeight: 24 * s }),
   },
   innerCard: {
@@ -97,13 +97,13 @@ const styles = StyleSheet.create({
   },
   metaSection: {
     flex: 1,
-    marginRight: 10,
+    marginRight: 10 * s,
   },
   storeName: {
     ...KBODiaGothicTextStyle.bold({ fontSize: 20 * s, color: AppColorStyles.black, lineHeight: 24 * s }),
   },
   requesterName: {
-    marginTop: 8,
+    marginTop: 8 * s,
     ...KBODiaGothicTextStyle.medium({ fontSize: 14 * s, color: AppColorStyles.gray3, lineHeight: 14 * s }),
   },
   amountSection: {
@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
     color: AppColorStyles.textHint,
   },
   guideText: {
-    marginTop: 14,
+    marginTop: 14 * s,
     textAlign: 'center',
     ...KBODiaGothicTextStyle.medium({ fontSize: 13 * s, lineHeight: 20 * s }),
   },

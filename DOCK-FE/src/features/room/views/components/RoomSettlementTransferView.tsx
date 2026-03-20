@@ -81,7 +81,13 @@ export function RoomSettlementTransferView({ onBack }: RoomSettlementTransferVie
     return (
       <View style={styles.centered}>
         <Text style={styles.errorMessage}>{state.message}</Text>
-        <FilledButton text="다시 시도" onPress={reload} isFullWidth={false} width={160} height={52} />
+        <FilledButton
+          text="다시 시도"
+          onPress={reload}
+          isFullWidth={false}
+          width={160 * s}
+          height={52 * s}
+        />
       </View>
     );
   }
