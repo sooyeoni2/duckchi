@@ -10,6 +10,7 @@ import com.duckchi.pay.domain.expense.dto.response.ExpenseResponse;
 import com.duckchi.pay.domain.expense.service.ExpenseOcrService;
 import com.duckchi.pay.domain.expense.service.ExpenseService;
 import com.duckchi.pay.global.response.ApiResponseDto;
+import com.fasterxml.jackson.databind.JsonNode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -45,6 +46,14 @@ public class ExpenseController {
             @RequestPart("image") MultipartFile image
     ) {
         return ApiResponseDto.success(expenseOcrService.analyzeReceipt(image));
+    }
+
+    @Operation(summary = "개발용 OCR 원본 응답 조회", description = "영수증 이미지를 OCR에 전달한 뒤 네이버 OCR 원본 JSON 응답을 그대로 반환합니다.")
+    @PostMapping(value = "/expenses/ocr/raw", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponseDto<JsonNode> analyzeReceiptRaw(
+            @RequestPart("image") MultipartFile image
+    ) {
+        return ApiResponseDto.success(expenseOcrService.analyzeReceiptRaw(image));
     }
 
     @Operation(summary = "계좌 거래 내역 조회", description = "로그인 사용자의 대표 계좌 기준으로 최근 거래 내역을 조회합니다.")

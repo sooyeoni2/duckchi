@@ -1,10 +1,18 @@
 package com.duckchi.pay.domain.expense.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
+
 import com.duckchi.pay.domain.expense.dto.response.ExpenseOcrDraftResponse;
 import com.duckchi.pay.global.error.CustomException;
 import com.duckchi.pay.global.error.ErrorCode;
 import com.duckchi.pay.infra.ocr.OcrClient;
 import com.duckchi.pay.infra.ocr.dto.OcrResponse;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,14 +25,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.when;
-
 @ExtendWith(MockitoExtension.class)
 class ExpenseOcrServiceTest {
+
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @InjectMocks
     private ExpenseOcrServiceImpl expenseOcrService;
@@ -38,7 +42,7 @@ class ExpenseOcrServiceTest {
     }
 
     @Test
-    @DisplayName("영수증 OCR 분석 성공 시 결제 초안을 반환한다")
+    @DisplayName("OCR response is converted to expense draft")
     void analyzeReceiptSuccess() {
         MockMultipartFile image = new MockMultipartFile(
                 "image",
@@ -51,17 +55,17 @@ class ExpenseOcrServiceTest {
 
         ExpenseOcrDraftResponse result = expenseOcrService.analyzeReceipt(image);
 
-        assertThat(result.getTitle()).isEqualTo("덕치식당");
+        assertThat(result.getTitle()).isEqualTo("Sample Store");
         assertThat(result.getTotalAmount()).isEqualTo(150000);
         assertThat(result.getPaidAt()).isEqualTo(LocalDateTime.of(2026, 3, 18, 14, 15, 0));
         assertThat(result.getItems()).hasSize(2);
-        assertThat(result.getItems().get(0).getName()).isEqualTo("삼겹살");
+        assertThat(result.getItems().get(0).getName()).isEqualTo("Pasta");
         assertThat(result.getItems().get(0).getTotalAmount()).isEqualTo(60000);
         assertThat(result.getItems().get(0).getQuantity()).isEqualTo(2);
     }
 
     @Test
-    @DisplayName("OCR 인식 결과가 실패면 예외를 던진다")
+    @DisplayName("OCR failure response throws analysis error")
     void analyzeReceiptFailure() {
         MockMultipartFile image = new MockMultipartFile(
                 "image",
@@ -87,6 +91,34 @@ class ExpenseOcrServiceTest {
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.OCR_ANALYSIS_FAILED);
     }
 
+    @Test
+    @DisplayName("Raw OCR response is returned as-is")
+    void analyzeReceiptRawSuccess() {
+        MockMultipartFile image = new MockMultipartFile(
+                "image",
+                "receipt.jpg",
+                "image/jpeg",
+                "sample".getBytes()
+        );
+
+        JsonNode rawResponse = OBJECT_MAPPER.createObjectNode();
+        ((com.fasterxml.jackson.databind.node.ObjectNode) rawResponse).put("version", "V2");
+        ((com.fasterxml.jackson.databind.node.ObjectNode) rawResponse)
+                .putArray("images")
+                .addObject()
+                .put("inferResult", "SUCCESS")
+                .put("message", "SUCCESS")
+                .put("name", "receipt_test");
+
+        when(ocrClient.callReceiptOcrRaw(eq("test-secret"), any())).thenReturn(rawResponse);
+
+        JsonNode result = expenseOcrService.analyzeReceiptRaw(image);
+
+        assertThat(result.get("version").asText()).isEqualTo("V2");
+        assertThat(result.get("images")).hasSize(1);
+        assertThat(result.get("images").get(0).get("inferResult").asText()).isEqualTo("SUCCESS");
+    }
+
     private OcrResponse successResponse() {
         return OcrResponse.builder()
                 .images(List.of(new OcrResponse.ImageResponse(
@@ -96,24 +128,25 @@ class ExpenseOcrServiceTest {
                         "ok",
                         new OcrResponse.Receipt(
                                 new OcrResponse.Result(
-                                        new OcrResponse.StoreInfo(new OcrResponse.TextInfo("덕치식당")),
+                                        new OcrResponse.StoreInfo(new OcrResponse.TextInfo("Sample Store")),
                                         new OcrResponse.PaymentInfo(
                                                 new OcrResponse.TextInfo("2026-03-18"),
                                                 new OcrResponse.TextInfo("14:15"),
-                                                new OcrResponse.PriceInfo(new OcrResponse.PriceDetails("150000"))
+                                                null
                                         ),
                                         List.of(new OcrResponse.SubResult(List.of(
                                                 new OcrResponse.Item(
-                                                        new OcrResponse.TextInfo("삼겹살"),
+                                                        new OcrResponse.TextInfo("Pasta"),
                                                         new OcrResponse.TextInfo("2"),
                                                         new OcrResponse.PriceInfo(new OcrResponse.PriceDetails("60000"))
                                                 ),
                                                 new OcrResponse.Item(
-                                                        new OcrResponse.TextInfo("소주"),
+                                                        new OcrResponse.TextInfo("Drink"),
                                                         new OcrResponse.TextInfo("5"),
                                                         new OcrResponse.PriceInfo(new OcrResponse.PriceDetails("15000"))
                                                 )
-                                        )))
+                                        ))),
+                                        new OcrResponse.PriceInfo(new OcrResponse.PriceDetails("150000"))
                                 )
                         )
                 )))

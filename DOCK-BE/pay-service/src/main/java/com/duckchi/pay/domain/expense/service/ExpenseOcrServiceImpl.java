@@ -6,6 +6,7 @@ import com.duckchi.pay.global.error.ErrorCode;
 import com.duckchi.pay.infra.ocr.OcrClient;
 import com.duckchi.pay.infra.ocr.dto.OcrRequest;
 import com.duckchi.pay.infra.ocr.dto.OcrResponse;
+import com.fasterxml.jackson.databind.JsonNode;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Base64;
@@ -45,6 +46,20 @@ public class ExpenseOcrServiceImpl implements ExpenseOcrService {
         }
 
         return toDraftResponse(response);
+    }
+
+    @Override
+    public JsonNode analyzeReceiptRaw(MultipartFile image) {
+        validateImage(image);
+
+        try {
+            return ocrClient.callReceiptOcrRaw(ocrSecret, buildRequest(image));
+        } catch (CustomException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("OCR 원본 응답 조회에 실패했습니다.", e);
+            throw new CustomException(ErrorCode.OCR_API_ERROR);
+        }
     }
 
     private void validateImage(MultipartFile image) {
@@ -138,8 +153,9 @@ public class ExpenseOcrServiceImpl implements ExpenseOcrService {
             OcrResponse.Result result,
             List<ExpenseOcrDraftResponse.OcrItemResponse> items
     ) {
-        Integer totalFromReceipt = null;
-        if (result.getPaymentInfo() != null) {
+        Integer totalFromReceipt = parsePositiveInt(extractPriceText(result.getTotalPrice()));
+
+        if (totalFromReceipt == null && result.getPaymentInfo() != null) {
             totalFromReceipt = parsePositiveInt(extractPriceText(result.getPaymentInfo().getTotalPrice()));
         }
 
