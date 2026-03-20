@@ -52,7 +52,8 @@ public class UserFcmToken {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    public void updateRegistration(String fcmToken, boolean notificationEnabled) {
+    public void updateRegistration(Long userId, String fcmToken, boolean notificationEnabled) {
+        this.userId = userId;
         this.fcmToken = fcmToken;
         this.notificationEnabled = notificationEnabled;
         this.isActive = true;

@@ -33,10 +33,10 @@ public class NotificationTokenServiceImpl implements NotificationTokenService {
         boolean notificationEnabled = request.notificationEnabled() == null || request.notificationEnabled();
 
         try {
-            // upsert의 기준 키는 user_id + device_id
-            // "같은 사용자의 같은 앱 설치 인스턴스"를 하나의 row로 봄
+            // upsert의 기준 키는 device_id
+            // "같은 앱 설치 인스턴스"를 하나의 row로 보고, 현재 로그인 사용자 기준으로 재귀속
             // 기존 row가 있으면 update, 없으면 insert 방향으로 진행
-            UserFcmToken currentToken = userFcmTokenRepository.findByUserIdAndDeviceId(userId, request.deviceId())
+            UserFcmToken currentToken = userFcmTokenRepository.findByDeviceId(request.deviceId())
                     .orElse(null);
 
             // 같은 token이 다른 row에 이미 연결되어 있는지 먼저 확인
@@ -59,12 +59,13 @@ public class NotificationTokenServiceImpl implements NotificationTokenService {
 
             UserFcmToken savedToken;
 
-            if (currentToken != null) { //(user_id + device_id) 조합 이미 존재하는 경우
-                // 같은 user_id + device_id 조합이 이미 존재하면 새 row를 만들지 않고 현재 row를 갱신
+            if (currentToken != null) { //(device_id) row가 이미 존재하는 경우
+                // 같은 device_id row가 이미 존재하면 새 row를 만들지 않고 현재 row를 갱신
+                // 같은 기기에서 다른 사용자가 로그인한 경우도 현재 사용자 기준으로 user_id를 재설정
                 // FCM token은 재발급될 수 있으므로 최신 token으로 덮어씀
-                currentToken.updateRegistration(request.token(), notificationEnabled);
+                currentToken.updateRegistration(userId, request.token(), notificationEnabled);
                 savedToken = userFcmTokenRepository.save(currentToken);
-            } else { //(user_id + device_id) 조합이면 새로 등록
+            } else { //(device_id) row가 없으면 새로 등록
                 // 기존 row가 없으면 최초 등록으로 판단하고 새 row를 생성한다.
                 savedToken = userFcmTokenRepository.save(
                         UserFcmToken.builder()
