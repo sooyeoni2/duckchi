@@ -3,6 +3,7 @@ package com.duckchi.pay.domain.settlement.controller;
 import com.duckchi.pay.domain.settlement.dto.request.SettlementManualTransferRequest;
 import com.duckchi.pay.domain.settlement.dto.request.SettlementRequestCreateRequest;
 import com.duckchi.pay.domain.settlement.dto.request.SettlementTransferRequest;
+import com.duckchi.pay.domain.settlement.dto.response.PendingSettlementsResponse;
 import com.duckchi.pay.domain.settlement.dto.response.SettlementManualTransferResponse;
 import com.duckchi.pay.domain.settlement.service.SettlementService;
 import com.duckchi.pay.global.error.CustomException;
@@ -14,10 +15,12 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -61,6 +64,17 @@ public class SettlementController {
         Long currentUserId = resolveRequiredUserId(userIdHeader);
         SettlementManualTransferResponse response = settlementService.manualTransferSettlement(currentUserId, request);
         return ResponseEntity.ok(ApiResponseDto.success(response, "총무 확인으로 정산이 완료 처리되었습니다."));
+    }
+
+    @GetMapping("/pending-settlements")
+    @Operation(summary = "SET-04: 총무 확인용 대기 정산 목록 조회 API")
+    public ResponseEntity<ApiResponseDto<PendingSettlementsResponse>> getPendingSettlements(
+            @RequestHeader(value = USER_ID_HEADER, required = false) String userIdHeader,
+            @RequestParam("expenseId") Long expenseId
+    ) {
+        Long currentUserId = resolveRequiredUserId(userIdHeader);
+        PendingSettlementsResponse response = settlementService.getPendingSettlements(currentUserId, expenseId);
+        return ResponseEntity.ok(ApiResponseDto.success(response));
     }
 
     private Long resolveRequiredUserId(String userIdHeader) {
