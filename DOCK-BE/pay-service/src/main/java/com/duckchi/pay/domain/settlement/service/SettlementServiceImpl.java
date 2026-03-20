@@ -7,12 +7,15 @@ import com.duckchi.pay.domain.expense.repository.ExpenseRepository;
 import com.duckchi.pay.domain.room.entity.Room;
 import com.duckchi.pay.domain.room.repository.RoomParticipantRepository;
 import com.duckchi.pay.domain.room.repository.RoomRepository;
+import com.duckchi.pay.domain.settlement.dto.request.SettlementManualTransferRequest;
 import com.duckchi.pay.domain.settlement.dto.request.SettlementRequestCreateRequest;
 import com.duckchi.pay.domain.settlement.dto.request.SettlementTransferRequest;
+import com.duckchi.pay.domain.settlement.dto.response.SettlementManualTransferResponse;
 import com.duckchi.pay.domain.settlement.entity.Settlement;
 import com.duckchi.pay.domain.settlement.repository.SettlementRepository;
 import com.duckchi.pay.global.error.CustomException;
 import com.duckchi.pay.global.error.ErrorCode;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -35,6 +38,7 @@ public class SettlementServiceImpl implements SettlementService {
 
     private static final String EXPENSE_STATUS_PENDING = "PENDING";
     private static final String SETTLEMENT_PENDING_STATUS = "PENDING";
+    private static final String MANUAL_TRANSACTION_PREFIX = "MANUAL-";
     private static final int TRANSFER_BATCH_MAX_SIZE = 30;
     private static final String UK_SETTLEMENTS_EXPENSE_PAYER = "UK_SETTLEMENTS_EXPENSE_PAYER";
     private static final String UK_SETTLEMENTS_BANK_TRANSACTION_ID = "UK_SETTLEMENTS_BANK_TRANSACTION_ID";
@@ -130,6 +134,53 @@ public class SettlementServiceImpl implements SettlementService {
             throw new CustomException(ErrorCode.SETTLEMENT_TRANSFER_PARTIAL, failedSettlementIds);
         }
     }
+    @Override
+    @Transactional
+    public SettlementManualTransferResponse manualTransferSettlement(
+            Long currentUserId,
+            SettlementManualTransferRequest request
+    ) {
+        if (currentUserId == null) {
+            throw new CustomException(ErrorCode.COMMON_UNAUTHORIZED);
+        }
+
+        if (request == null || request.settlementId() == null || request.settlementId() <= 0L) {
+            throw new CustomException(ErrorCode.COMMON_INVALID_INPUT);
+        }
+
+        Settlement settlement = settlementRepository.findByIdForUpdate(request.settlementId())
+                .orElseThrow(() -> new CustomException(ErrorCode.SETTLEMENT_NOT_FOUND));
+
+        // 수기 완료는 총무(정산 요청자)만 확정할 수 있다.
+        if (!currentUserId.equals(settlement.getRequesterUserId())) {
+            throw new CustomException(ErrorCode.SETTLEMENT_FORBIDDEN_REQUESTER);
+        }
+
+        // 동일 정산의 중복 완료 처리를 차단해 상태 정합성을 보장한다.
+        if (!SETTLEMENT_PENDING_STATUS.equals(settlement.getStatus())) {
+            throw new CustomException(ErrorCode.SETTLEMENT_ALREADY_COMPLETED);
+        }
+
+        LocalDateTime completedAt = LocalDateTime.now();
+        settlement.markCompleted(MANUAL_TRANSACTION_PREFIX + settlement.getId(), completedAt);
+
+        Expense expense = expenseRepository.findByIdForUpdate(settlement.getExpenseId())
+                .orElseThrow(() -> new CustomException(ErrorCode.SETTLEMENT_EXPENSE_NOT_FOUND));
+
+        // 동일 결제의 미완료 정산이 0건이 되는 시점에만 결제 상태를 SETTLED로 전이한다.
+        if (!settlementRepository.existsByExpenseIdAndStatus(expense.getId(), SETTLEMENT_PENDING_STATUS)) {
+            expense.markSettled();
+        }
+
+        return new SettlementManualTransferResponse(
+                settlement.getId(),
+                settlement.getExpenseId(),
+                settlement.getStatus(),
+                expense.getStatus(),
+                completedAt
+        );
+    }
+
 
     private void validateTransferBatchSize(List<Long> settlementIds) {
         if (settlementIds.size() > TRANSFER_BATCH_MAX_SIZE) {
