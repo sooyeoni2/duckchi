@@ -13,7 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { RootStackParamList } from '@core/navigation/types';
 import { AppColorStyles } from '@core/theme/colors';
-import { KBODiaGothicTextStyle } from '@core/theme/typography';
+import { KBODiaGothicTextStyle, PretendardTextStyle } from '@core/theme/typography';
 import { CustomAppBar } from '@shared/components/app_bar/CustomAppBar';
 import { FilledButton } from '@shared/components/buttons/FilledButton';
 
@@ -156,20 +156,23 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 21 * s,
-    paddingTop: 24 * s,
-    paddingBottom: 24 * s,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 32,
   },
   emptyBox: {
-    marginTop: 28 * s,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    backgroundColor: AppColorStyles.gray5,
     alignItems: 'center',
     justifyContent: 'center',
   },
   emptyText: {
-    ...KBODiaGothicTextStyle.medium({ fontSize: 18 * s, color: AppColorStyles.gray2 }),
+    ...PretendardTextStyle.medium({ fontSize: 13, color: AppColorStyles.textSecondary }),
   },
   footer: {
-    marginTop: 30 * s,
-    paddingBottom: 12 * s,
+    marginTop: 20,
+    paddingBottom: 12,
   },
 });

@@ -1,11 +1,11 @@
 import { useCallback } from 'react';
 import { create } from 'zustand';
+import { useProfileViewModel } from '../../profile/viewmodels/useProfileViewModel';
 
 interface AutoTransferAgreeState {
   isAgreed: boolean;
   roomTitle: string;
   agreedDate: string | null;
-  transferLimit: number;
   isConfirmModalVisible: boolean;
 }
 
@@ -18,7 +18,6 @@ const initialState: AutoTransferAgreeState = {
   isAgreed: false,
   roomTitle: 'C102 회식',
   agreedDate: null,
-  transferLimit: 50000,
   isConfirmModalVisible: false,
 };
 
@@ -29,6 +28,8 @@ const useAutoTransferAgreeStore = create<AutoTransferAgreeStore>((set) => ({
 
 export const useAutoTransferAgreeViewModel = () => {
   const { state, updateState } = useAutoTransferAgreeStore();
+  const { state: profileState } = useProfileViewModel();
+  const transferLimit = profileState.status === 'loaded' ? (profileState.profile.transferLimit ?? 0) : 0;
 
   const openConfirmModal = useCallback(() => {
     updateState({ isConfirmModalVisible: true });
@@ -49,5 +50,5 @@ export const useAutoTransferAgreeViewModel = () => {
     }
   }, [state.isAgreed, updateState]);
 
-  return { state, openConfirmModal, closeConfirmModal, toggleAgreement };
+  return { state: { ...state, transferLimit }, openConfirmModal, closeConfirmModal, toggleAgreement };
 };
