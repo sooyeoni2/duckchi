@@ -24,8 +24,12 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     private static final String USER_ID_HEADER = "X-User-Id";
     private static final List<String> PUBLIC_PATH_PREFIXES = List.of(
             "/api/v1/auth/",
-            "/swagger-ui",
-            "/v3/api-docs",
+            "/api/auth/swagger-ui",
+            "/api/auth/v3/api-docs",
+            "/api/payment/swagger-ui",
+            "/api/payment/v3/api-docs",
+            "/api/analytics/swagger-ui",
+            "/api/analytics/v3/api-docs",
             "/actuator"
     );
 

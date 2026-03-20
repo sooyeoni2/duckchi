@@ -15,16 +15,16 @@ spring:
         - id: core-service-swagger-ui
           uri: lb://core-service
           predicates:
-            - Path=/swagger-ui/core-service/**
+            - Path=/api/auth/swagger-ui/**
           filters:
-            - RewritePath=/swagger-ui/core-service(?<segment>/?.*), /swagger-ui${segment}
+            - RewritePath=/api/auth/swagger-ui(?<segment>/?.*), /swagger-ui${segment}
 
         - id: core-service-api-docs
           uri: lb://core-service
           predicates:
-            - Path=/v3/api-docs/core-service/**
+            - Path=/api/auth/v3/api-docs/**
           filters:
-            - RewritePath=/v3/api-docs/core-service(?<segment>/?.*), /v3/api-docs${segment}
+            - RewritePath=/api/auth/v3/api-docs(?<segment>/?.*), /v3/api-docs${segment}
 
         - id: pay-service
           uri: lb://pay-service
@@ -34,16 +34,16 @@ spring:
         - id: pay-service-swagger-ui
           uri: lb://pay-service
           predicates:
-            - Path=/swagger-ui/pay-service/**
+            - Path=/api/payment/swagger-ui/**
           filters:
-            - RewritePath=/swagger-ui/pay-service(?<segment>/?.*), /swagger-ui${segment}
+            - RewritePath=/api/payment/swagger-ui(?<segment>/?.*), /swagger-ui${segment}
 
         - id: pay-service-api-docs
           uri: lb://pay-service
           predicates:
-            - Path=/v3/api-docs/pay-service/**
+            - Path=/api/payment/v3/api-docs/**
           filters:
-            - RewritePath=/v3/api-docs/pay-service(?<segment>/?.*), /v3/api-docs${segment}
+            - RewritePath=/api/payment/v3/api-docs(?<segment>/?.*), /v3/api-docs${segment}
 
         - id: insight-service
           uri: lb://insight-service
@@ -53,16 +53,16 @@ spring:
         - id: insight-service-swagger-ui
           uri: lb://insight-service
           predicates:
-            - Path=/swagger-ui/insight-service/**
+            - Path=/api/analytics/swagger-ui/**
           filters:
-            - RewritePath=/swagger-ui/insight-service(?<segment>/?.*), /swagger-ui${segment}
+            - RewritePath=/api/analytics/swagger-ui(?<segment>/?.*), /swagger-ui${segment}
 
         - id: insight-service-api-docs
           uri: lb://insight-service
           predicates:
-            - Path=/v3/api-docs/insight-service/**
+            - Path=/api/analytics/v3/api-docs/**
           filters:
-            - RewritePath=/v3/api-docs/insight-service(?<segment>/?.*), /v3/api-docs${segment}
+            - RewritePath=/api/analytics/v3/api-docs(?<segment>/?.*), /v3/api-docs${segment}
 
 jwt:
   secret: ${JWT_SECRET}

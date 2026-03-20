@@ -34,3 +34,8 @@ ocr:
 
 swagger:
   server-url: http://j14c102.p.ssafy.io
+
+springdoc:
+  swagger-ui:
+    config-url: /api/payment/v3/api-docs/swagger-config
+    url: /api/payment/v3/api-docs
