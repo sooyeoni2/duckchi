@@ -19,6 +19,7 @@ import { KBODiaGothicTextStyle } from '../../../core/theme/typography';
 import { CustomAppBar } from '../../../shared/components/app_bar/CustomAppBar';
 import { usePopOnTabBlur } from '../../../shared/hooks/usePopOnTabBlur';
 import { useProfileViewModel } from '../viewmodels/useProfileViewModel';
+import { updateNotification } from '../models/notificationService';
 
 type Nav = CompositeNavigationProp<
   NativeStackNavigationProp<ProfileStackParamList>,
@@ -61,6 +62,11 @@ function RowDivider() {
 export function SettingsScreen() {
   const navigation = useNavigation<Nav>();
   const [notificationEnabled, setNotificationEnabled] = useState(true);
+
+  const handleNotificationToggle = async (value: boolean) => {
+    setNotificationEnabled(value);
+    await updateNotification(value);
+  };
   const { state } = useProfileViewModel();
   const hasAccount = state.status === 'loaded' && state.profile.accounts.length > 0;
 
@@ -105,7 +111,7 @@ export function SettingsScreen() {
             right={
               <Switch
                 value={notificationEnabled}
-                onValueChange={setNotificationEnabled}
+                onValueChange={handleNotificationToggle}
                 trackColor={{ false: AppColorStyles.gray3, true: AppColorStyles.gray1 }}
                 thumbColor={AppColorStyles.white}
                 style={{ alignSelf: 'center' }}
