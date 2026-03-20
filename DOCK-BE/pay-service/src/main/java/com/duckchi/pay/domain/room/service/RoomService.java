@@ -18,6 +18,11 @@ public interface RoomService {
             AutoDebitConsentStatus status
     );
 
+    UpdateAutoDebitConsentResponse toggleAutoDebitConsent(
+            Long roomId,
+            Long currentUserId
+    );
+
     List<RoomListResponse> getRoomLists(Long currentUserId, Boolean isProgress);
 
     void updateRoomInfo(Long roomId, Long currentUserId, UpdateRoomRequest request);
@@ -25,4 +30,8 @@ public interface RoomService {
     void leaveRoom(Long roomId, Long currentUserId);
 
     void deleteRoom(Long roomId, Long currentUserId);
+
+    void startRoom(Long roomId, Long currentUserId, com.duckchi.pay.domain.room.dto.request.StartRoomRequest request);
+
+    void endRoom(Long roomId, Long currentUserId);
 }

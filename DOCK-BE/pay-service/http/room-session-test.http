@@ -1,0 +1,61 @@
+### [선행 작업] ROOM-01 모임 방 생성 (테스트용)
+POST http://localhost:8082/api/v1/rooms
+Content-Type: application/json
+X-User-Id: 7
+
+{
+  "name": "세션 테스트용 모임방",
+  "category": "기타",
+  "description": "ROOM-17/18 테스트를 위해 생성된 방입니다."
+}
+
+> {%
+    client.global.set("roomId", response.body.data.roomId);
+%}
+
+### [ROOM-17] 모임 시작 (성공)
+# 카테고리와 상세 내용을 업데이트하며 모임을 시작합니다.
+POST http://localhost:8082/api/v1/rooms/{{roomId}}/start
+Content-Type: application/json
+X-User-Id: 7
+
+{
+  "category": "여행",
+  "description": "제주도 졸업 여행 시작!"
+}
+
+### [ROOM-05] 모임 정보 수정 시도 (실패 - 진행 중 상태)
+# isProgress=true 일 때는 수정이 불가해야 합니다. (409)
+PATCH http://localhost:8082/api/v1/rooms/{{roomId}}
+Content-Type: application/json
+X-User-Id: 7
+
+{
+  "name": "이름 수정 시도",
+  "category": "수정시도"
+}
+
+### [ROOM-06] 모임 방 나가기 시도 (실패 - 진행 중 상태)
+# "모임이 진행 중에는 나갈 수 없습니다." 메시지와 함께 409가 발생해야 합니다.
+DELETE http://localhost:8082/api/v1/rooms/{{roomId}}/members/left
+X-User-Id: 8
+
+### [ROOM-07] 모임 방 삭제 시도 (실패 - 진행 중 상태)
+# "모임이 진행 중에는 삭제할 수 없습니다." 메시지와 함께 409가 발생해야 합니다.
+DELETE http://localhost:8082/api/v1/rooms/{{roomId}}/delete
+X-User-Id: 7
+
+### [ROOM-18] 모임 종료 (성공)
+# 정산 요청 중(REQUESTED)인 결제가 없을 때 종료 가능합니다.
+POST http://localhost:8082/api/v1/rooms/{{roomId}}/end
+X-User-Id: 7
+
+### [ROOM-06] 모임 방 나가기 (종료 후 성공)
+# 모임이 종료(isProgress=false)된 후에는 나갈 수 있습니다.
+DELETE http://localhost:8082/api/v1/rooms/{{roomId}}/members/left
+X-User-Id: 8
+
+### [ROOM-07] 모임 방 삭제 (종료 후 성공)
+# 모임이 종료(isProgress=false)된 후에는 삭제할 수 있습니다.
+DELETE http://localhost:8082/api/v1/rooms/{{roomId}}/delete
+X-User-Id: 7
