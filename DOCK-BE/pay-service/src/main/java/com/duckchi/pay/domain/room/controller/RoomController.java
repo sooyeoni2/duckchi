@@ -41,7 +41,7 @@ public class RoomController {
     private final RoomService roomService;
 
     @PostMapping
-    @Operation(summary = "ROOM-01 Create room")
+    @Operation(summary = "ROOM-01: 모임 방 생성 API ")
     public ResponseEntity<ApiResponseDto<CreateRoomResponse>> createRoom(
             @RequestHeader(value = USER_ID_HEADER, required = false) String userIdHeader,
             @Valid @RequestBody CreateRoomRequest request
@@ -52,7 +52,7 @@ public class RoomController {
     }
 
     @PatchMapping("/{roomId}/auto-debit/consents")
-    @Operation(summary = "ROOM-04 Update auto debit consent")
+    @Operation(summary = "ROOM-04: 자동이체 동의/거절 API ")
     public ResponseEntity<ApiResponseDto<UpdateAutoDebitConsentResponse>> updateAutoDebitConsent(
             @PathVariable Long roomId,
             @RequestParam AutoDebitConsentStatus status,

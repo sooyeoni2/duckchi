@@ -32,8 +32,8 @@ export const DUCKCHI_NAV_ITEMS: NavigationItem[] = [
     activeIcon: <MaterialDesignIcons name="home" size={26} color={AppColorStyles.black} />,
   },
   {
-    icon: <MaterialDesignIcons name="credit-card-outline" size={26} color={AppColorStyles.gray2} />,
-    activeIcon: <MaterialDesignIcons name="credit-card" size={26} color={AppColorStyles.black} />,
+    icon: <MaterialDesignIcons name="account-group-outline" size={26} color={AppColorStyles.gray2} />,
+    activeIcon: <MaterialDesignIcons name="account-group" size={26} color={AppColorStyles.black} />,
   },
   {
     icon: <MaterialDesignIcons name="chart-bar" size={26} color={AppColorStyles.gray2} />,

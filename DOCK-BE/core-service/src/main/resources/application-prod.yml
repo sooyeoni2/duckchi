@@ -35,3 +35,8 @@ finance:
   api:
     base-url: https://finopenapi.ssafy.io
     key: ${FINANCE_API_KEY}
+
+security:
+  pay-password:
+    pepper: ${PAY_PASSWORD_PEPPER}
+    bcrypt-strength: 12

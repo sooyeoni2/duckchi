@@ -8,7 +8,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.duckchi.pay.domain.expenses.repository.ExpenseRepository;
+import com.duckchi.pay.domain.expense.repository.ExpenseRepository;
 import com.duckchi.pay.domain.room.dto.request.CreateRoomRequest;
 import com.duckchi.pay.domain.room.dto.request.UpdateRoomRequest;
 import com.duckchi.pay.domain.room.dto.response.CreateRoomResponse;
@@ -51,12 +51,12 @@ class RoomServiceImplTest {
         CreateRoomRequest request = new CreateRoomRequest();
         ReflectionTestUtils.setField(request, "name", "제주여행");
         ReflectionTestUtils.setField(request, "category", null);
-        ReflectionTestUtils.setField(request, "description", "C102뒷풀이");
+        ReflectionTestUtils.setField(request, "description", "C102 룸");
 
         Room persisted = Room.builder()
                 .name("제주여행")
                 .category("기타")
-                .description("C102뒷풀이")
+                .description("C102 룸")
                 .isProgress(false)
                 .build();
         ReflectionTestUtils.setField(persisted, "id", 101L);

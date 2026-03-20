@@ -8,6 +8,8 @@ interface AuthState {
   user: AuthUser | null;
   isLoggedIn: boolean;
   setAuth: (accessToken: string, refreshToken: string, user: AuthUser) => void;
+  setHasBankAccount: () => void;
+  setHasPayPassword: () => void;
   clear: () => void;
 }
 
@@ -20,6 +22,14 @@ export const useAuthStore = create<AuthState>((set) => ({
     setAccessToken(accessToken);
     set({ accessToken, refreshToken, user, isLoggedIn: true });
   },
+  setHasBankAccount: () =>
+    set(state => ({
+      user: state.user ? { ...state.user, hasBankAccount: true } : null,
+    })),
+  setHasPayPassword: () =>
+    set(state => ({
+      user: state.user ? { ...state.user, hasPayPassword: true } : null,
+    })),
   clear: () => {
     setAccessToken(null);
     set({ accessToken: null, refreshToken: null, user: null, isLoggedIn: false });

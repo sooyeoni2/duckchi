@@ -58,6 +58,8 @@ export const CustomAppBar: React.FC<CustomAppBarProps> = ({
   const effectiveBg = backgroundColor ?? AppColorStyles.white;
   const effectiveFg = foregroundColor ?? AppColorStyles.black;
 
+  const hasLeading = leading != null || showBackButton;
+
   const renderLeading = () => {
     if (leading != null) return leading;
     if (!showBackButton) return <View style={styles.leadingPlaceholder} />;
@@ -79,10 +81,10 @@ export const CustomAppBar: React.FC<CustomAppBarProps> = ({
         backgroundColor="transparent"
         translucent={Platform.OS === 'android'}
       />
-      <View style={[styles.container, { backgroundColor: effectiveBg }, showDivider && styles.containerDivider, style]}>
-        <View style={styles.leadingArea}>{renderLeading()}</View>
+      <View style={[styles.container, { backgroundColor: effectiveBg }, style]}>
+        {hasLeading && <View style={styles.leadingArea}>{renderLeading()}</View>}
 
-        <View style={[styles.titleArea, centerTitle && styles.titleCenter]}>
+        <View style={[styles.titleArea, centerTitle && styles.titleCenter, !hasLeading && !centerTitle && styles.titleNoLeading]}>
           {titleWidget ?? (
             <Text
               style={KBODiaGothicTextStyle.medium({ fontSize: 18, color: effectiveFg })}
@@ -97,6 +99,11 @@ export const CustomAppBar: React.FC<CustomAppBarProps> = ({
           {actions?.map((action, index) => <View key={index}>{action}</View>)}
         </View>
       </View>
+      {showDivider && (
+        <View style={styles.dividerOuter}>
+          <View style={styles.dividerInner} />
+        </View>
+      )}
     </>
   );
 };
@@ -192,10 +199,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 4,
   },
-  containerDivider: {
-    borderBottomWidth: 1,
-    borderBottomColor: AppColorStyles.divider,
+  dividerOuter: {
+    height: 1,
+    overflow: 'hidden',
+  },
+  dividerInner: {
+    height: 10,
+    borderWidth: 1,
     borderStyle: 'dashed',
+    borderColor: AppColorStyles.gray2,
   },
   leadingArea: {
     width: 48,
@@ -203,7 +215,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   leadingPlaceholder: {
-    width: 48,
+    width: 44,
+    height: 44,
   },
   backButton: {
     width: 44,
@@ -215,6 +228,9 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
   },
+  titleNoLeading: {
+    paddingLeft: 12,
+  },
   titleCenter: {
     alignItems: 'center',
   },
@@ -223,6 +239,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     minWidth: 48,
     justifyContent: 'flex-end',
+    paddingRight: 16,
   },
   tabbedContainer: {},
   tabbedTitleRow: {

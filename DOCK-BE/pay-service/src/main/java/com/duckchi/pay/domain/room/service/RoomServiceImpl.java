@@ -42,7 +42,6 @@ public class RoomServiceImpl implements RoomService {
     @Override
     @Transactional
     public CreateRoomResponse createRoom(Long currentUserId, CreateRoomRequest request) {
-        // 컨트롤러에서 JWT 기반으로 해석된 userId가 없으면 비인증 요청으로 차단한다.
         if (currentUserId == null) {
             throw new CustomException(ErrorCode.COMMON_UNAUTHORIZED);
         }
@@ -59,13 +58,11 @@ public class RoomServiceImpl implements RoomService {
         RoomParticipant owner = RoomParticipant.builder()
                 .room(savedRoom)
                 .userId(currentUserId)
-                // 방 생성자는 이후 ROOM-02/04 흐름의 기준 주체이므로 생성 시점에 관리자/동의 상태로 저장한다.
                 .isAdmin(true)
                 .isAgreed(true)
                 .build();
 
         roomParticipantRepository.save(owner);
-
         return CreateRoomResponse.from(savedRoom);
     }
 
@@ -84,7 +81,6 @@ public class RoomServiceImpl implements RoomService {
                 .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
 
         RoomParticipant participant = roomParticipantRepository.findByRoom_IdAndUserId(roomId, currentUserId)
-                // ROOM-02와 같은 에러코드를 재사용하되 ROOM-04 명세 문구를 맞추기 위해 메시지를 오버라이드한다.
                 .orElseThrow(() -> new CustomException(
                         "해당 모임의 멤버만 자동이체 동의/거절을 변경할 수 있습니다.",
                         ErrorCode.ROOM_MEMBER_ONLY
@@ -146,7 +142,6 @@ public class RoomServiceImpl implements RoomService {
 
         List<Long> roomIds = rooms.stream().map(Room::getId).toList();
 
-        // roomId 단위 배치 조회로 참여자/결제/정산 집계를 한 번에 가져와 N+1을 방지한다.
         Map<Long, List<Long>> participantsByRoomId = roomParticipantRepository.findParticipantUserMappingsByRoomIds(roomIds)
                 .stream()
                 .collect(Collectors.groupingBy(
@@ -205,7 +200,6 @@ public class RoomServiceImpl implements RoomService {
     }
 
     private int calculatePercent(long completedCount, long targetCount) {
-        // 정산 대상이 없으면 0%로 고정해 division-by-zero와 의미 불명 케이스를 함께 차단한다.
         if (targetCount <= 0) {
             return 0;
         }
@@ -223,7 +217,6 @@ public class RoomServiceImpl implements RoomService {
     }
 
     private String normalizeCategory(String category) {
-        // DDL 기본값("기타")과 서비스 동작을 맞춰 DB 기본값 의존 없이 동일 결과를 보장한다.
         if (category == null || category.isBlank()) {
             return DEFAULT_CATEGORY;
         }
@@ -251,7 +244,6 @@ public class RoomServiceImpl implements RoomService {
             throw new CustomException(ErrorCode.ROOM_NOT_ADMIN); // 방장만 모임 정보를 수정할 수 있다.
         }
 
-        // [ROOM-05] 모임이 진행 중(isProgress=true)이면 정보 수정을 차단한다.
         if (room.isProgress()) {
             throw new CustomException(ErrorCode.ROOM_CANNOT_UPDATE_STATUS);
         }
@@ -273,8 +265,6 @@ public class RoomServiceImpl implements RoomService {
             throw new CustomException(ErrorCode.ROOM_NOT_FOUND);
         }
 
-        // [ROOM-06] 모임이 진행 중(isProgress=true)이면 나가기를 차단한다.
-        // 모임이 대기 상태(isProgress=false)일 때만 나가기가 가능하다.
         if (room.isProgress()) {
             throw new CustomException(ErrorCode.ROOM_CANNOT_LEAVE_PROGRESS);
         }
@@ -303,8 +293,6 @@ public class RoomServiceImpl implements RoomService {
             throw new CustomException(ErrorCode.ROOM_NOT_FOUND);
         }
 
-        // [ROOM-07] 모임이 진행 중(isProgress=true)이면 삭제를 차단한다.
-        // 모임이 대기 상태(isProgress=false)일 때만 삭제가 가능하다.
         if (room.isProgress()) {
             throw new CustomException(ErrorCode.ROOM_CANNOT_DELETE_PROGRESS);
         }
@@ -319,22 +307,8 @@ public class RoomServiceImpl implements RoomService {
         room.deleteRoom();
     }
 
-    // ──────────────────────────────────────────────────────────────
-    // ROOM-17: 모임 시작
-    // ──────────────────────────────────────────────────────────────
-
-    /**
+    /*
      * [ROOM-17] 모임을 시작한다.
-     *
-     * <p>비즈니스 규칙:</p>
-     * <ul>
-     *   <li>일반 멤버 포함 누구나 시작 가능 (방장 권한 불필요)</li>
-     *   <li>이미 진행 중인 모임은 중복 시작할 수 없다 (409)</li>
-     *   <li>정산 요청 중(REQUESTED) 결제가 남아 있으면 시작할 수 없다 (409)</li>
-     *   <li>시작 시 카테고리와 세부 내용(description)을 업데이트한다 (모임 이름은 수정 불가)</li>
-     *   <li>새로운 RoomSession 레코드를 생성하여 회차를 기록한다</li>
-     * </ul>
-     *
      * @param roomId        모임방 ID
      * @param currentUserId 현재 인증된 사용자 ID
      * @param request       카테고리와 세부 내용이 담긴 요청 DTO
@@ -385,21 +359,8 @@ public class RoomServiceImpl implements RoomService {
         roomSessionRepository.save(session);
     }
 
-    // ──────────────────────────────────────────────────────────────
-    // ROOM-18: 모임 종료
-    // ──────────────────────────────────────────────────────────────
-
-    /**
+    /*
      * [ROOM-18] 모임을 종료한다.
-     *
-     * <p>비즈니스 규칙:</p>
-     * <ul>
-     *   <li>일반 멤버 포함 누구나 종료 가능 (방장 권한 불필요)</li>
-     *   <li>진행 중이 아닌 모임은 종료할 수 없다 (409)</li>
-     *   <li>정산 요청 중(REQUESTED) 결제가 남아 있으면 종료할 수 없다 (409)</li>
-     *   <li>활성 RoomSession의 endedAt과 finalCategory를 기록한다</li>
-     * </ul>
-     *
      * @param roomId        모임방 ID
      * @param currentUserId 현재 인증된 사용자 ID
      */
@@ -447,20 +408,10 @@ public class RoomServiceImpl implements RoomService {
         room.markReady();
     }
 
-    // ──────────────────────────────────────────────────────────────
-    // 공통 헬퍼
-    // ──────────────────────────────────────────────────────────────
-
-    /**
+    /*
      * 해당 모임방에 정산 요청 중(REQUESTED) 상태인 결제가 존재하는지 검증한다.
      * 존재하면 409 Conflict 예외를 던져 모임 시작/종료를 차단한다.
-     *
-     * <p>expenses 테이블의 status 컬럼 기준:</p>
-     * <ul>
-     *   <li>PENDING: 등록만 된 상태 → 시작/종료에 영향 없음</li>
-     *   <li>REQUESTED: 정산 요청 중 → 시작/종료 차단</li>
-     *   <li>SETTLED: 정산 완료 → 시작/종료에 영향 없음</li>
-     * </ul>
+
      */
     private void validateNoRequestedExpenses(Long roomId) {
         long requestedCount = expenseRepository.countByRoomIdAndStatus(roomId, "REQUESTED");

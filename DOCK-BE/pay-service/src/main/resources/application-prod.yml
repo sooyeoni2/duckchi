@@ -26,3 +26,8 @@ finance:
   api:
     base-url: https://finopenapi.ssafy.io
     key: ${FINANCE_API_KEY}
+
+ocr:
+  naver:
+    invoke-url: ${OCR_INVOKE_URL}
+    secret: ${OCR_SECRET_KEY}
