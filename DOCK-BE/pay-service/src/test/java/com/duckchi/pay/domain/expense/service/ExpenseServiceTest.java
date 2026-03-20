@@ -9,6 +9,7 @@ import com.duckchi.pay.domain.expense.dto.response.ExpenseParticipantOptionRespo
 import com.duckchi.pay.domain.expense.dto.response.ExpenseResponse;
 import com.duckchi.pay.domain.expense.entity.Expense;
 import com.duckchi.pay.domain.expense.repository.ExpenseRepository;
+import com.duckchi.pay.domain.room.entity.Room;
 import com.duckchi.pay.domain.room.entity.RoomSession;
 import com.duckchi.pay.domain.room.repository.RoomParticipantRepository;
 import com.duckchi.pay.domain.room.repository.RoomSessionRepository;
@@ -139,7 +140,12 @@ class ExpenseServiceTest {
                 .participants(List.of(payer))
                 .build();
 
-        when(roomSessionRepository.findById(1L)).thenReturn(Optional.of(RoomSession.builder().id(1L).roomId(ROOM_ID).build()));
+        Room room = Room.builder().build();
+        ReflectionTestUtils.setField(room, "id", ROOM_ID);
+        RoomSession session = RoomSession.builder().room(room).build();
+        ReflectionTestUtils.setField(session, "id", 1L);
+
+        when(roomSessionRepository.findById(1L)).thenReturn(Optional.of(session));
         when(roomParticipantRepository.existsByRoom_IdAndUserId(ROOM_ID, TEST_USER_ID)).thenReturn(true);
         when(roomParticipantRepository.findUserIdsByRoomId(ROOM_ID)).thenReturn(List.of(TEST_USER_ID));
         when(coreClient.getUserProfiles(any())).thenReturn(ApiResponseDto.success(List.of(
@@ -198,7 +204,12 @@ class ExpenseServiceTest {
                 .build();
 
         when(expenseRepository.findById(1L)).thenReturn(Optional.of(existingExpense));
-        when(roomSessionRepository.findById(1L)).thenReturn(Optional.of(RoomSession.builder().id(1L).roomId(ROOM_ID).build()));
+        Room room = Room.builder().build();
+        ReflectionTestUtils.setField(room, "id", ROOM_ID);
+        RoomSession session = RoomSession.builder().room(room).build();
+        ReflectionTestUtils.setField(session, "id", 1L);
+
+        when(roomSessionRepository.findById(1L)).thenReturn(Optional.of(session));
         when(roomParticipantRepository.existsByRoom_IdAndUserId(ROOM_ID, TEST_USER_ID)).thenReturn(true);
         when(roomParticipantRepository.findUserIdsByRoomId(ROOM_ID)).thenReturn(List.of(TEST_USER_ID));
         when(coreClient.getUserProfiles(any())).thenReturn(ApiResponseDto.success(List.of(

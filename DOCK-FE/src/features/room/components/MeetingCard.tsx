@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { AppColorStyles } from '@core/theme/colors';
 import { KBODiaGothicTextStyle } from '@core/theme/typography';
 import { MeetingRoom } from '../models/roomMockData';
@@ -15,58 +15,122 @@ interface MeetingCardGroupProps {
   onActionPress: (meeting: MeetingRoom) => void;
 }
 
+interface RoomCardProps {
+  meeting: MeetingRoom;
+  onPress?: (meeting: MeetingRoom) => void;
+  onActionPress: (meeting: MeetingRoom) => void;
+}
+
+function RoomCard({ meeting, onPress, onActionPress }: RoomCardProps) {
+  const scale = React.useRef(new Animated.Value(1)).current;
+  const actionScale = React.useRef(new Animated.Value(1)).current;
+  const highlightedButton = meeting.status === 'ENDED';
+
+  const handlePressIn = () => {
+    Animated.spring(scale, {
+      toValue: 0.97,
+      useNativeDriver: true,
+      speed: 50,
+      bounciness: 0,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scale, {
+      toValue: 1,
+      useNativeDriver: true,
+      speed: 30,
+      bounciness: 4,
+    }).start();
+  };
+
+  const handleActionPressIn = () => {
+    Animated.spring(actionScale, {
+      toValue: 0.93,
+      useNativeDriver: true,
+      speed: 50,
+      bounciness: 0,
+    }).start();
+  };
+
+  const handleActionPressOut = () => {
+    Animated.spring(actionScale, {
+      toValue: 1,
+      useNativeDriver: true,
+      speed: 30,
+      bounciness: 4,
+    }).start();
+  };
+
+  return (
+    <Animated.View style={{ transform: [{ scale }] }}>
+      <Pressable
+        style={styles.card}
+        onPress={() => onPress?.(meeting)}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+      >
+        <View style={styles.titleRow}>
+          <View style={styles.titleWrap}>
+            <Text style={styles.title}>{meeting.roomName}</Text>
+            <Text style={styles.subtitle}>{meeting.description}</Text>
+          </View>
+        </View>
+
+        <Text style={styles.metaText}>
+          {meeting.memberCount}명 · {currency.format(meeting.totalPay)}원 · 결제 {meeting.payCount}건
+        </Text>
+
+        <View style={styles.progressSection}>
+          <ProgressBar value={meeting.percent} />
+          <View style={styles.progressFooter}>
+            <Text style={styles.progressText}>
+              {meeting.completedCount}/{meeting.totalCount}명 완료
+            </Text>
+            <Text style={styles.progressText}>{meeting.percent}%</Text>
+          </View>
+        </View>
+
+        <ParticipantAvatarGroup
+          participants={meeting.participants}
+          extraCount={meeting.extraMemberCount}
+          style={styles.avatarGroup}
+        />
+
+        <Animated.View style={[styles.actionButton, { transform: [{ scale: actionScale }] }]}>
+          <Pressable
+            onPress={(event) => {
+              event.stopPropagation();
+              onActionPress(meeting);
+            }}
+            onPressIn={handleActionPressIn}
+            onPressOut={handleActionPressOut}
+            style={[
+              styles.actionButton,
+              highlightedButton ? styles.actionButtonHighlighted : styles.actionButtonMuted,
+            ]}
+          >
+            <Text style={styles.actionButtonText}>{meeting.actionLabel}</Text>
+          </Pressable>
+        </Animated.View>
+      </Pressable>
+    </Animated.View>
+  );
+}
+
 export function MeetingCard({ category, rooms, onPress, onActionPress }: MeetingCardGroupProps) {
   return (
     <View style={styles.cardShell}>
       <Text style={styles.shellCategory}>{category}</Text>
 
-      {rooms.map((meeting) => {
-        const highlightedButton = meeting.status === 'ENDED';
-        return (
-          <Pressable key={meeting.roomId} style={styles.card} onPress={() => onPress?.(meeting)}>
-            <View style={styles.titleRow}>
-              <View style={styles.titleWrap}>
-                <Text style={styles.title}>{meeting.roomName}</Text>
-                <Text style={styles.subtitle}>{meeting.description}</Text>
-              </View>
-
-            </View>
-
-            <Text style={styles.metaText}>
-              {meeting.memberCount}명 · {currency.format(meeting.totalPay)}원 · 결제 {meeting.payCount}건
-            </Text>
-
-            <View style={styles.progressSection}>
-              <ProgressBar value={meeting.percent} />
-              <View style={styles.progressFooter}>
-                <Text style={styles.progressText}>
-                  {meeting.completedCount}/{meeting.totalCount}명 완료
-                </Text>
-                <Text style={styles.progressText}>{meeting.percent}%</Text>
-              </View>
-            </View>
-
-            <ParticipantAvatarGroup
-              participants={meeting.participants}
-              extraCount={meeting.extraMemberCount}
-              style={styles.avatarGroup}
-            />
-
-            <Pressable
-              onPress={(event) => {
-                event.stopPropagation();
-                onActionPress(meeting);
-              }}
-              style={[
-                styles.actionButton,
-                highlightedButton ? styles.actionButtonHighlighted : styles.actionButtonMuted,
-              ]}
-            >
-              <Text style={styles.actionButtonText}>{meeting.actionLabel}</Text>
-            </Pressable>
-          </Pressable>
-        );
-      })}
+      {rooms.map((meeting) => (
+        <RoomCard
+          key={meeting.roomId}
+          meeting={meeting}
+          onPress={onPress}
+          onActionPress={onActionPress}
+        />
+      ))}
     </View>
   );
 }

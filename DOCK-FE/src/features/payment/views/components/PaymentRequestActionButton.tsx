@@ -1,7 +1,8 @@
 ﻿import React from 'react';
-import { StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 import { AppColorStyles } from '@core/theme/colors';
 import { KBODiaGothicTextStyle } from '@core/theme/typography';
+import { PaymentAnimatedTouchable } from './PaymentAnimatedTouchable';
 
 interface PaymentRequestActionButtonProps {
   label: string;
@@ -17,7 +18,7 @@ export function PaymentRequestActionButton({
   onPress,
 }: PaymentRequestActionButtonProps) {
   return (
-    <TouchableOpacity
+    <PaymentAnimatedTouchable
       activeOpacity={0.85}
       onPress={onPress}
       style={styles.button}
@@ -31,7 +32,7 @@ export function PaymentRequestActionButton({
       >
         {label}
       </Text>
-    </TouchableOpacity>
+    </PaymentAnimatedTouchable>
   );
 }
 

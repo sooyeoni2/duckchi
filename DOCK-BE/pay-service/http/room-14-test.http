@@ -1,0 +1,11 @@
+### ROOM-14 모임방 자동이체 동의 여부 토글 수정
+PATCH http://localhost:8082/api/v1/rooms/1/my-transfer-agree
+Authorization: {{token}}
+Content-Type: application/json
+
+> {%
+client.test("Request executed successfully", function() {
+    client.assert(response.status === 200, "Response status is not 200");
+    client.assert(response.body.success === true, "Response is not success");
+});
+%}
