@@ -34,6 +34,10 @@ public enum ErrorCode {
     SETTLEMENT_REQUEST_TARGET_EMPTY("SET-409-2", HttpStatus.CONFLICT, "정산 요청 대상이 없습니다."),
     SETTLEMENT_AMOUNT_MISMATCH("SET-409-3", HttpStatus.CONFLICT, "정산 금액 정합성이 맞지 않습니다."),
     SETTLEMENT_PARTICIPANTS_INVALID("SET-409-4", HttpStatus.CONFLICT, "정산 참여자 데이터가 유효하지 않습니다."),
+    SETTLEMENT_NOT_FOUND("SET-404-2", HttpStatus.NOT_FOUND, "요청한 정산을 찾을 수 없습니다."),
+    SETTLEMENT_FORBIDDEN_PAYER("SET-403-2", HttpStatus.FORBIDDEN, "해당 정산의 송금 권한이 없습니다."),
+    SETTLEMENT_ALREADY_COMPLETED("SET-409-5", HttpStatus.CONFLICT, "이미 송금 완료된 정산이 포함되어 있습니다."),
+    SETTLEMENT_TRANSFER_PARTIAL("SET-409-6", HttpStatus.CONFLICT, "일부 정산 송금에 실패했습니다."),
 
     //ROOM
     ROOM_SESSION_MISMATCH("ROOM-400-4", HttpStatus.BAD_REQUEST, "해당 회차는 요청된 모임방에 속해있지 않습니다."),
