@@ -5,15 +5,17 @@ import { KBODiaGothicTextStyle } from '../../../core/theme/typography';
 
 export const profileCardStyle = StyleSheet.create({
   card: {
-    marginHorizontal: 21,
-    marginBottom: 12,
+    marginHorizontal: 20,
+    marginBottom: 8,
     backgroundColor: AppColorStyles.surface,
-    borderRadius: 10,
-    padding: 16,
-    shadowColor: AppColorStyles.gray2,
+    borderRadius: 18,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: AppColorStyles.divider,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
     elevation: 2,
   },
   cardLabel: {
