@@ -70,7 +70,6 @@ type PaymentDetailState =
   | { status: 'loading'; expenseId: number }
   | { status: 'loaded'; expenseId: number; detail: MyExpenseDetail }
   | { status: 'error'; expenseId: number; message: string };
-
 function getAccountHistoryIdFromExpenseId(expenseId: number): string {
   return `account-history-${expenseId}`;
 }
