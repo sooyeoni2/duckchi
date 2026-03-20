@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { AppColorStyles } from '@core/theme/colors';
@@ -19,6 +18,7 @@ import { PaymentOcrEntryView } from './PaymentOcrEntryView';
 import { PaymentOcrFailureView } from './PaymentOcrFailureView';
 import { PaymentOcrMenuSplitView } from './PaymentOcrMenuSplitView';
 import { PaymentOcrSplitSetupView } from './PaymentOcrSplitSetupView';
+import { PaymentAnimatedTouchable } from './PaymentAnimatedTouchable';
 
 interface PaymentOcrFlowProps {
   roomId: number;
@@ -313,13 +313,13 @@ export const PaymentOcrFlow = React.forwardRef<
           : '영수증 흐름을 다시 시작해 주세요.'}
       </Text>
 
-      <TouchableOpacity
+      <PaymentAnimatedTouchable
         activeOpacity={0.85}
         onPress={handleRetryExistingDraft}
         style={styles.retryButton}
       >
         <Text style={styles.retryButtonText}>다시 시도하기</Text>
-      </TouchableOpacity>
+      </PaymentAnimatedTouchable>
     </View>
   );
 

@@ -1,11 +1,12 @@
 import { MaterialCommunityIcons as MaterialDesignIcons } from '@expo/vector-icons';
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { AppColorStyles } from '@core/theme/colors';
 import {
   KBODiaGothicTextStyle,
   PretendardTextStyle,
 } from '@core/theme/typography';
+import { PaymentAnimatedTouchable } from './PaymentAnimatedTouchable';
 
 interface PaymentOcrEntryViewProps {
   errorMessage?: string | null;
@@ -64,9 +65,10 @@ export function PaymentOcrEntryView({
       </View>
 
       <View style={styles.actionRow}>
-        <TouchableOpacity
+        <PaymentAnimatedTouchable
           activeOpacity={0.85}
           onPress={onPressCamera}
+          wrapperStyle={styles.primaryActionButtonWrap}
           style={[styles.actionButton, styles.primaryActionButton]}
         >
           <Text
@@ -77,11 +79,12 @@ export function PaymentOcrEntryView({
           >
             촬영하기
           </Text>
-        </TouchableOpacity>
+        </PaymentAnimatedTouchable>
 
-        <TouchableOpacity
+        <PaymentAnimatedTouchable
           activeOpacity={0.85}
           onPress={onPressLibrary}
+          wrapperStyle={styles.secondaryActionButtonWrap}
           style={[styles.actionButton, styles.secondaryActionButton]}
         >
           <Text
@@ -92,7 +95,7 @@ export function PaymentOcrEntryView({
           >
             앨범
           </Text>
-        </TouchableOpacity>
+        </PaymentAnimatedTouchable>
       </View>
     </View>
   );
@@ -123,8 +126,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginTop: 24,
   },
-  actionButton: {
+  primaryActionButtonWrap: {
     flex: 1,
+    marginRight: 12,
+  },
+  secondaryActionButtonWrap: {
+    flex: 1,
+  },
+  actionButton: {
     height: 60,
     borderRadius: 14,
     alignItems: 'center',
@@ -132,7 +141,6 @@ const styles = StyleSheet.create({
   },
   primaryActionButton: {
     backgroundColor: AppColorStyles.yellow,
-    marginRight: 12,
   },
   secondaryActionButton: {
     borderWidth: 1.5,

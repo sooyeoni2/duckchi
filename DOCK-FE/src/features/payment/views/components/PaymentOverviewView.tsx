@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { AppColorStyles } from '@core/theme/colors';
@@ -14,6 +13,7 @@ import {
 import { PAYMENT_ENTRY_TABS } from '../../models/paymentContentLayout';
 import type { PaymentListState } from '../../viewmodels/usePaymentListViewModel';
 import type { ExpenseInputType, MyExpenseItem } from '../../models/paymentTypes';
+import { PaymentAnimatedTouchable } from './PaymentAnimatedTouchable';
 import { PaymentExpenseGroupSection } from './PaymentExpenseGroupSection';
 import { PaymentRequestActionButton } from './PaymentRequestActionButton';
 
@@ -79,7 +79,7 @@ export function PaymentOverviewView({
           >
             {state.message}
           </Text>
-          <TouchableOpacity
+          <PaymentAnimatedTouchable
             activeOpacity={0.85}
             onPress={onRefresh}
             style={styles.retryButton}
@@ -92,7 +92,7 @@ export function PaymentOverviewView({
             >
               다시 시도하기
             </Text>
-          </TouchableOpacity>
+          </PaymentAnimatedTouchable>
         </View>
       );
     }
@@ -166,7 +166,7 @@ export function PaymentOverviewView({
 
         <View style={styles.listBody}>{renderOverviewListBody()}</View>
 
-        <TouchableOpacity
+        <PaymentAnimatedTouchable
           activeOpacity={0.9}
           disabled={state.status !== 'loaded' || selectedExpenseIds.length === 0}
           onPress={onRequestPress}
@@ -184,7 +184,7 @@ export function PaymentOverviewView({
           >
             요청하기
           </Text>
-        </TouchableOpacity>
+        </PaymentAnimatedTouchable>
       </View>
 
       <View style={styles.actionSection}>

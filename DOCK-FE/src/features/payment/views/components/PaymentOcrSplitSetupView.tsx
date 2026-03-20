@@ -1,12 +1,13 @@
 import { MaterialCommunityIcons as MaterialDesignIcons } from '@expo/vector-icons';
 import React from 'react';
-import { StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Switch, Text, View } from 'react-native';
 import { AppColorStyles } from '@core/theme/colors';
 import {
   KBODiaGothicTextStyle,
   PretendardTextStyle,
 } from '@core/theme/typography';
 import type { OcrReceiptDraft, OcrSplitMode } from '../../models/paymentTypes';
+import { PaymentAnimatedTouchable } from './PaymentAnimatedTouchable';
 
 interface PaymentOcrSplitSetupViewProps {
   draft: OcrReceiptDraft;
@@ -30,7 +31,7 @@ function SplitModeButton({
   onPress: () => void;
 }) {
   return (
-    <TouchableOpacity
+    <PaymentAnimatedTouchable
       activeOpacity={0.85}
       onPress={onPress}
       style={[
@@ -46,7 +47,7 @@ function SplitModeButton({
       >
         {label}
       </Text>
-    </TouchableOpacity>
+    </PaymentAnimatedTouchable>
   );
 }
 
@@ -72,7 +73,7 @@ export function PaymentOcrSplitSetupView({
           />
         </View>
         <View style={styles.modeButtonWrap}>
-          <TouchableOpacity
+          <PaymentAnimatedTouchable
             activeOpacity={itemSplitEnabled ? 0.85 : 1}
             disabled={!itemSplitEnabled}
             onPress={() => onSelectSplitMode('ITEM')}
@@ -97,7 +98,7 @@ export function PaymentOcrSplitSetupView({
             >
               메뉴별 나누기
             </Text>
-          </TouchableOpacity>
+          </PaymentAnimatedTouchable>
         </View>
       </View>
 
@@ -165,11 +166,14 @@ export function PaymentOcrSplitSetupView({
         </View>
       )}
 
-      <TouchableOpacity
+      <PaymentAnimatedTouchable
         activeOpacity={0.85}
         disabled={isPrimaryDisabled}
         onPress={onPrimaryAction}
-        style={[styles.primaryButton, isPrimaryDisabled && styles.primaryButtonDisabled]}
+        style={[
+          styles.primaryButton,
+          isPrimaryDisabled && styles.primaryButtonDisabled,
+        ]}
       >
         <Text
           style={KBODiaGothicTextStyle.bold({
@@ -179,7 +183,7 @@ export function PaymentOcrSplitSetupView({
         >
           {draft.splitMode === 'TOTAL' ? '장바구니 담기' : '다음'}
         </Text>
-      </TouchableOpacity>
+      </PaymentAnimatedTouchable>
     </View>
   );
 }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { AppColorStyles } from '@core/theme/colors';
 import {
   KBODiaGothicTextStyle,
@@ -10,6 +10,7 @@ import type {
   OcrParticipantDraft,
   OcrReceiptDraft,
 } from '../../models/paymentTypes';
+import { PaymentAnimatedTouchable } from './PaymentAnimatedTouchable';
 
 interface PaymentOcrMenuSplitViewProps {
   draft: OcrReceiptDraft;
@@ -98,13 +99,13 @@ export function PaymentOcrMenuSplitView({
 
                 <Text style={styles.itemQuantity}>{item.quantity}</Text>
 
-                <TouchableOpacity
+                <PaymentAnimatedTouchable
                   activeOpacity={0.85}
                   onPress={() => onOpenAssignSheet(item.itemId)}
                   style={styles.assignButton}
                 >
                   <Text style={styles.assignButtonText}>+ 인원 선택</Text>
-                </TouchableOpacity>
+                </PaymentAnimatedTouchable>
               </View>
             ))
           )}
@@ -149,21 +150,21 @@ export function PaymentOcrMenuSplitView({
                 </Text>
 
                 <View style={styles.assignedActionRow}>
-                  <TouchableOpacity
+                  <PaymentAnimatedTouchable
                     activeOpacity={0.85}
                     onPress={() => onOpenAssignSheet(item.itemId)}
                     style={[styles.smallActionButton, styles.editButton]}
                   >
                     <Text style={styles.editButtonText}>수정</Text>
-                  </TouchableOpacity>
+                  </PaymentAnimatedTouchable>
 
-                  <TouchableOpacity
+                  <PaymentAnimatedTouchable
                     activeOpacity={0.85}
                     onPress={() => onClearAssignment(item.itemId)}
                     style={[styles.smallActionButton, styles.deleteButton]}
                   >
                     <Text style={styles.deleteButtonText}>삭제</Text>
-                  </TouchableOpacity>
+                  </PaymentAnimatedTouchable>
                 </View>
               </View>
             ))
@@ -171,13 +172,13 @@ export function PaymentOcrMenuSplitView({
         </View>
       </View>
 
-      <TouchableOpacity
+      <PaymentAnimatedTouchable
         activeOpacity={0.85}
         onPress={onSubmit}
         style={styles.primaryButton}
       >
         <Text style={styles.primaryButtonText}>장바구니 담기</Text>
-      </TouchableOpacity>
+      </PaymentAnimatedTouchable>
     </View>
   );
 }

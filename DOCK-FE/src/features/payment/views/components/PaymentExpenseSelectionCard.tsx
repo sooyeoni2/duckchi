@@ -1,6 +1,6 @@
 import { MaterialCommunityIcons as MaterialDesignIcons } from '@expo/vector-icons';
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AppColorStyles } from '@core/theme/colors';
 import {
   KBODiaGothicTextStyle,
@@ -12,6 +12,7 @@ import {
   getExpensePrimaryDisplayDate,
 } from '../../models/paymentDisplay';
 import type { MyExpenseItem } from '../../models/paymentTypes';
+import { usePressScaleAnimation } from '../hooks/usePressScaleAnimation';
 import { PaymentExpenseStatusBadge } from './PaymentExpenseStatusBadge';
 
 interface PaymentExpenseSelectionCardProps {
@@ -32,13 +33,16 @@ export function PaymentExpenseSelectionCard({
   const displayTime = formatExpenseListDate(
     getExpensePrimaryDisplayDate(expense),
   );
+  const { animatedStyle, handlePressIn, handlePressOut } =
+    usePressScaleAnimation(0.97);
 
   return (
-    <View
+    <Animated.View
       style={[
         styles.card,
         selected && styles.cardSelected,
         isSettled && styles.cardSettled,
+        animatedStyle,
       ]}
     >
       <View style={styles.row}>
@@ -47,6 +51,8 @@ export function PaymentExpenseSelectionCard({
             <TouchableOpacity
               activeOpacity={0.85}
               onPress={onToggle}
+              onPressIn={handlePressIn}
+              onPressOut={handlePressOut}
               style={styles.checkboxButton}
             >
               <MaterialDesignIcons
@@ -63,6 +69,8 @@ export function PaymentExpenseSelectionCard({
         <TouchableOpacity
           activeOpacity={0.85}
           onPress={onDetailPress}
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
           style={styles.contentButton}
         >
           <View style={styles.titleRow}>
@@ -105,7 +113,7 @@ export function PaymentExpenseSelectionCard({
           </View>
         </TouchableOpacity>
       </View>
-    </View>
+    </Animated.View>
   );
 }
 

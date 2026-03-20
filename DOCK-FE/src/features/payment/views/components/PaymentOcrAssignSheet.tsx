@@ -6,7 +6,6 @@ import {
   StyleSheet,
   Switch,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { AppColorStyles } from '@core/theme/colors';
@@ -19,6 +18,7 @@ import type {
   OcrItemQuantityAllocation,
   OcrParticipantDraft,
 } from '../../models/paymentTypes';
+import { PaymentAnimatedTouchable } from './PaymentAnimatedTouchable';
 
 interface PaymentOcrAssignSheetProps {
   visible: boolean;
@@ -45,7 +45,7 @@ function AssignModeButton({
   onPress: () => void;
 }) {
   return (
-    <TouchableOpacity
+    <PaymentAnimatedTouchable
       activeOpacity={0.85}
       onPress={onPress}
       style={[
@@ -61,7 +61,7 @@ function AssignModeButton({
       >
         {label}
       </Text>
-    </TouchableOpacity>
+    </PaymentAnimatedTouchable>
   );
 }
 
@@ -148,7 +148,7 @@ export function PaymentOcrAssignSheet({
                   />
                 ) : (
                   <View style={styles.quantityStepper}>
-                    <TouchableOpacity
+                    <PaymentAnimatedTouchable
                       activeOpacity={0.85}
                       onPress={() => onUpdateQuantity(participant.userId, -1)}
                       style={styles.stepperButton}
@@ -162,11 +162,11 @@ export function PaymentOcrAssignSheet({
                             : AppColorStyles.gray3
                         }
                       />
-                    </TouchableOpacity>
+                    </PaymentAnimatedTouchable>
 
                     <Text style={styles.quantityText}>{quantity}</Text>
 
-                    <TouchableOpacity
+                    <PaymentAnimatedTouchable
                       activeOpacity={0.85}
                       onPress={() => onUpdateQuantity(participant.userId, 1)}
                       style={styles.stepperButton}
@@ -176,7 +176,7 @@ export function PaymentOcrAssignSheet({
                         size={22}
                         color={AppColorStyles.black}
                       />
-                    </TouchableOpacity>
+                    </PaymentAnimatedTouchable>
                   </View>
                 )}
               </View>
@@ -189,13 +189,13 @@ export function PaymentOcrAssignSheet({
             </Text>
           )}
 
-          <TouchableOpacity
+          <PaymentAnimatedTouchable
             activeOpacity={0.85}
             onPress={onConfirm}
             style={styles.confirmButton}
           >
             <Text style={styles.confirmButtonText}>확인</Text>
-          </TouchableOpacity>
+          </PaymentAnimatedTouchable>
         </View>
       </View>
     </Modal>

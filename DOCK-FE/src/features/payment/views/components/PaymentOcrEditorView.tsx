@@ -4,7 +4,6 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { AppColorStyles } from '@core/theme/colors';
@@ -13,6 +12,7 @@ import {
   PretendardTextStyle,
 } from '@core/theme/typography';
 import type { OcrReceiptDraft } from '../../models/paymentTypes';
+import { PaymentAnimatedTouchable } from './PaymentAnimatedTouchable';
 
 interface PaymentOcrEditorViewProps {
   draft: OcrReceiptDraft;
@@ -193,15 +193,15 @@ export function PaymentOcrEditorView({
 
               <View style={styles.actionColumn}>
                 {isEditing ? (
-                  <TouchableOpacity
+                  <PaymentAnimatedTouchable
                     activeOpacity={0.85}
                     onPress={() => setEditingItemId(null)}
                     style={styles.confirmButton}
                   >
                     <Text style={styles.confirmButtonText}>확인</Text>
-                  </TouchableOpacity>
+                  </PaymentAnimatedTouchable>
                 ) : (
-                  <TouchableOpacity
+                  <PaymentAnimatedTouchable
                     activeOpacity={0.85}
                     onPress={() => setEditingItemId(item.itemId)}
                     style={styles.editButton}
@@ -211,20 +211,20 @@ export function PaymentOcrEditorView({
                       size={18}
                       color={AppColorStyles.caution}
                     />
-                  </TouchableOpacity>
+                  </PaymentAnimatedTouchable>
                 )}
               </View>
             </View>
           );
         })}
 
-        <TouchableOpacity
+        <PaymentAnimatedTouchable
           activeOpacity={0.85}
           onPress={onAddItem}
           style={styles.addButton}
         >
           <Text style={styles.addButtonText}>+ 항목 추가</Text>
-        </TouchableOpacity>
+        </PaymentAnimatedTouchable>
       </View>
 
       <View style={styles.totalCard}>
@@ -232,7 +232,7 @@ export function PaymentOcrEditorView({
         <Text style={styles.totalAmount}>{formatAmount(draft.totalAmount)}</Text>
       </View>
 
-      <TouchableOpacity
+      <PaymentAnimatedTouchable
         activeOpacity={0.85}
         disabled={isNextDisabled}
         onPress={onNext}
@@ -246,7 +246,7 @@ export function PaymentOcrEditorView({
         >
           다음
         </Text>
-      </TouchableOpacity>
+      </PaymentAnimatedTouchable>
     </View>
   );
 }

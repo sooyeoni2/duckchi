@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { AppColorStyles } from '@core/theme/colors';
 import {
   KBODiaGothicTextStyle,
@@ -9,6 +9,7 @@ import type {
   OcrFailureType,
   OcrReceiptSummary,
 } from '../../models/paymentTypes';
+import { PaymentAnimatedTouchable } from './PaymentAnimatedTouchable';
 
 interface PaymentOcrFailureViewProps {
   failureType: OcrFailureType;
@@ -81,23 +82,25 @@ export function PaymentOcrFailureView({
       </View>
 
       <View style={styles.actionRow}>
-        <TouchableOpacity
+        <PaymentAnimatedTouchable
           activeOpacity={0.85}
           onPress={onRetry}
+          wrapperStyle={styles.primaryButtonWrap}
           style={[styles.actionButton, styles.primaryButton]}
         >
           <Text style={styles.primaryButtonText}>다시 촬영하기</Text>
-        </TouchableOpacity>
+        </PaymentAnimatedTouchable>
 
-        <TouchableOpacity
+        <PaymentAnimatedTouchable
           activeOpacity={0.85}
           onPress={onFallback}
+          wrapperStyle={styles.secondaryButtonWrap}
           style={[styles.actionButton, styles.secondaryButton]}
         >
           <Text style={styles.secondaryButtonText}>
             {isReceiptUnreadable ? '직접 입력하기' : '총 금액만 등록'}
           </Text>
-        </TouchableOpacity>
+        </PaymentAnimatedTouchable>
       </View>
     </View>
   );
@@ -170,8 +173,14 @@ const styles = StyleSheet.create({
   actionRow: {
     flexDirection: 'row',
   },
-  actionButton: {
+  primaryButtonWrap: {
     flex: 1,
+    marginRight: 12,
+  },
+  secondaryButtonWrap: {
+    flex: 1,
+  },
+  actionButton: {
     height: 60,
     borderRadius: 14,
     alignItems: 'center',
@@ -179,7 +188,6 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     backgroundColor: AppColorStyles.yellow,
-    marginRight: 12,
   },
   secondaryButton: {
     backgroundColor: AppColorStyles.white,

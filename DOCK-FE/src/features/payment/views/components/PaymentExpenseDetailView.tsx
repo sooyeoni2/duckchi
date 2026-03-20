@@ -1,11 +1,12 @@
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { AppColorStyles } from '@core/theme/colors';
 import {
   KBODiaGothicTextStyle,
   PretendardTextStyle,
 } from '@core/theme/typography';
 import type { MyExpenseDetail } from '../../models/paymentTypes';
+import { PaymentAnimatedTouchable } from './PaymentAnimatedTouchable';
 
 interface PaymentExpenseDetailViewProps {
   expense: MyExpenseDetail;
@@ -288,9 +289,10 @@ export function PaymentExpenseDetailView({
       {canShowAnyAction && (
         <View style={styles.actionRow}>
           {!editDisabled && (
-            <TouchableOpacity
+            <PaymentAnimatedTouchable
               activeOpacity={0.85}
               onPress={onEdit}
+              wrapperStyle={styles.actionButtonWrap}
               style={[styles.actionButton, styles.editButton]}
             >
               <Text
@@ -301,18 +303,18 @@ export function PaymentExpenseDetailView({
               >
                 수정하기
               </Text>
-            </TouchableOpacity>
+            </PaymentAnimatedTouchable>
           )}
 
           {!cancelDisabled && (
-            <TouchableOpacity
+            <PaymentAnimatedTouchable
               activeOpacity={0.85}
               onPress={onCancel}
-              style={[
-                styles.actionButton,
-                styles.cancelButton,
+              wrapperStyle={[
+                styles.actionButtonWrap,
                 !editDisabled && styles.cancelButtonSpacing,
               ]}
+              style={[styles.actionButton, styles.cancelButton]}
             >
               <Text
                 style={KBODiaGothicTextStyle.bold({
@@ -322,7 +324,7 @@ export function PaymentExpenseDetailView({
               >
                 취소하기
               </Text>
-            </TouchableOpacity>
+            </PaymentAnimatedTouchable>
           )}
         </View>
       )}
@@ -410,8 +412,10 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 12,
   },
-  actionButton: {
+  actionButtonWrap: {
     flex: 1,
+  },
+  actionButton: {
     height: 60,
     borderRadius: 14,
     alignItems: 'center',

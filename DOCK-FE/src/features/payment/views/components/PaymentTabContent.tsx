@@ -5,7 +5,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { AppColorStyles } from '@core/theme/colors';
@@ -28,6 +27,7 @@ import { usePaymentManualEntryViewModel } from '../../viewmodels/usePaymentManua
 import { PaymentAccountHistoryFormView } from './PaymentAccountHistoryFormView';
 import { PaymentAccountHistoryListView } from './PaymentAccountHistoryListView';
 import { PaymentAccountHistorySplitView } from './PaymentAccountHistorySplitView';
+import { PaymentAnimatedTouchable } from './PaymentAnimatedTouchable';
 import { PaymentExpenseDetailView } from './PaymentExpenseDetailView';
 import { PaymentManualEntrySetupView } from './PaymentManualEntrySetupView';
 import { PaymentManualEntrySplitView } from './PaymentManualEntrySplitView';
@@ -666,7 +666,7 @@ export const PaymentTabContent = React.forwardRef<
           >
             {detailState.message}
           </Text>
-          <TouchableOpacity
+          <PaymentAnimatedTouchable
             activeOpacity={0.85}
             onPress={() => setScene({ kind: 'detail', expenseId: detailState.expenseId })}
             style={styles.retryButton}
@@ -679,7 +679,7 @@ export const PaymentTabContent = React.forwardRef<
             >
               다시 시도하기
             </Text>
-          </TouchableOpacity>
+          </PaymentAnimatedTouchable>
         </View>
       );
     }
