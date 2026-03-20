@@ -6,7 +6,6 @@ import {
   Switch,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { AppColorStyles } from '@core/theme/colors';
@@ -15,6 +14,7 @@ import {
   PretendardTextStyle,
 } from '@core/theme/typography';
 import type { PaymentManualEntryState } from '../../viewmodels/usePaymentManualEntryViewModel';
+import { PaymentAnimatedTouchable } from './PaymentAnimatedTouchable';
 
 interface PaymentManualEntrySetupViewProps {
   state: PaymentManualEntryState;
@@ -74,7 +74,7 @@ export function PaymentManualEntrySetupView({
         >
           {state.message}
         </Text>
-        <TouchableOpacity
+        <PaymentAnimatedTouchable
           activeOpacity={0.85}
           onPress={onRetry}
           style={styles.retryButton}
@@ -87,7 +87,7 @@ export function PaymentManualEntrySetupView({
           >
             다시 불러오기
           </Text>
-        </TouchableOpacity>
+        </PaymentAnimatedTouchable>
       </View>
     );
   }
@@ -250,11 +250,14 @@ export function PaymentManualEntrySetupView({
         ))}
       </View>
 
-      <TouchableOpacity
+      <PaymentAnimatedTouchable
         activeOpacity={0.85}
         disabled={isNextDisabled}
         onPress={onNext}
-        style={[styles.primaryButton, isNextDisabled && styles.primaryButtonDisabled]}
+        style={[
+          styles.primaryButton,
+          isNextDisabled && styles.primaryButtonDisabled,
+        ]}
       >
         <Text
           style={KBODiaGothicTextStyle.bold({
@@ -264,7 +267,7 @@ export function PaymentManualEntrySetupView({
         >
           다음
         </Text>
-      </TouchableOpacity>
+      </PaymentAnimatedTouchable>
     </View>
   );
 }
