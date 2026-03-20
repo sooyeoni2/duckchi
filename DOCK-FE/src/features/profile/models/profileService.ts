@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { axiosClient } from '../../../core/network/axiosClient';
+import { useAuthStore } from '../../auth/models/authStore';
 import type {
   Account,
   AcquiredBadge,
@@ -175,8 +176,12 @@ const mockBadgeList = badgeListSchema.parse({
 export const fetchProfile = async (): Promise<Profile> => {
   if (USE_MOCK) {
     await new Promise<void>(resolve => setTimeout(resolve, 500));
+    const authUser = useAuthStore.getState().user;
     return {
       ...mockProfile,
+      name: authUser?.name ?? mockProfile.name,
+      tag: authUser?.tag ?? mockProfile.tag,
+      profileImageUrl: authUser?.profileImageUrl ?? mockProfile.profileImageUrl,
       createdAt: toDate(mockProfile.createdAt),
       accounts: mockProfile.accounts.map(toAccount),
       badges: mockProfile.badges.map(toProfileBadge),
