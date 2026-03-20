@@ -2,14 +2,17 @@ package com.duckchi.pay.domain.room.service;
 
 import com.duckchi.pay.domain.expenses.repository.ExpenseRepository;
 import com.duckchi.pay.domain.room.dto.request.CreateRoomRequest;
+import com.duckchi.pay.domain.room.dto.request.StartRoomRequest;
 import com.duckchi.pay.domain.room.dto.request.UpdateRoomRequest;
 import com.duckchi.pay.domain.room.dto.response.CreateRoomResponse;
 import com.duckchi.pay.domain.room.dto.response.RoomListResponse;
 import com.duckchi.pay.domain.room.dto.response.UpdateAutoDebitConsentResponse;
 import com.duckchi.pay.domain.room.entity.Room;
 import com.duckchi.pay.domain.room.entity.RoomParticipant;
+import com.duckchi.pay.domain.room.entity.RoomSession;
 import com.duckchi.pay.domain.room.repository.RoomParticipantRepository;
 import com.duckchi.pay.domain.room.repository.RoomRepository;
+import com.duckchi.pay.domain.room.repository.RoomSessionRepository;
 import com.duckchi.pay.domain.room.repository.projection.RoomExpenseSummaryProjection;
 import com.duckchi.pay.domain.room.repository.projection.RoomParticipantUserProjection;
 import com.duckchi.pay.domain.room.repository.projection.RoomSettlementSummaryProjection;
@@ -34,6 +37,7 @@ public class RoomServiceImpl implements RoomService {
     private final RoomRepository roomRepository;
     private final RoomParticipantRepository roomParticipantRepository;
     private final ExpenseRepository expenseRepository;
+    private final RoomSessionRepository roomSessionRepository;
 
     @Override
     @Transactional
@@ -228,7 +232,7 @@ public class RoomServiceImpl implements RoomService {
 
     @Override
     @Transactional
-    public void updateRoomInfo(Long roomId, Long currentUserId, com.duckchi.pay.domain.room.dto.request.UpdateRoomRequest request) {
+    public void updateRoomInfo(Long roomId, Long currentUserId, UpdateRoomRequest request) {
         if (currentUserId == null) {
             throw new CustomException(ErrorCode.COMMON_UNAUTHORIZED);
         }
@@ -244,11 +248,12 @@ public class RoomServiceImpl implements RoomService {
                 .orElseThrow(() -> new CustomException(ErrorCode.ROOM_MEMBER_ONLY));
 
         if (!participant.isAdmin()) {
-            throw new CustomException(ErrorCode.ROOM_NOT_ADMIN); // 별도의 커스텀 에러 혹은 403 반환
+            throw new CustomException(ErrorCode.ROOM_NOT_ADMIN); // 방장만 모임 정보를 수정할 수 있다.
         }
 
+        // [ROOM-05] 모임이 진행 중(isProgress=true)이면 정보 수정을 차단한다.
         if (room.isProgress()) {
-            throw new CustomException(ErrorCode.ROOM_CANNOT_UPDATE_STATUS); // 정산중일 때 수정 불가 에러
+            throw new CustomException(ErrorCode.ROOM_CANNOT_UPDATE_STATUS);
         }
 
         room.updateRoomInfo(request.getName(), request.getCategory());
@@ -268,6 +273,8 @@ public class RoomServiceImpl implements RoomService {
             throw new CustomException(ErrorCode.ROOM_NOT_FOUND);
         }
 
+        // [ROOM-06] 모임이 진행 중(isProgress=true)이면 나가기를 차단한다.
+        // 모임이 대기 상태(isProgress=false)일 때만 나가기가 가능하다.
         if (room.isProgress()) {
             throw new CustomException(ErrorCode.ROOM_CANNOT_LEAVE_PROGRESS);
         }
@@ -296,6 +303,8 @@ public class RoomServiceImpl implements RoomService {
             throw new CustomException(ErrorCode.ROOM_NOT_FOUND);
         }
 
+        // [ROOM-07] 모임이 진행 중(isProgress=true)이면 삭제를 차단한다.
+        // 모임이 대기 상태(isProgress=false)일 때만 삭제가 가능하다.
         if (room.isProgress()) {
             throw new CustomException(ErrorCode.ROOM_CANNOT_DELETE_PROGRESS);
         }
@@ -308,5 +317,155 @@ public class RoomServiceImpl implements RoomService {
         }
 
         room.deleteRoom();
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // ROOM-17: 모임 시작
+    // ──────────────────────────────────────────────────────────────
+
+    /**
+     * [ROOM-17] 모임을 시작한다.
+     *
+     * <p>비즈니스 규칙:</p>
+     * <ul>
+     *   <li>일반 멤버 포함 누구나 시작 가능 (방장 권한 불필요)</li>
+     *   <li>이미 진행 중인 모임은 중복 시작할 수 없다 (409)</li>
+     *   <li>정산 요청 중(REQUESTED) 결제가 남아 있으면 시작할 수 없다 (409)</li>
+     *   <li>시작 시 카테고리와 세부 내용(description)을 업데이트한다 (모임 이름은 수정 불가)</li>
+     *   <li>새로운 RoomSession 레코드를 생성하여 회차를 기록한다</li>
+     * </ul>
+     *
+     * @param roomId        모임방 ID
+     * @param currentUserId 현재 인증된 사용자 ID
+     * @param request       카테고리와 세부 내용이 담긴 요청 DTO
+     */
+    @Override
+    @Transactional
+    public void startRoom(Long roomId, Long currentUserId, StartRoomRequest request) {
+        if (currentUserId == null) {
+            throw new CustomException(ErrorCode.COMMON_UNAUTHORIZED);
+        }
+
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
+
+        // 논리 삭제된 방에서의 시작을 방지한다.
+        if (room.getDeletedAt() != null) {
+            throw new CustomException(ErrorCode.ROOM_NOT_FOUND);
+        }
+
+        // 멤버 확인: 일반 멤버도 시작 가능하므로 isAdmin 체크는 하지 않는다.
+        roomParticipantRepository.findByRoom_IdAndUserId(roomId, currentUserId)
+                .orElseThrow(() -> new CustomException(
+                        "해당 모임의 멤버만 모임을 시작할 수 있습니다.",
+                        ErrorCode.ROOM_MEMBER_ONLY
+                ));
+
+        // 이미 진행 중인 모임은 다시 시작할 수 없다.
+        if (room.isProgress()) {
+            throw new CustomException(ErrorCode.ROOM_HAS_REQUESTED_EXPENSE);
+        }
+
+        // 이전 회차에서 정산 요청 중(REQUESTED)인 결제가 남아 있으면
+        // 정산이 완료되기 전까지 새 모임을 시작할 수 없다.
+        validateNoRequestedExpenses(roomId);
+
+        // 모임 시작 시 사용자가 입력한 카테고리(태그)와 세부 내용으로 방 정보를 업데이트한다.
+        // 모임 이름은 시작 시 수정할 수 없으므로 건드리지 않는다.
+        room.updateRoomDetails(request.getCategory(), request.getDescription());
+
+        // isProgress 플래그를 true로 전환하여 모임 진행 상태로 변경한다.
+        room.markInProgress();
+
+        // 새로운 회차(RoomSession)를 생성하여 시작 시점을 기록한다.
+        // startedAt은 @PrePersist에서 자동 설정된다.
+        RoomSession session = RoomSession.builder()
+                .room(room)
+                .build();
+        roomSessionRepository.save(session);
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // ROOM-18: 모임 종료
+    // ──────────────────────────────────────────────────────────────
+
+    /**
+     * [ROOM-18] 모임을 종료한다.
+     *
+     * <p>비즈니스 규칙:</p>
+     * <ul>
+     *   <li>일반 멤버 포함 누구나 종료 가능 (방장 권한 불필요)</li>
+     *   <li>진행 중이 아닌 모임은 종료할 수 없다 (409)</li>
+     *   <li>정산 요청 중(REQUESTED) 결제가 남아 있으면 종료할 수 없다 (409)</li>
+     *   <li>활성 RoomSession의 endedAt과 finalCategory를 기록한다</li>
+     * </ul>
+     *
+     * @param roomId        모임방 ID
+     * @param currentUserId 현재 인증된 사용자 ID
+     */
+    @Override
+    @Transactional
+    public void endRoom(Long roomId, Long currentUserId) {
+        if (currentUserId == null) {
+            throw new CustomException(ErrorCode.COMMON_UNAUTHORIZED);
+        }
+
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
+
+        // 논리 삭제된 방에서의 종료를 방지한다.
+        if (room.getDeletedAt() != null) {
+            throw new CustomException(ErrorCode.ROOM_NOT_FOUND);
+        }
+
+        // 멤버 확인: 일반 멤버도 종료 가능하므로 isAdmin 체크는 하지 않는다.
+        roomParticipantRepository.findByRoom_IdAndUserId(roomId, currentUserId)
+                .orElseThrow(() -> new CustomException(
+                        "해당 모임의 멤버만 모임을 종료할 수 있습니다.",
+                        ErrorCode.ROOM_MEMBER_ONLY
+                ));
+
+        // 이미 종료된(대기 중인) 모임은 다시 종료할 수 없다.
+        if (!room.isProgress()) {
+            throw new CustomException(ErrorCode.ROOM_HAS_REQUESTED_EXPENSE);
+        }
+
+        // 정산 요청 중(REQUESTED)인 결제가 남아 있으면 종료할 수 없다.
+        // 모든 정산이 완료(SETTLED)되거나 아직 요청되지 않은(PENDING) 상태여야 한다.
+        validateNoRequestedExpenses(roomId);
+
+        // 활성 세션(endedAt이 null인 세션)을 찾아 종료 처리한다.
+        // finalCategory에 현재 방의 카테고리를 스냅샷으로 저장한다.
+        RoomSession activeSession = roomSessionRepository.findByRoomIdAndEndedAtIsNull(roomId)
+                .orElse(null);
+
+        if (activeSession != null) {
+            activeSession.endSession(room.getCategory());
+        }
+
+        // isProgress 플래그를 false로 전환하여 대기 상태로 복귀한다.
+        room.markReady();
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // 공통 헬퍼
+    // ──────────────────────────────────────────────────────────────
+
+    /**
+     * 해당 모임방에 정산 요청 중(REQUESTED) 상태인 결제가 존재하는지 검증한다.
+     * 존재하면 409 Conflict 예외를 던져 모임 시작/종료를 차단한다.
+     *
+     * <p>expenses 테이블의 status 컬럼 기준:</p>
+     * <ul>
+     *   <li>PENDING: 등록만 된 상태 → 시작/종료에 영향 없음</li>
+     *   <li>REQUESTED: 정산 요청 중 → 시작/종료 차단</li>
+     *   <li>SETTLED: 정산 완료 → 시작/종료에 영향 없음</li>
+     * </ul>
+     */
+    private void validateNoRequestedExpenses(Long roomId) {
+        long requestedCount = expenseRepository.countByRoomIdAndStatus(roomId, "REQUESTED");
+        if (requestedCount > 0) {
+            throw new CustomException(ErrorCode.ROOM_HAS_REQUESTED_EXPENSE);
+        }
     }
 }

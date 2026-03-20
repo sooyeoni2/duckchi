@@ -24,4 +24,6 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
             group by e.roomId
             """)
     List<RoomExpenseSummaryProjection> findRoomExpenseSummaries(@Param("roomIds") List<Long> roomIds);
+
+    long countByRoomIdAndStatus(Long roomId, String status);
 }

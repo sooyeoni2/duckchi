@@ -20,28 +20,34 @@ public class Expense {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(name = "room_id", nullable = false)
     private Long roomId;             // 대상 모임방 식별자임.
 
-    @Column(nullable = false, length = 100)
-    private String roomName;         // 방 식별이 용이하도록 방 이름을 비정규화하여 저장함.
+    @Column(name = "room_session_id", nullable = false)
+    private Long roomSessionId;      // 회차 식별자임.
 
-    @Column(nullable = false)
+    @Column(name = "payer_user_id", nullable = false)
     private Long payerUserId;        // 결제 주체인 총무의 ID임.
 
-    @Column(nullable = false, length = 50)
+    @Column(name = "payer_user_name", nullable = false, length = 50)
     private String payerUserName;    // 조회 시 성능을 위해 결제자 이름을 상호 저장함.
 
-    @Column(nullable = false, length = 20)
+    @Column(name = "input_type", nullable = false, length = 20)
     private String inputType;        // 결제 수단 (MANUAL, ACCOUNT_HISTORY, OCR) 구분용임.
+
+    @Column(name = "status", nullable = false, length = 20)
+    private String status;           // PENDING, REQUESTED, SETTLED 상태임.
+
+    @Column(name = "receipt_image_url", length = 512)
+    private String receiptImageUrl; // 영수증 이미지 URL임.
 
     @Column(nullable = false, length = 200)
     private String title;            // 지출 항목명(예: OO식당)임.
 
-    @Column(nullable = false)
+    @Column(name = "total_amount", nullable = false)
     private Integer totalAmount;     // 결제 총액임.
 
-    @Column(nullable = false)
+    @Column(name = "paid_at")
     private LocalDateTime paidAt;    // 실제 돈이 나간 시점임.
 
     /**
