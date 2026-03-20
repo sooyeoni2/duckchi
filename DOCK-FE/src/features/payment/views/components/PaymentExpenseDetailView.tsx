@@ -1,11 +1,15 @@
+import { MaterialCommunityIcons as MaterialDesignIcons } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+
 import { AppColorStyles } from '@core/theme/colors';
-import {
-  KBODiaGothicTextStyle,
-  PretendardTextStyle,
-} from '@core/theme/typography';
-import type { MyExpenseDetail } from '../../models/paymentTypes';
+import { KBODiaGothicTextStyle, PretendardTextStyle } from '@core/theme/typography';
+
+import type {
+  ExpenseLineItemAssignmentDetail,
+  ExpenseLineItemPreview,
+  MyExpenseDetail,
+} from '../../models/paymentTypes';
 import { PaymentAnimatedTouchable } from './PaymentAnimatedTouchable';
 
 interface PaymentExpenseDetailViewProps {
@@ -29,23 +33,22 @@ const INPUT_TYPE_LABEL: Record<MyExpenseDetail['inputType'], string> = {
 };
 
 const STATUS_LABEL: Record<MyExpenseDetail['status'], string> = {
-  PENDING: '정산 전',
-  REQUESTED: '요청됨',
+  PENDING: '대기',
+  REQUESTED: '진행중',
   SETTLED: '완료',
 };
 
-const formatAmount = (amount: number): string =>
-  `${amount.toLocaleString('ko-KR')}원`;
+const formatAmount = (amount: number): string => `${amount.toLocaleString('ko-KR')}원`;
 
 const formatDate = (date: Date | null): string => {
   if (date == null) {
     return '시간 정보 없음';
   }
 
-  const month = date.getMonth() + 1;
-  const day = date.getDate().toString().padStart(2, '0');
-  const hour = date.getHours().toString().padStart(2, '0');
-  const minute = date.getMinutes().toString().padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hour = String(date.getHours()).padStart(2, '0');
+  const minute = String(date.getMinutes()).padStart(2, '0');
 
   return `${month}.${day} ${hour}:${minute}`;
 };
@@ -53,24 +56,47 @@ const formatDate = (date: Date | null): string => {
 function InfoRow({ label, value }: InfoRowProps) {
   return (
     <View style={styles.infoRow}>
-      <Text
-        style={PretendardTextStyle.medium({
-          fontSize: 13,
-          color: AppColorStyles.textSecondary,
-        })}
-      >
-        {label}
-      </Text>
-      <Text
-        style={PretendardTextStyle.semiBold({
-          fontSize: 13,
-          color: AppColorStyles.black,
-        })}
-      >
-        {value}
-      </Text>
+      <Text style={styles.infoLabel}>{label}</Text>
+      <Text style={styles.infoValue}>{value}</Text>
     </View>
   );
+}
+
+function buildFallbackBreakdown(
+  item: ExpenseLineItemPreview,
+): ExpenseLineItemAssignmentDetail[] {
+  if (item.assignedParticipants.length === 0) {
+    return [];
+  }
+
+  const participantCount = item.assignedParticipants.length;
+  const baseAmount = Math.floor(item.amount / participantCount);
+  const amountRemainder = item.amount % participantCount;
+  const baseQuantity = Math.floor(item.quantity / participantCount);
+  const quantityRemainder = item.quantity % participantCount;
+
+  return item.assignedParticipants.map((userName, index) => ({
+    userId: index + 1,
+    userName,
+    quantity: baseQuantity + (index < quantityRemainder ? 1 : 0),
+    amount: baseAmount + (index < amountRemainder ? 1 : 0),
+  }));
+}
+
+function getLineItemBreakdown(
+  item: ExpenseLineItemPreview,
+): ExpenseLineItemAssignmentDetail[] {
+  if (item.assignmentDetails != null && item.assignmentDetails.length > 0) {
+    return item.assignmentDetails;
+  }
+
+  return buildFallbackBreakdown(item);
+}
+
+function isEqualSplitBreakdown(
+  breakdowns: ExpenseLineItemAssignmentDetail[],
+): boolean {
+  return breakdowns.length > 0 && breakdowns.every((detail) => detail.quantity === 0);
 }
 
 export function PaymentExpenseDetailView({
@@ -79,53 +105,33 @@ export function PaymentExpenseDetailView({
   onCancel,
   editDisabled = false,
   cancelDisabled = false,
-  actionHelperMessage = null,
 }: PaymentExpenseDetailViewProps) {
+  const [expandedItemId, setExpandedItemId] = React.useState<number | null>(null);
+
   const shouldShowLineItems =
     expense.inputType === 'OCR' && expense.lineItems.length > 0;
   const shouldShowSourceInfo =
     expense.sourceInfoRows != null && expense.sourceInfoRows.length > 0;
   const canShowAnyAction = !editDisabled || !cancelDisabled;
+  const actionHelperMessage =
+    expense.status === 'REQUESTED'
+      ? '이미 정산 요청이 진행 중인 결제안은 수정하거나 삭제할 수 없어요.'
+      : null;
+
+  const toggleLineItem = (itemId: number) => {
+    setExpandedItemId((currentId) => (currentId === itemId ? null : itemId));
+  };
 
   return (
     <View>
       <View style={styles.heroCard}>
-        <Text
-          style={KBODiaGothicTextStyle.bold({
-            fontSize: 24,
-            color: AppColorStyles.black,
-          })}
-        >
-          {expense.title}
-        </Text>
-        <Text
-          style={KBODiaGothicTextStyle.bold({
-            fontSize: 28,
-            color: AppColorStyles.gray1,
-          })}
-        >
-          {formatAmount(expense.totalAmount)}
-        </Text>
-        <Text
-          style={PretendardTextStyle.regular({
-            fontSize: 14,
-            lineHeight: 22,
-            color: AppColorStyles.textSecondary,
-          })}
-        >
-          {`${expense.storeName} · ${formatDate(expense.paidAt)}`}
-        </Text>
+        <Text style={styles.heroTitle}>{expense.title}</Text>
+        <Text style={styles.heroAmount}>{formatAmount(expense.totalAmount)}</Text>
+        <Text style={styles.heroMeta}>{`${expense.storeName} · ${formatDate(expense.paidAt)}`}</Text>
       </View>
 
       <View style={styles.sectionCard}>
-        <Text
-          style={KBODiaGothicTextStyle.medium({
-            fontSize: 18,
-            color: AppColorStyles.black,
-          })}
-        >
-          기본 정보
-        </Text>
+        <Text style={styles.sectionTitle}>기본 정보</Text>
         <View style={styles.sectionBody}>
           <InfoRow label="정산 상태" value={STATUS_LABEL[expense.status]} />
           <InfoRow label="등록 방식" value={INPUT_TYPE_LABEL[expense.inputType]} />
@@ -135,47 +141,22 @@ export function PaymentExpenseDetailView({
 
       {shouldShowSourceInfo && (
         <View style={styles.sectionCard}>
-          <Text
-            style={KBODiaGothicTextStyle.medium({
-              fontSize: 18,
-              color: AppColorStyles.black,
-            })}
-          >
-            원본 정보
-          </Text>
+          <Text style={styles.sectionTitle}>원본 정보</Text>
           <View style={styles.sectionBody}>
             {expense.sourceInfoRows?.map((row) => (
-              <InfoRow
-                key={`${row.label}-${row.value}`}
-                label={row.label}
-                value={row.value}
-              />
+              <InfoRow key={`${row.label}-${row.value}`} label={row.label} value={row.value} />
             ))}
           </View>
         </View>
       )}
 
       <View style={styles.sectionCard}>
-        <Text
-          style={KBODiaGothicTextStyle.medium({
-            fontSize: 18,
-            color: AppColorStyles.black,
-          })}
-        >
-          참여자 설정
-        </Text>
+        <Text style={styles.sectionTitle}>참여자 설정</Text>
         <View style={styles.sectionBody}>
           {expense.participants.map((participant) => (
             <View key={participant.userId} style={styles.participantRow}>
               <View style={styles.participantInfo}>
-                <Text
-                  style={KBODiaGothicTextStyle.medium({
-                    fontSize: 16,
-                    color: AppColorStyles.black,
-                  })}
-                >
-                  {participant.userName}
-                </Text>
+                <Text style={styles.participantName}>{participant.userName}</Text>
                 <View
                   style={[
                     styles.statusChip,
@@ -183,12 +164,7 @@ export function PaymentExpenseDetailView({
                     participant.isSettled && styles.settledChip,
                   ]}
                 >
-                  <Text
-                    style={PretendardTextStyle.semiBold({
-                      fontSize: 11,
-                      color: AppColorStyles.black,
-                    })}
-                  >
+                  <Text style={styles.statusChipText}>
                     {participant.isRequester
                       ? '요청자'
                       : participant.isSettled
@@ -197,14 +173,7 @@ export function PaymentExpenseDetailView({
                   </Text>
                 </View>
               </View>
-              <Text
-                style={KBODiaGothicTextStyle.bold({
-                  fontSize: 16,
-                  color: AppColorStyles.gray1,
-                })}
-              >
-                {formatAmount(participant.splitAmount)}
-              </Text>
+              <Text style={styles.participantAmount}>{formatAmount(participant.splitAmount)}</Text>
             </View>
           ))}
         </View>
@@ -212,77 +181,79 @@ export function PaymentExpenseDetailView({
 
       {shouldShowLineItems && (
         <View style={styles.sectionCard}>
-          <Text
-            style={KBODiaGothicTextStyle.medium({
-              fontSize: 18,
-              color: AppColorStyles.black,
-            })}
-          >
-            세부 품목
-          </Text>
+          <Text style={styles.sectionTitle}>세부 품목</Text>
           <View style={styles.sectionBody}>
-            {expense.lineItems.map((item) => (
-              <View key={item.itemId} style={styles.itemCard}>
-                <View style={styles.itemTopRow}>
-                  <Text
-                    style={KBODiaGothicTextStyle.medium({
-                      fontSize: 16,
-                      color: AppColorStyles.black,
-                    })}
+            {expense.lineItems.map((item) => {
+              const isExpanded = expandedItemId === item.itemId;
+              const breakdowns = getLineItemBreakdown(item);
+              const isEqualSplit = isEqualSplitBreakdown(breakdowns);
+              const equalSplitAmount =
+                breakdowns.length > 0
+                  ? Math.floor(item.amount / breakdowns.length)
+                  : item.amount;
+
+              return (
+                <View key={item.itemId} style={styles.itemCard}>
+                  <PaymentAnimatedTouchable
+                    variant="card"
+                    activeOpacity={0.9}
+                    onPress={() => toggleLineItem(item.itemId)}
+                    style={styles.itemPressable}
                   >
-                    {item.name}
-                  </Text>
-                  <Text
-                    style={PretendardTextStyle.semiBold({
-                      fontSize: 13,
-                      color: AppColorStyles.textSecondary,
-                    })}
-                  >
-                    {`${item.quantity}개`}
-                  </Text>
+                    <View style={styles.itemTopRow}>
+                      <View style={styles.itemMetaColumn}>
+                        <Text style={styles.itemName}>{item.name}</Text>
+                        <Text style={styles.itemSubMeta}>
+                          {`${item.quantity}개 · ${item.assignedParticipants.join(', ')}`}
+                        </Text>
+                      </View>
+
+                      <View style={styles.itemAmountWrap}>
+                        <Text style={styles.itemAmount}>{formatAmount(item.amount)}</Text>
+                        <MaterialDesignIcons
+                          name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                          size={20}
+                          color={AppColorStyles.gray2}
+                        />
+                      </View>
+                    </View>
+                  </PaymentAnimatedTouchable>
+
+                  {isExpanded && breakdowns.length > 0 && (
+                    <View style={styles.breakdownList}>
+                      {isEqualSplit ? (
+                        <View style={styles.breakdownRow}>
+                          <Text style={styles.breakdownName}>공통 N빵</Text>
+                          <Text style={styles.breakdownMeta}>
+                            {`${breakdowns.length}명 · 1인 ${formatAmount(equalSplitAmount)}`}
+                          </Text>
+                        </View>
+                      ) : (
+                        breakdowns.map((detail) => (
+                          <View
+                            key={`${item.itemId}-${detail.userId}-${detail.userName}`}
+                            style={styles.breakdownRow}
+                          >
+                            <Text style={styles.breakdownName}>{detail.userName}</Text>
+                            <Text style={styles.breakdownMeta}>
+                              {`${detail.quantity}개 · ${formatAmount(detail.amount)}`}
+                            </Text>
+                          </View>
+                        ))
+                      )}
+                    </View>
+                  )}
                 </View>
-                <Text
-                  style={KBODiaGothicTextStyle.bold({
-                    fontSize: 16,
-                    color: AppColorStyles.gray1,
-                  })}
-                >
-                  {formatAmount(item.amount)}
-                </Text>
-                <Text
-                  style={PretendardTextStyle.regular({
-                    fontSize: 13,
-                    lineHeight: 20,
-                    color: AppColorStyles.textSecondary,
-                  })}
-                >
-                  {`배정 참여자 · ${item.assignedParticipants.join(', ')}`}
-                </Text>
-              </View>
-            ))}
+              );
+            })}
           </View>
         </View>
       )}
 
       <View style={styles.sectionCard}>
-        <Text
-          style={KBODiaGothicTextStyle.medium({
-            fontSize: 18,
-            color: AppColorStyles.black,
-          })}
-        >
-          메모
-        </Text>
+        <Text style={styles.sectionTitle}>메모</Text>
         <View style={styles.sectionBody}>
-          <Text
-            style={PretendardTextStyle.regular({
-              fontSize: 14,
-              lineHeight: 22,
-              color: AppColorStyles.textSecondary,
-            })}
-          >
-            {expense.memo}
-          </Text>
+          <Text style={styles.memoText}>{expense.memo}</Text>
         </View>
       </View>
 
@@ -295,14 +266,7 @@ export function PaymentExpenseDetailView({
               wrapperStyle={styles.actionButtonWrap}
               style={[styles.actionButton, styles.editButton]}
             >
-              <Text
-                style={KBODiaGothicTextStyle.bold({
-                  fontSize: 18,
-                  color: AppColorStyles.black,
-                })}
-              >
-                수정하기
-              </Text>
+              <Text style={styles.editButtonText}>수정하기</Text>
             </PaymentAnimatedTouchable>
           )}
 
@@ -316,29 +280,14 @@ export function PaymentExpenseDetailView({
               ]}
               style={[styles.actionButton, styles.cancelButton]}
             >
-              <Text
-                style={KBODiaGothicTextStyle.bold({
-                  fontSize: 18,
-                  color: AppColorStyles.black,
-                })}
-              >
-                취소하기
-              </Text>
+              <Text style={styles.cancelButtonText}>삭제하기</Text>
             </PaymentAnimatedTouchable>
           )}
         </View>
       )}
 
       {actionHelperMessage != null && (
-        <Text
-          style={PretendardTextStyle.medium({
-            fontSize: 13,
-            lineHeight: 20,
-            color: AppColorStyles.textSecondary,
-          })}
-        >
-          {actionHelperMessage}
-        </Text>
+        <Text style={styles.actionHelperText}>{actionHelperMessage}</Text>
       )}
     </View>
   );
@@ -353,6 +302,27 @@ const styles = StyleSheet.create({
     borderColor: AppColorStyles.divider,
     marginBottom: 16,
   },
+  heroTitle: {
+    ...KBODiaGothicTextStyle.bold({
+      fontSize: 24,
+      color: AppColorStyles.black,
+    }),
+  },
+  heroAmount: {
+    marginTop: 10,
+    ...KBODiaGothicTextStyle.bold({
+      fontSize: 28,
+      color: AppColorStyles.gray1,
+    }),
+  },
+  heroMeta: {
+    marginTop: 10,
+    ...PretendardTextStyle.regular({
+      fontSize: 14,
+      lineHeight: 22,
+      color: AppColorStyles.textSecondary,
+    }),
+  },
   sectionCard: {
     padding: 18,
     borderRadius: 18,
@@ -360,6 +330,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: AppColorStyles.divider,
     marginBottom: 16,
+  },
+  sectionTitle: {
+    ...KBODiaGothicTextStyle.medium({
+      fontSize: 18,
+      color: AppColorStyles.black,
+    }),
   },
   sectionBody: {
     marginTop: 14,
@@ -369,6 +345,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 8,
+  },
+  infoLabel: {
+    ...PretendardTextStyle.medium({
+      fontSize: 13,
+      color: AppColorStyles.textSecondary,
+    }),
+  },
+  infoValue: {
+    ...PretendardTextStyle.semiBold({
+      fontSize: 13,
+      color: AppColorStyles.black,
+    }),
   },
   participantRow: {
     flexDirection: 'row',
@@ -381,6 +369,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
     paddingRight: 12,
+  },
+  participantName: {
+    ...KBODiaGothicTextStyle.medium({
+      fontSize: 16,
+      color: AppColorStyles.black,
+    }),
+  },
+  participantAmount: {
+    ...KBODiaGothicTextStyle.bold({
+      fontSize: 16,
+      color: AppColorStyles.gray1,
+    }),
   },
   statusChip: {
     marginLeft: 10,
@@ -395,17 +395,85 @@ const styles = StyleSheet.create({
   settledChip: {
     backgroundColor: AppColorStyles.gray4,
   },
+  statusChipText: {
+    ...PretendardTextStyle.semiBold({
+      fontSize: 11,
+      color: AppColorStyles.black,
+    }),
+  },
   itemCard: {
-    padding: 14,
     borderRadius: 14,
     backgroundColor: AppColorStyles.gray5,
     marginBottom: 10,
+    overflow: 'hidden',
+  },
+  itemPressable: {
+    padding: 14,
   },
   itemTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 8,
+  },
+  itemMetaColumn: {
+    flex: 1,
+    paddingRight: 12,
+  },
+  itemName: {
+    ...KBODiaGothicTextStyle.medium({
+      fontSize: 16,
+      color: AppColorStyles.black,
+    }),
+  },
+  itemSubMeta: {
+    marginTop: 8,
+    ...PretendardTextStyle.regular({
+      fontSize: 13,
+      lineHeight: 20,
+      color: AppColorStyles.textSecondary,
+    }),
+  },
+  itemAmountWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  itemAmount: {
+    marginRight: 6,
+    ...KBODiaGothicTextStyle.bold({
+      fontSize: 16,
+      color: AppColorStyles.gray1,
+    }),
+  },
+  breakdownList: {
+    borderTopWidth: 1,
+    borderTopColor: AppColorStyles.divider,
+    paddingHorizontal: 14,
+    paddingBottom: 8,
+  },
+  breakdownRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 10,
+  },
+  breakdownName: {
+    ...PretendardTextStyle.medium({
+      fontSize: 13,
+      color: AppColorStyles.black,
+    }),
+  },
+  breakdownMeta: {
+    ...PretendardTextStyle.semiBold({
+      fontSize: 13,
+      color: AppColorStyles.gray1,
+    }),
+  },
+  memoText: {
+    ...PretendardTextStyle.regular({
+      fontSize: 14,
+      lineHeight: 22,
+      color: AppColorStyles.textSecondary,
+    }),
   },
   actionRow: {
     flexDirection: 'row',
@@ -424,6 +492,12 @@ const styles = StyleSheet.create({
   editButton: {
     backgroundColor: AppColorStyles.yellow,
   },
+  editButtonText: {
+    ...KBODiaGothicTextStyle.bold({
+      fontSize: 18,
+      color: AppColorStyles.black,
+    }),
+  },
   cancelButtonSpacing: {
     marginLeft: 12,
   },
@@ -431,5 +505,20 @@ const styles = StyleSheet.create({
     backgroundColor: AppColorStyles.white,
     borderWidth: 2,
     borderColor: AppColorStyles.yellow,
+  },
+  cancelButtonText: {
+    ...KBODiaGothicTextStyle.bold({
+      fontSize: 18,
+      color: AppColorStyles.black,
+    }),
+  },
+  actionHelperText: {
+    marginTop: 8,
+    marginBottom: 12,
+    ...PretendardTextStyle.medium({
+      fontSize: 13,
+      lineHeight: 20,
+      color: AppColorStyles.textSecondary,
+    }),
   },
 });

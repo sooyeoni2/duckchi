@@ -121,6 +121,18 @@ export interface ExpenseLineItemPreview {
   quantity: number;
   amount: number;
   assignedParticipants: string[];
+  assignmentDetails?: ExpenseLineItemAssignmentDetail[];
+}
+
+/**
+ * OCR 세부 품목을 펼쳤을 때 보여줄 참여자별 분담 상세.
+ * 수량/금액 기준으로 누가 얼마를 부담하는지 dropdown 형태로 확인한다.
+ */
+export interface ExpenseLineItemAssignmentDetail {
+  userId: number;
+  userName: string;
+  quantity: number;
+  amount: number;
 }
 
 /**
