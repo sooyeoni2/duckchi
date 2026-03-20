@@ -15,19 +15,28 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { RoomStackParamList } from '@core/navigation/types';
 import { AppColorStyles } from '@core/theme/colors';
-import { KBODiaGothicTextStyle, PretendardTextStyle } from '@core/theme/typography';
+import {
+  KBODiaGothicTextStyle,
+  PretendardTextStyle,
+} from '@core/theme/typography';
 import { CustomAppBar } from '@shared/components/app_bar/CustomAppBar';
 
-import {
-  PaymentTabContent,
-  type PaymentTabContentHandle,
-} from '../../payment/views/components/PaymentTabContent';
-import { PaymentEntryMethodTabs } from '../../payment/views/components/PaymentEntryMethodTabs';
 import {
   defaultPaymentContentLayoutState,
   type PaymentContentLayoutState,
 } from '../../payment/models/paymentContentLayout';
-import { roomParticipatedPaymentsMock, roomSettlementRequestsMock } from '../models/roomDetailMockData';
+import { getExpenseDetail } from '../../payment/models/paymentService';
+import type { MyExpenseDetail } from '../../payment/models/paymentTypes';
+import { PaymentEntryMethodTabs } from '../../payment/views/components/PaymentEntryMethodTabs';
+import { PaymentExpenseDetailView } from '../../payment/views/components/PaymentExpenseDetailView';
+import {
+  PaymentTabContent,
+  type PaymentTabContentHandle,
+} from '../../payment/views/components/PaymentTabContent';
+import {
+  roomParticipatedPaymentsMock,
+  roomSettlementRequestsMock,
+} from '../models/roomDetailMockData';
 import { meetingRoomMockData } from '../models/roomMockData';
 import { useRoomStore } from '../models/roomStore';
 import { RoomSettlementTransferView } from './components/RoomSettlementTransferView';
@@ -45,7 +54,14 @@ const ROOM_TABS = [
 type RoomViewMode = 'SUMMARY' | 'TRANSFER';
 type RoomMainTab = (typeof ROOM_TABS)[number]['key'];
 
+type SettlementDetailState =
+  | { status: 'idle' }
+  | { status: 'loading'; expenseId: number }
+  | { status: 'loaded'; expenseId: number; detail: MyExpenseDetail }
+  | { status: 'error'; expenseId: number; message: string };
+
 const toWon = (value: number) => `${value.toLocaleString('ko-KR')}원`;
+
 type Nav = NativeStackNavigationProp<RoomStackParamList, 'RoomDetail'>;
 type Route = RouteProp<RoomStackParamList, 'RoomDetail'>;
 
@@ -61,10 +77,16 @@ export function RoomScreen() {
   const [paymentLayoutState, setPaymentLayoutState] =
     useState<PaymentContentLayoutState>(defaultPaymentContentLayoutState);
   const [roomTabHistory, setRoomTabHistory] = useState<RoomMainTab[]>([]);
+  const [settlementDetailState, setSettlementDetailState] =
+    useState<SettlementDetailState>({
+      status: 'idle',
+    });
+
   const rooms = useRoomStore((state) => state.rooms);
   const room =
     rooms.find((item) => item.roomId === route.params.roomId) ??
     meetingRoomMockData[0];
+
   const expectedAmount =
     room != null ? Math.round(room.totalPay / Math.max(room.memberCount, 1)) : 0;
   const participatedPayments = roomParticipatedPaymentsMock[room.roomId] ?? [];
@@ -72,6 +94,46 @@ export function RoomScreen() {
   const selectedRoomTabIndex = ROOM_TABS.findIndex(
     (tab) => tab.key === selectedRoomTab,
   );
+  const isSettlementDetailOpen = settlementDetailState.status !== 'idle';
+
+  React.useEffect(() => {
+    if (settlementDetailState.status !== 'loading') {
+      return;
+    }
+
+    let cancelled = false;
+
+    void getExpenseDetail(settlementDetailState.expenseId)
+      .then((detail) => {
+        if (cancelled) {
+          return;
+        }
+
+        setSettlementDetailState({
+          status: 'loaded',
+          expenseId: settlementDetailState.expenseId,
+          detail,
+        });
+      })
+      .catch((error) => {
+        if (cancelled) {
+          return;
+        }
+
+        setSettlementDetailState({
+          status: 'error',
+          expenseId: settlementDetailState.expenseId,
+          message:
+            error instanceof Error
+              ? error.message
+              : '상세 내역을 불러오지 못했습니다.',
+        });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [settlementDetailState]);
 
   const handleSelectRoomTab = React.useCallback(
     (nextTab: RoomMainTab) => {
@@ -83,11 +145,22 @@ export function RoomScreen() {
         setPaymentLayoutState(defaultPaymentContentLayoutState);
       }
 
+      if (selectedRoomTab === 'SETTLEMENT' && nextTab !== 'SETTLEMENT') {
+        setSettlementDetailState({ status: 'idle' });
+      }
+
       setRoomTabHistory((previousHistory) => [...previousHistory, selectedRoomTab]);
       setSelectedRoomTab(nextTab);
     },
     [selectedRoomTab],
   );
+
+  const handleOpenSettlementDetail = React.useCallback((expenseId: number) => {
+    setSettlementDetailState({
+      status: 'loading',
+      expenseId,
+    });
+  }, []);
 
   const handleBack = React.useCallback(() => {
     if (
@@ -95,6 +168,11 @@ export function RoomScreen() {
       paymentTabRef.current?.canGoBack()
     ) {
       paymentTabRef.current.goBack();
+      return;
+    }
+
+    if (selectedRoomTab === 'SETTLEMENT' && isSettlementDetailOpen) {
+      setSettlementDetailState({ status: 'idle' });
       return;
     }
 
@@ -117,7 +195,7 @@ export function RoomScreen() {
     if (navigation.canGoBack()) {
       navigation.goBack();
     }
-  }, [navigation, selectedRoomTab]);
+  }, [isSettlementDetailOpen, navigation, selectedRoomTab]);
 
   if (viewMode === 'TRANSFER') {
     return <RoomSettlementTransferView onBack={() => setViewMode('SUMMARY')} />;
@@ -125,18 +203,139 @@ export function RoomScreen() {
 
   const shouldUsePaymentAppBar =
     selectedRoomTab === 'PAYMENT' && paymentLayoutState.headerTitle != null;
+  const shouldUseSettlementDetailAppBar =
+    selectedRoomTab === 'SETTLEMENT' && isSettlementDetailOpen;
   const appBarTitle = shouldUsePaymentAppBar
     ? paymentLayoutState.headerTitle
-    : room?.roomName ?? '모임 상세';
+    : shouldUseSettlementDetailAppBar
+      ? '상세 내역'
+      : room?.roomName ?? '모임 상세';
   const showRoomActions =
-    selectedRoomTab !== 'PAYMENT' || paymentLayoutState.showRoomActions;
+    !shouldUseSettlementDetailAppBar &&
+    (selectedRoomTab !== 'PAYMENT' || paymentLayoutState.showRoomActions);
+
+  const renderSettlementOverview = () => (
+    <ScrollView
+      style={styles.scrollArea}
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+    >
+      <TouchableOpacity
+        style={styles.expectedCard}
+        activeOpacity={0.85}
+        onPress={() => setViewMode('TRANSFER')}
+      >
+        <Text style={styles.expectedLabel}>예상 금액</Text>
+        <Text style={styles.expectedAmount}>{toWon(expectedAmount)}</Text>
+        <View style={styles.expectedBottomRow}>
+          <Text style={styles.expectedHint}>금액은 변경할 수 있어요.</Text>
+          <View style={styles.expectedActionBadge}>
+            <Text style={styles.expectedAction}>정산하기</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+
+      <View style={[styles.sectionCard, styles.sectionCardSpacing]}>
+        <Text style={styles.sectionTitle}>내가 참여한 결제</Text>
+        {participatedPayments.length > 0 ? (
+          participatedPayments.map((item, index) => (
+            <SettlementRowCard
+              key={item.id}
+              item={item}
+              isLast={index === participatedPayments.length - 1}
+              onPress={() => handleOpenSettlementDetail(item.id)}
+            />
+          ))
+        ) : (
+          <View style={styles.sectionEmptyBox}>
+            <Text style={styles.emptyText}>참여 중인 결제가 없습니다.</Text>
+          </View>
+        )}
+      </View>
+
+      <View style={[styles.sectionCard, styles.sectionCardBottomSpacing]}>
+        <Text style={styles.sectionTitle}>정산 요청 목록</Text>
+        {settlementRequests.length > 0 ? (
+          settlementRequests.map((item, index) => (
+            <SettlementRowCard
+              key={item.id}
+              item={item}
+              isLast={index === settlementRequests.length - 1}
+              onPress={() => handleOpenSettlementDetail(item.id)}
+            />
+          ))
+        ) : (
+          <View style={styles.sectionEmptyBox}>
+            <Text style={styles.emptyText}>정산 요청이 없습니다.</Text>
+          </View>
+        )}
+      </View>
+
+      <View style={styles.totalCard}>
+        <Text style={styles.totalLabel}>모임 전체 합계</Text>
+        <Text style={styles.totalAmount}>{toWon(room?.totalPay ?? 0)}</Text>
+      </View>
+    </ScrollView>
+  );
+
+  const renderSettlementDetail = () => {
+    if (settlementDetailState.status === 'loading') {
+      return (
+        <View style={styles.detailContainer}>
+          <View style={styles.sceneCenterCard}>
+            <Text style={styles.messageText}>상세 내역을 불러오는 중입니다.</Text>
+          </View>
+        </View>
+      );
+    }
+
+    if (settlementDetailState.status === 'error') {
+      return (
+        <View style={styles.detailContainer}>
+          <View style={styles.sceneCenterCard}>
+            <Text style={styles.errorText}>{settlementDetailState.message}</Text>
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() =>
+                setSettlementDetailState({
+                  status: 'loading',
+                  expenseId: settlementDetailState.expenseId,
+                })
+              }
+              style={styles.retryButton}
+            >
+              <Text style={styles.retryButtonText}>다시 시도하기</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      );
+    }
+
+    if (settlementDetailState.status !== 'loaded') {
+      return null;
+    }
+
+    return (
+      <ScrollView
+        style={styles.scrollArea}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <PaymentExpenseDetailView
+          expense={settlementDetailState.detail}
+          onEdit={() => {}}
+          onCancel={() => {}}
+          editDisabled
+          cancelDisabled
+        />
+      </ScrollView>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <CustomAppBar
-        titleWidget={
-          <Text style={styles.summaryRoomTitle}>{appBarTitle}</Text>
-        }
+        titleWidget={<Text style={styles.summaryRoomTitle}>{appBarTitle}</Text>}
         centerTitle={false}
         showDivider
         backgroundColor={AppColorStyles.background}
@@ -164,12 +363,15 @@ export function RoomScreen() {
         }
       />
 
-      {selectedRoomTab === 'PAYMENT' && paymentLayoutState.topTabMode === 'ENTRY' ? (
+      {selectedRoomTab === 'PAYMENT' &&
+      paymentLayoutState.topTabMode === 'ENTRY' ? (
         <PaymentEntryMethodTabs
           activeTab={paymentLayoutState.activeEntryTab ?? 'ACCOUNT_HISTORY'}
           onChange={(nextTab) => paymentTabRef.current?.selectEntryTab(nextTab)}
         />
-      ) : selectedRoomTab !== 'PAYMENT' || paymentLayoutState.topTabMode === 'ROOM' ? (
+      ) : (selectedRoomTab !== 'PAYMENT' ||
+          paymentLayoutState.topTabMode === 'ROOM') &&
+        !shouldUseSettlementDetailAppBar ? (
         <View style={styles.roomTabContainer}>
           {ROOM_TABS.map((tab) => (
             <TouchableOpacity
@@ -210,71 +412,13 @@ export function RoomScreen() {
           onLayoutChange={setPaymentLayoutState}
         />
       ) : selectedRoomTab === 'SETTLEMENT' ? (
-        <ScrollView
-          style={styles.scrollArea}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          <TouchableOpacity
-            style={styles.expectedCard}
-            activeOpacity={0.85}
-            onPress={() => setViewMode('TRANSFER')}
-          >
-            <Text style={styles.expectedLabel}>내 예상 금액</Text>
-            <Text style={styles.expectedAmount}>{toWon(expectedAmount)}</Text>
-            <View style={styles.expectedBottomRow}>
-              <Text style={styles.expectedHint}>금액이 변동될 수 있어요</Text>
-              <View style={styles.expectedActionBadge}>
-                <Text style={styles.expectedAction}>탭하여 정산하기 →</Text>
-              </View>
-            </View>
-          </TouchableOpacity>
-
-          <View style={[styles.sectionCard, styles.sectionCardSpacing]}>
-            <Text style={styles.sectionTitle}>내가 참여한 결제</Text>
-            {participatedPayments.length > 0 ? (
-              participatedPayments.map((item, index) => (
-                <SettlementRowCard
-                  key={item.id}
-                  item={item}
-                  isLast={index === participatedPayments.length - 1}
-                />
-              ))
-            ) : (
-              <View style={styles.sectionEmptyBox}>
-                <Text style={styles.emptyText}>결제 목록이 없습니다</Text>
-              </View>
-            )}
-          </View>
-
-          <View style={[styles.sectionCard, styles.sectionCardBottomSpacing]}>
-            <Text style={styles.sectionTitle}>정산 요청 목록</Text>
-            {settlementRequests.length > 0 ? (
-              settlementRequests.map((item, index) => (
-                <SettlementRowCard
-                  key={item.id}
-                  item={item}
-                  isLast={index === settlementRequests.length - 1}
-                />
-              ))
-            ) : (
-              <View style={styles.sectionEmptyBox}>
-                <Text style={styles.emptyText}>정산 목록이 없습니다</Text>
-              </View>
-            )}
-          </View>
-
-          <View style={styles.totalCard}>
-            <Text style={styles.totalLabel}>모임 전체 합계</Text>
-            <Text style={styles.totalAmount}>{toWon(room?.totalPay ?? 0)}</Text>
-          </View>
-        </ScrollView>
+        isSettlementDetailOpen ? renderSettlementDetail() : renderSettlementOverview()
       ) : (
         <View style={styles.placeholderContainer}>
           <View style={styles.placeholderCard}>
             <Text style={styles.sectionTitle}>순위</Text>
             <Text style={styles.placeholderDescription}>
-              순위 탭은 모임 활동 규칙이 정리된 뒤 연결합니다.
+              순위 화면은 모임 활동 규칙과 함께 연결될 예정입니다.
             </Text>
           </View>
         </View>
@@ -350,6 +494,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 21 * s,
     paddingTop: 20 * s,
     paddingBottom: 32 * s,
+  },
+  detailContainer: {
+    flex: 1,
+    paddingHorizontal: 21 * s,
+    paddingTop: 20 * s,
   },
   placeholderContainer: {
     flex: 1,
@@ -485,6 +634,45 @@ const styles = StyleSheet.create({
       fontSize: 22 * s,
       lineHeight: 22 * s,
       color: AppColorStyles.white,
+    }),
+  },
+  sceneCenterCard: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20 * s,
+    paddingVertical: 28 * s,
+    borderRadius: 18 * s,
+    backgroundColor: AppColorStyles.surface,
+    borderWidth: 1,
+    borderColor: AppColorStyles.divider,
+  },
+  messageText: {
+    ...PretendardTextStyle.medium({
+      fontSize: 14 * s,
+      lineHeight: 22 * s,
+      color: AppColorStyles.textSecondary,
+    }),
+    textAlign: 'center',
+  },
+  errorText: {
+    ...PretendardTextStyle.medium({
+      fontSize: 14 * s,
+      lineHeight: 22 * s,
+      color: AppColorStyles.textSecondary,
+    }),
+    textAlign: 'center',
+  },
+  retryButton: {
+    marginTop: 16 * s,
+    paddingHorizontal: 16 * s,
+    paddingVertical: 10 * s,
+    borderRadius: 10 * s,
+    backgroundColor: AppColorStyles.yellow,
+  },
+  retryButtonText: {
+    ...KBODiaGothicTextStyle.medium({
+      fontSize: 14 * s,
+      color: AppColorStyles.black,
     }),
   },
 });
