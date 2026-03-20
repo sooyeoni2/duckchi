@@ -1,13 +1,24 @@
 package com.duckchi.pay.domain.expense.entity;
 
-import jakarta.persistence.*;
-import lombok.*;
-
 import static jakarta.persistence.FetchType.LAZY;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 /**
  * 결제 참여자 엔티티.
- * 특정 결제 건에 대해 개별 유저가 분담해야 할 금액을 저장함.
+ * 결제안 기준 최종 분담 금액 보관 역할.
  */
 @Entity
 @Table(name = "expense_participants")
@@ -23,21 +34,20 @@ public class ExpenseParticipant {
 
     @ManyToOne(fetch = LAZY)
     @JoinColumn(name = "expense_id", nullable = false)
-    private Expense expense; // 연관된 결제 원장 정보임.
+    private Expense expense;
 
     @Column(nullable = false)
-    private Long userId;             // 참여 유저 식별자임.
+    private Long userId;
 
     @Column(nullable = false, length = 50)
-    private String userName;         // 참여자 이름 스냅샷임.
+    private String userName;
 
     @Column(nullable = false, length = 20)
-    private String userTag;          // 참여자 태그 스냅샷임.
+    private String userTag;
 
     @Column(length = 512)
-    private String profileImageUrl;  // 참여자 프로필 이미지 스냅샷임.
+    private String profileImageUrl;
 
     @Column(nullable = false)
-    private Integer splitAmount;     // 유저별 실제 분담 금액임.
+    private Integer splitAmount;
 }
-

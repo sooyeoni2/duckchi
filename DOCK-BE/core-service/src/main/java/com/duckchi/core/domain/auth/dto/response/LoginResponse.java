@@ -17,6 +17,7 @@ public class LoginResponse {
     @Builder
     public static class UserResponse {
         private Long userId;
+        private String email;
         private String name;
         private String tag;
         private boolean hasBankAccount;

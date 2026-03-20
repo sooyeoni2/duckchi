@@ -43,3 +43,11 @@ security:
 
 firebase:
   admin-sdk-path: ${FIREBASE_PROD_ACCOUNT_PATH}
+
+swagger:
+  server-url: ${SWAGGER_SERVER_URL:http://j14c102.p.ssafy.io}
+
+springdoc:
+  swagger-ui:
+    config-url: /api/auth/v3/api-docs/swagger-config
+    url: /api/auth/v3/api-docs

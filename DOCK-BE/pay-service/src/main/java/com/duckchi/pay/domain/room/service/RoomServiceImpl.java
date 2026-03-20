@@ -398,7 +398,7 @@ public class RoomServiceImpl implements RoomService {
 
         // 활성 세션(endedAt이 null인 세션)을 찾아 종료 처리한다.
         // finalCategory에 현재 방의 카테고리를 스냅샷으로 저장한다.
-        RoomSession activeSession = roomSessionRepository.findByRoomIdAndEndedAtIsNull(roomId)
+        RoomSession activeSession = roomSessionRepository.findByRoom_IdAndEndedAtIsNull(roomId)
                 .orElse(null);
 
         if (activeSession != null) {
