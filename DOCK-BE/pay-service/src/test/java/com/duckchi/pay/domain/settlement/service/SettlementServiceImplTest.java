@@ -3,6 +3,9 @@ package com.duckchi.pay.domain.settlement.service;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -14,6 +17,7 @@ import com.duckchi.pay.domain.room.entity.Room;
 import com.duckchi.pay.domain.room.repository.RoomParticipantRepository;
 import com.duckchi.pay.domain.room.repository.RoomRepository;
 import com.duckchi.pay.domain.settlement.dto.request.SettlementRequestCreateRequest;
+import com.duckchi.pay.domain.settlement.dto.request.SettlementTransferRequest;
 import com.duckchi.pay.domain.settlement.entity.Settlement;
 import com.duckchi.pay.domain.settlement.repository.SettlementRepository;
 import com.duckchi.pay.global.error.CustomException;
@@ -22,6 +26,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -44,6 +49,9 @@ class SettlementServiceImplTest {
 
     @Mock
     private RoomParticipantRepository roomParticipantRepository;
+
+    @Mock
+    private SettlementTransferExecutor settlementTransferExecutor;
 
     @InjectMocks
     private SettlementServiceImpl settlementService;
@@ -262,5 +270,88 @@ class SettlementServiceImplTest {
                 () -> settlementService.requestSettlements(1L, new SettlementRequestCreateRequest(List.of(200L))));
 
         assertEquals(ErrorCode.SETTLEMENT_PARTICIPANTS_INVALID, ex.getErrorCode());
+    }
+
+    @Test
+    void transferSettlements_success_callsExecutorInSortedOrder() {
+        Settlement settlement30 = createSettlement(30L, 1L, "PENDING");
+        Settlement settlement10 = createSettlement(10L, 1L, "PENDING");
+        Settlement settlement20 = createSettlement(20L, 1L, "PENDING");
+
+        when(settlementRepository.findAllByIdIn(List.of(30L, 10L, 20L)))
+                .thenReturn(List.of(settlement30, settlement10, settlement20));
+
+        settlementService.transferSettlements(1L, new SettlementTransferRequest(List.of(30L, 10L, 20L)));
+
+        InOrder inOrder = inOrder(settlementTransferExecutor);
+        inOrder.verify(settlementTransferExecutor).transferOne(1L, 10L);
+        inOrder.verify(settlementTransferExecutor).transferOne(1L, 20L);
+        inOrder.verify(settlementTransferExecutor).transferOne(1L, 30L);
+    }
+
+    @Test
+    void transferSettlements_whenOneTransferFails_throwsPartialError() {
+        Settlement settlement10 = createSettlement(10L, 1L, "PENDING");
+        Settlement settlement20 = createSettlement(20L, 1L, "PENDING");
+
+        when(settlementRepository.findAllByIdIn(List.of(10L, 20L))).thenReturn(List.of(settlement10, settlement20));
+        org.mockito.Mockito.doAnswer(invocation -> {
+                    Long settlementId = invocation.getArgument(1, Long.class);
+                    if (Long.valueOf(20L).equals(settlementId)) {
+                        throw new CustomException(ErrorCode.FINANCE_API_ERROR);
+                    }
+                    return null;
+                })
+                .when(settlementTransferExecutor)
+                .transferOne(eq(1L), org.mockito.ArgumentMatchers.anyLong());
+
+        CustomException ex = assertThrows(CustomException.class,
+                () -> settlementService.transferSettlements(1L, new SettlementTransferRequest(List.of(10L, 20L))));
+
+        assertEquals(ErrorCode.SETTLEMENT_TRANSFER_PARTIAL, ex.getErrorCode());
+        assertEquals(List.of(20L), ex.getData());
+    }
+
+    @Test
+    void transferSettlements_whenPayerMismatch_throwsForbidden() {
+        Settlement forbiddenSettlement = createSettlement(10L, 2L, "PENDING");
+
+        when(settlementRepository.findAllByIdIn(List.of(10L))).thenReturn(List.of(forbiddenSettlement));
+
+        CustomException ex = assertThrows(CustomException.class,
+                () -> settlementService.transferSettlements(1L, new SettlementTransferRequest(List.of(10L))));
+
+        assertEquals(ErrorCode.SETTLEMENT_FORBIDDEN_PAYER, ex.getErrorCode());
+        verify(settlementTransferExecutor, never()).transferOne(any(), any());
+    }
+
+    @Test
+    void transferSettlements_whenAlreadyCompleted_throwsConflict() {
+        Settlement completedSettlement = createSettlement(10L, 1L, "COMPLETED");
+
+        when(settlementRepository.findAllByIdIn(List.of(10L))).thenReturn(List.of(completedSettlement));
+
+        CustomException ex = assertThrows(CustomException.class,
+                () -> settlementService.transferSettlements(1L, new SettlementTransferRequest(List.of(10L))));
+
+        assertEquals(ErrorCode.SETTLEMENT_ALREADY_COMPLETED, ex.getErrorCode());
+        verify(settlementTransferExecutor, never()).transferOne(any(), any());
+    }
+
+    private Settlement createSettlement(Long id, Long payerUserId, String status) {
+        Settlement settlement = Settlement.builder()
+                .roomId(10L)
+                .roomSessionId(100L)
+                .expenseId(200L)
+                .roomName("C102 회식")
+                .requesterUserId(2L)
+                .requesterUserName("요청자")
+                .payerUserId(payerUserId)
+                .payerUserName("총무")
+                .payableAmount(20000)
+                .status(status)
+                .build();
+        ReflectionTestUtils.setField(settlement, "id", id);
+        return settlement;
     }
 }

@@ -76,4 +76,21 @@ class SettlementControllerTest {
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.errorCode").value("COMMON-400-1"));
     }
+
+    @Test
+    void transferSettlements_success_returns200() throws Exception {
+        doNothing().when(settlementService).transferSettlements(eq(1L), any());
+
+        mockMvc.perform(post("/api/v1/settlements/transfer")
+                        .header("X-User-Id", "1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "settlementIds": [301, 302]
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.msg").value("성공적으로 정산이 완료되었습니다."));
+    }
 }
