@@ -10,6 +10,8 @@ import com.duckchi.pay.domain.room.repository.RoomRepository;
 import com.duckchi.pay.domain.settlement.dto.request.SettlementManualTransferRequest;
 import com.duckchi.pay.domain.settlement.dto.request.SettlementRequestCreateRequest;
 import com.duckchi.pay.domain.settlement.dto.request.SettlementTransferRequest;
+import com.duckchi.pay.domain.settlement.dto.response.PendingSettlementItemResponse;
+import com.duckchi.pay.domain.settlement.dto.response.PendingSettlementsResponse;
 import com.duckchi.pay.domain.settlement.dto.response.SettlementManualTransferResponse;
 import com.duckchi.pay.domain.settlement.entity.Settlement;
 import com.duckchi.pay.domain.settlement.repository.SettlementRepository;
@@ -180,8 +182,62 @@ public class SettlementServiceImpl implements SettlementService {
                 completedAt
         );
     }
+    @Override
+    public PendingSettlementsResponse getPendingSettlements(Long currentUserId, Long expenseId) {
+        if (currentUserId == null) {
+            throw new CustomException(ErrorCode.COMMON_UNAUTHORIZED);
+        }
 
+        if (expenseId == null || expenseId <= 0L) {
+            throw new CustomException(ErrorCode.COMMON_INVALID_INPUT);
+        }
 
+        List<Settlement> settlements = settlementRepository.findByExpenseIdOrderByCreatedAtAscIdAsc(expenseId);
+        if (settlements.isEmpty()) {
+            throw new CustomException(ErrorCode.SETTLEMENT_NOT_FOUND);
+        }
+
+        Settlement firstSettlement = settlements.get(0);
+
+        // 총무 확인 화면은 정산 요청자 본인만 조회할 수 있도록 제한한다.
+        if (!currentUserId.equals(firstSettlement.getRequesterUserId())) {
+            throw new CustomException(ErrorCode.SETTLEMENT_FORBIDDEN_REQUESTER);
+        }
+
+        int totalPayableAmount = settlements.stream()
+                .mapToInt(Settlement::getPayableAmount)
+                .sum();
+
+        int pendingCount = (int) settlements.stream()
+                .filter(settlement -> SETTLEMENT_PENDING_STATUS.equals(settlement.getStatus()))
+                .count();
+
+        int completedCount = settlements.size() - pendingCount;
+
+        List<PendingSettlementItemResponse> settlementItems = settlements.stream()
+                .map(settlement -> new PendingSettlementItemResponse(
+                        settlement.getId(),
+                        settlement.getPayerUserId(),
+                        settlement.getPayerUserName(),
+                        settlement.getPayableAmount(),
+                        settlement.getStatus(),
+                        settlement.getCreatedAt(),
+                        settlement.getCompletedAt()
+                ))
+                .toList();
+
+        return new PendingSettlementsResponse(
+                firstSettlement.getExpenseId(),
+                firstSettlement.getRoomId(),
+                firstSettlement.getRoomName(),
+                firstSettlement.getRequesterUserId(),
+                firstSettlement.getRequesterUserName(),
+                totalPayableAmount,
+                pendingCount,
+                completedCount,
+                settlementItems
+        );
+    }
     private void validateTransferBatchSize(List<Long> settlementIds) {
         if (settlementIds.size() > TRANSFER_BATCH_MAX_SIZE) {
             throw new CustomException(ErrorCode.COMMON_INVALID_INPUT);
