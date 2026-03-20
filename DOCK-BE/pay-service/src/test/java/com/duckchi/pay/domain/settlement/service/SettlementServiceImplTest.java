@@ -16,13 +16,18 @@ import com.duckchi.pay.domain.expense.repository.ExpenseRepository;
 import com.duckchi.pay.domain.room.entity.Room;
 import com.duckchi.pay.domain.room.repository.RoomParticipantRepository;
 import com.duckchi.pay.domain.room.repository.RoomRepository;
+import com.duckchi.pay.domain.settlement.dto.request.SettlementManualTransferRequest;
 import com.duckchi.pay.domain.settlement.dto.request.SettlementRequestCreateRequest;
 import com.duckchi.pay.domain.settlement.dto.request.SettlementTransferRequest;
+import com.duckchi.pay.domain.settlement.dto.response.PendingSettlementItemResponse;
+import com.duckchi.pay.domain.settlement.dto.response.PendingSettlementsResponse;
+import com.duckchi.pay.domain.settlement.dto.response.SettlementManualTransferResponse;
 import com.duckchi.pay.domain.settlement.entity.Settlement;
 import com.duckchi.pay.domain.settlement.repository.SettlementRepository;
 import com.duckchi.pay.global.error.CustomException;
 import com.duckchi.pay.global.error.ErrorCode;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -338,6 +343,148 @@ class SettlementServiceImplTest {
         verify(settlementTransferExecutor, never()).transferOne(any(), any());
     }
 
+
+    @Test
+    void manualTransferSettlement_success_whenLastPending_marksExpenseSettled() {
+        Settlement settlement = Settlement.builder()
+                .roomId(10L)
+                .roomSessionId(100L)
+                .expenseId(200L)
+                .roomName("C102 회식")
+                .requesterUserId(1L)
+                .requesterUserName("총무")
+                .payerUserId(2L)
+                .payerUserName("납부자")
+                .payableAmount(20000)
+                .status("PENDING")
+                .build();
+        ReflectionTestUtils.setField(settlement, "id", 981301L);
+
+        Expense expense = Expense.builder()
+                .roomId(10L)
+                .roomSessionId(100L)
+                .payerUserId(1L)
+                .payerUserName("총무")
+                .inputType("MANUAL")
+                .status("REQUESTED")
+                .title("고기집")
+                .totalAmount(20000)
+                .build();
+        ReflectionTestUtils.setField(expense, "id", 200L);
+
+        when(settlementRepository.findByIdForUpdate(981301L)).thenReturn(Optional.of(settlement));
+        when(expenseRepository.findByIdForUpdate(200L)).thenReturn(Optional.of(expense));
+        when(settlementRepository.existsByExpenseIdAndStatus(200L, "PENDING")).thenReturn(false);
+
+        SettlementManualTransferResponse response = settlementService.manualTransferSettlement(
+                1L,
+                new SettlementManualTransferRequest(981301L)
+        );
+
+        assertEquals("COMPLETED", response.settlementStatus());
+        assertEquals("SETTLED", response.expenseStatus());
+        assertEquals("MANUAL-981301", settlement.getBankTransactionId());
+        assertEquals("COMPLETED", settlement.getStatus());
+    }
+
+    @Test
+    void manualTransferSettlement_whenRequesterMismatch_throwsForbidden() {
+        Settlement settlement = Settlement.builder()
+                .roomId(10L)
+                .roomSessionId(100L)
+                .expenseId(200L)
+                .roomName("C102 회식")
+                .requesterUserId(99L)
+                .requesterUserName("다른총무")
+                .payerUserId(2L)
+                .payerUserName("납부자")
+                .payableAmount(20000)
+                .status("PENDING")
+                .build();
+        ReflectionTestUtils.setField(settlement, "id", 981301L);
+
+        when(settlementRepository.findByIdForUpdate(981301L)).thenReturn(Optional.of(settlement));
+
+        CustomException ex = assertThrows(CustomException.class,
+                () -> settlementService.manualTransferSettlement(1L, new SettlementManualTransferRequest(981301L)));
+
+        assertEquals(ErrorCode.SETTLEMENT_FORBIDDEN_REQUESTER, ex.getErrorCode());
+        verify(expenseRepository, never()).findByIdForUpdate(any());
+    }
+
+    @Test
+    void manualTransferSettlement_whenAlreadyCompleted_throwsConflict() {
+        Settlement settlement = Settlement.builder()
+                .roomId(10L)
+                .roomSessionId(100L)
+                .expenseId(200L)
+                .roomName("C102 회식")
+                .requesterUserId(1L)
+                .requesterUserName("총무")
+                .payerUserId(2L)
+                .payerUserName("납부자")
+                .payableAmount(20000)
+                .status("COMPLETED")
+                .build();
+        ReflectionTestUtils.setField(settlement, "id", 981301L);
+
+        when(settlementRepository.findByIdForUpdate(981301L)).thenReturn(Optional.of(settlement));
+
+        CustomException ex = assertThrows(CustomException.class,
+                () -> settlementService.manualTransferSettlement(1L, new SettlementManualTransferRequest(981301L)));
+
+        assertEquals(ErrorCode.SETTLEMENT_ALREADY_COMPLETED, ex.getErrorCode());
+        verify(expenseRepository, never()).findByIdForUpdate(any());
+    }
+    @Test
+    void getPendingSettlements_success_returnsAggregatedResponse() {
+        Settlement pendingSettlement = createSettlement(10L, 3L, "PENDING");
+        Settlement completedSettlement = createSettlement(11L, 4L, "COMPLETED");
+
+        when(settlementRepository.findByExpenseIdOrderByCreatedAtAscIdAsc(200L))
+                .thenReturn(List.of(pendingSettlement, completedSettlement));
+
+        PendingSettlementsResponse response = settlementService.getPendingSettlements(2L, 200L);
+
+        assertEquals(200L, response.expenseId());
+        assertEquals(40000, response.totalPayableAmount());
+        assertEquals(1, response.pendingCount());
+        assertEquals(1, response.completedCount());
+        assertEquals(2, response.settlements().size());
+
+        PendingSettlementItemResponse firstItem = response.settlements().get(0);
+        assertEquals(10L, firstItem.settlementId());
+        assertEquals("PENDING", firstItem.status());
+    }
+
+    @Test
+    void getPendingSettlements_whenExpenseInvalid_throwsBadRequest() {
+        CustomException ex = assertThrows(CustomException.class,
+                () -> settlementService.getPendingSettlements(2L, 0L));
+
+        assertEquals(ErrorCode.COMMON_INVALID_INPUT, ex.getErrorCode());
+    }
+
+    @Test
+    void getPendingSettlements_whenNotFound_throwsNotFound() {
+        when(settlementRepository.findByExpenseIdOrderByCreatedAtAscIdAsc(200L)).thenReturn(List.of());
+
+        CustomException ex = assertThrows(CustomException.class,
+                () -> settlementService.getPendingSettlements(2L, 200L));
+
+        assertEquals(ErrorCode.SETTLEMENT_NOT_FOUND, ex.getErrorCode());
+    }
+
+    @Test
+    void getPendingSettlements_whenRequesterMismatch_throwsForbidden() {
+        Settlement settlement = createSettlement(10L, 3L, "PENDING");
+        when(settlementRepository.findByExpenseIdOrderByCreatedAtAscIdAsc(200L)).thenReturn(List.of(settlement));
+
+        CustomException ex = assertThrows(CustomException.class,
+                () -> settlementService.getPendingSettlements(1L, 200L));
+
+        assertEquals(ErrorCode.SETTLEMENT_FORBIDDEN_REQUESTER, ex.getErrorCode());
+    }
     private Settlement createSettlement(Long id, Long payerUserId, String status) {
         Settlement settlement = Settlement.builder()
                 .roomId(10L)
