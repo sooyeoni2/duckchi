@@ -43,6 +43,10 @@ public enum ErrorCode {
     ACCOUNT_REGISTRATION_FAILED("ACCOUNT-500-1", HttpStatus.INTERNAL_SERVER_ERROR, "계좌 등록에 실패했습니다. 잠시 후 다시 시도해 주세요."),
     ACCOUNT_VERIFICATION_FAILED("ACCOUNT-502-1", HttpStatus.BAD_GATEWAY, "1원 인증에 실패했습니다. 잠시 후 다시 시도해 주세요."),
 
+    // NOTIFICATION
+    NOTIFICATION_TOKEN_CONFLICT("NOTIFICATION-409-1", HttpStatus.CONFLICT, "FCM 토큰 저장 중 충돌이 발생했습니다."),
+    NOTIFICATION_TOKEN_UPSERT_FAILED("NOTIFICATION-500-1", HttpStatus.INTERNAL_SERVER_ERROR, "FCM 토큰 등록에 실패했습니다."),
+
     // USER
     USER_NOT_FOUND("USER-404-1", HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다.");
     private final String code; //에러코드
