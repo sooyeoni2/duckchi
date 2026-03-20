@@ -2,6 +2,7 @@ package com.duckchi.pay.domain.room.service;
 
 import com.duckchi.pay.domain.expense.repository.ExpenseRepository;
 import com.duckchi.pay.domain.room.dto.request.CreateRoomRequest;
+import com.duckchi.pay.domain.room.dto.request.DelegateAdminRequest;
 import com.duckchi.pay.domain.room.dto.request.StartRoomRequest;
 import com.duckchi.pay.domain.room.dto.request.UpdateRoomRequest;
 import com.duckchi.pay.domain.room.dto.response.CreateRoomResponse;
@@ -419,5 +420,58 @@ public class RoomServiceImpl implements RoomService {
         if (requestedCount > 0) {
             throw new CustomException(ErrorCode.ROOM_HAS_REQUESTED_EXPENSE);
         }
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // ROOM-15: 방장 위임
+    // ──────────────────────────────────────────────────────────────
+
+    /**
+     * [ROOM-15] 방장 권한을 다른 멤버에게 위임한다.
+     *
+     * 비즈니스 규칙:
+     * 1. 인증된 사용자만 호출 가능 (null 검증).
+     * 2. 본인에게 위임할 수 없다 (400 Bad Request).
+     * 3. 요청자가 해당 방의 방장이어야 한다 (403 Forbidden).
+     * 4. 위임 대상이 해당 방의 참여자여야 한다 (404 Not Found).
+     * 5. 기존 방장은 일반 멤버로, 대상 멤버는 방장으로 역할이 변경된다.
+     */
+    @Override
+    @Transactional
+    public void delegateAdmin(Long roomId, Long currentUserId, DelegateAdminRequest request) {
+        if (currentUserId == null) {
+            throw new CustomException(ErrorCode.COMMON_UNAUTHORIZED);
+        }
+
+        Long targetUserId = request.getUserId();
+
+        // 본인에게 위임할 수 없다.
+        if (currentUserId.equals(targetUserId)) {
+            throw new CustomException(ErrorCode.ROOM_CANNOT_DELEGATE_SELF);
+        }
+
+        // 방 존재 여부 확인 (논리 삭제 포함)
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
+        if (room.getDeletedAt() != null) {
+            throw new CustomException(ErrorCode.ROOM_NOT_FOUND);
+        }
+
+        // 요청자가 해당 방의 방장인지 확인한다.
+        RoomParticipant currentParticipant = roomParticipantRepository.findByRoom_IdAndUserId(roomId, currentUserId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_MEMBER_ONLY));
+        if (!currentParticipant.isAdmin()) {
+            throw new CustomException("방장만 방장 위임을 할 수 있습니다.", ErrorCode.ROOM_NOT_ADMIN);
+        }
+
+        // 위임 대상이 해당 방의 참여자인지 확인한다.
+        RoomParticipant targetParticipant = roomParticipantRepository.findByRoom_IdAndUserId(roomId, targetUserId)
+                .orElseThrow(() -> new CustomException(
+                        "위임 대상 사용자가 해당 모임의 멤버가 아닙니다.",
+                        ErrorCode.ROOM_PARTICIPANT_NOT_FOUND));
+
+        // 방장 권한을 교환한다: 기존 방장 → 일반 멤버, 대상 멤버 → 방장
+        currentParticipant.changeAdminRole(false);
+        targetParticipant.changeAdminRole(true);
     }
 }

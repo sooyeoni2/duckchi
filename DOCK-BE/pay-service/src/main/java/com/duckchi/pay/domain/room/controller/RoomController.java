@@ -1,6 +1,7 @@
 package com.duckchi.pay.domain.room.controller;
 
 import com.duckchi.pay.domain.room.dto.request.CreateRoomRequest;
+import com.duckchi.pay.domain.room.dto.request.DelegateAdminRequest;
 import com.duckchi.pay.domain.room.dto.request.StartRoomRequest;
 import com.duckchi.pay.domain.room.dto.request.UpdateRoomRequest;
 import com.duckchi.pay.domain.room.dto.response.CreateRoomResponse;
@@ -154,6 +155,23 @@ public class RoomController {
         Long currentUserId = resolveRequiredUserId(userIdHeader);
         roomService.endRoom(roomId, currentUserId);
         return ResponseEntity.ok(ApiResponseDto.success("모임이 종료되었습니다."));
+    }
+
+    /*
+     * [ROOM-15] 방장 권한을 다른 멤버에게 위임한다.
+     * 요청자는 반드시 해당 방의 방장이어야 하며,
+     * 대상 유저는 해당 방의 참여자여야 한다.
+     */
+    @PostMapping("/{roomId}/delegations")
+    @Operation(summary = "ROOM-15 방장 위임")
+    public ResponseEntity<ApiResponseDto<String>> delegateAdmin(
+            @PathVariable Long roomId,
+            @RequestHeader(value = USER_ID_HEADER, required = false) String userIdHeader,
+            @Valid @RequestBody DelegateAdminRequest request
+    ) {
+        Long currentUserId = resolveRequiredUserId(userIdHeader);
+        roomService.delegateAdmin(roomId, currentUserId, request);
+        return ResponseEntity.ok(ApiResponseDto.success("방장 위임이 성공적으로 이루어졌습니다."));
     }
 
     private Long resolveRequiredUserId(String userIdHeader) {
