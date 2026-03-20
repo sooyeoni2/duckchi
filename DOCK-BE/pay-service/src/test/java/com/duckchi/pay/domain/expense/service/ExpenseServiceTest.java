@@ -10,6 +10,7 @@ import com.duckchi.pay.domain.expense.dto.response.ExpenseParticipantOptionRespo
 import com.duckchi.pay.domain.expense.dto.response.ExpenseResponse;
 import com.duckchi.pay.domain.expense.entity.Expense;
 import com.duckchi.pay.domain.expense.repository.ExpenseRepository;
+import com.duckchi.pay.domain.room.entity.Room;
 import com.duckchi.pay.domain.room.entity.RoomSession;
 import com.duckchi.pay.domain.room.repository.RoomParticipantRepository;
 import com.duckchi.pay.domain.room.repository.RoomSessionRepository;
@@ -140,7 +141,7 @@ class ExpenseServiceTest {
                 .participants(List.of(payer))
                 .build();
 
-        when(roomSessionRepository.findById(1L)).thenReturn(Optional.of(RoomSession.builder().id(1L).roomId(ROOM_ID).build()));
+        when(roomSessionRepository.findById(1L)).thenReturn(Optional.of(roomSession(1L, ROOM_ID)));
         when(roomParticipantRepository.existsByRoom_IdAndUserId(ROOM_ID, TEST_USER_ID)).thenReturn(true);
         when(roomParticipantRepository.findUserIdsByRoomId(ROOM_ID)).thenReturn(List.of(TEST_USER_ID));
         when(coreClient.getUserProfiles(any())).thenReturn(ApiResponseDto.success(List.of(
@@ -199,7 +200,7 @@ class ExpenseServiceTest {
                 .build();
 
         when(expenseRepository.findById(1L)).thenReturn(Optional.of(existingExpense));
-        when(roomSessionRepository.findById(1L)).thenReturn(Optional.of(RoomSession.builder().id(1L).roomId(ROOM_ID).build()));
+        when(roomSessionRepository.findById(1L)).thenReturn(Optional.of(roomSession(1L, ROOM_ID)));
         when(roomParticipantRepository.existsByRoom_IdAndUserId(ROOM_ID, TEST_USER_ID)).thenReturn(true);
         when(roomParticipantRepository.findUserIdsByRoomId(ROOM_ID)).thenReturn(List.of(TEST_USER_ID));
         when(coreClient.getUserProfiles(any())).thenReturn(ApiResponseDto.success(List.of(
@@ -295,5 +296,23 @@ class ExpenseServiceTest {
                 .userTag(userTag)
                 .profileImageUrl("https://cdn.example.com/" + userId + ".png")
                 .build();
+    }
+
+    private RoomSession roomSession(Long sessionId, Long roomId) {
+        return RoomSession.builder()
+                .id(sessionId)
+                .room(room(roomId))
+                .build();
+    }
+
+    private Room room(Long roomId) {
+        Room room = Room.builder()
+                .name("test-room")
+                .category("ETC")
+                .description("test")
+                .isProgress(false)
+                .build();
+        ReflectionTestUtils.setField(room, "id", roomId);
+        return room;
     }
 }
