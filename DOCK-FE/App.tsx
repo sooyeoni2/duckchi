@@ -19,7 +19,7 @@ import { PayPasswordInputScreen } from './src/features/bank/views/PayPasswordInp
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 function App() {
-  // const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
+  const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
   const [fontsLoaded, fontError] = useFonts({
     'KBO Dia Gothic Light': require('./src/assets/fonts/KBO Dia Gothic Light.otf'),
     'KBO Dia Gothic Medium': require('./src/assets/fonts/KBO Dia Gothic Medium.otf'),
@@ -41,7 +41,10 @@ function App() {
     <SafeAreaProvider>
       <StatusBar barStyle="dark-content" backgroundColor="#F2F3F5" />
       <NavigationContainer>
-        <Stack.Navigator screenOptions={{ headerShown: false, animation: 'none' }} initialRouteName="App">
+        <Stack.Navigator
+          screenOptions={{ headerShown: false, animation: 'none' }}
+          initialRouteName={isLoggedIn ? 'App' : 'Onboarding'}
+        >
           <Stack.Screen name="Onboarding">
             {({ navigation }) => (
               <OnboardingScreen onStart={() => navigation.replace('Auth')} />
