@@ -33,6 +33,8 @@
     "zustand": "^5.0.11"
   },
   "devDependencies": {
+    "@react-native-community/cli": "^20.0.2",
+    "@react-native/metro-config": "^0.81.5",
     "@babel/core": "^7.25.2",
     "@babel/preset-env": "^7.25.3",
     "@babel/runtime": "^7.25.0",
