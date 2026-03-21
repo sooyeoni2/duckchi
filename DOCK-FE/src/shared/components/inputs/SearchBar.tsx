@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View,
   ViewStyle,
 } from 'react-native';
 import { AppColorStyles } from '../../../core/theme/colors';
