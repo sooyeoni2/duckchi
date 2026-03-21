@@ -38,7 +38,7 @@ const useRoomMembersStore = create<RoomMembersStore>((set) => ({
 export const useRoomMembersViewModel = () => {
   const { state, updateState } = useRoomMembersStore();
 
-  const fetchMembers = useCallback(async (roomId: number) => {
+  const fetchMembers = useCallback(async (_roomId: number) => {
     updateState({ isLoading: true });
     // TODO: ROOM-16 API 연동 (GET /api/v1/rooms/{roomId}/participants-lists)
     await new Promise<void>((resolve) => setTimeout(() => resolve(), 800));

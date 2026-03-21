@@ -38,7 +38,7 @@ export function BadgePreviewCard({ badges }: BadgePreviewCardProps) {
       <View style={styles.grid}>
         {[0, 1].map(row => (
           <View key={row} style={styles.row}>
-            {displayBadges.slice(row * 3, row * 3 + 3).map((badge, col) => (
+            {displayBadges.slice(row * 3, row * 3 + 3).map((badge) => (
               <BadgeItem
                 key={badge.id}
                 badge={badge}

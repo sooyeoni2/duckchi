@@ -33,6 +33,9 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @EntityListeners(AuditingEntityListener.class)
 public class Expense {
 
+    private static final String STATUS_REQUESTED = "REQUESTED";
+    private static final String STATUS_SETTLED = "SETTLED";
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -99,5 +102,19 @@ public class Expense {
         this.totalAmount = totalAmount;
         this.paidAt = paidAt;
         this.receiptImageUrl = receiptImageUrl;
+    }
+
+    /**
+     * 정산 요청 시 결제안 상태를 REQUESTED로 전이함.
+     */
+    public void markRequested() {
+        this.status = STATUS_REQUESTED;
+    }
+
+    /**
+     * 연결된 모든 정산이 완료된 시점에 결제안 상태를 SETTLED로 전이함.
+     */
+    public void markSettled() {
+        this.status = STATUS_SETTLED;
     }
 }
