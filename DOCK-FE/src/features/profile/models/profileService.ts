@@ -205,8 +205,15 @@ export const updateProfile = async (params: UpdateProfileParams): Promise<Profil
     if (params.transferLimit !== undefined) {
       mockProfile = { ...mockProfile, transferLimit: params.transferLimit };
     }
-    const { accounts: _a, badges: _b, ...summary } = mockProfile;
-    return { ...summary, createdAt: toDate(summary.createdAt) };
+    return {
+      userId: mockProfile.userId,
+      email: mockProfile.email,
+      name: mockProfile.name,
+      tag: mockProfile.tag,
+      profileImageUrl: mockProfile.profileImageUrl,
+      transferLimit: mockProfile.transferLimit,
+      createdAt: toDate(mockProfile.createdAt),
+    };
   }
   const response = await axiosClient.post('/api/v1/profiles/edit', params);
   const raw = profileSummarySchema.parse(response.data.data);
