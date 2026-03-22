@@ -1,7 +1,7 @@
 import { useCallback, useEffect } from 'react';
 import { create } from 'zustand';
 
-import { deleteAccount as deleteAccountService, fetchProfile, updateProfile } from '../models/profileService';
+import { deleteAccount as deleteAccountService, fetchProfile, updateTransferLimit as updateTransferLimitService } from '../models/profileService';
 import type { Profile } from '../models/profileTypes';
 
 type ProfileState =
@@ -43,7 +43,7 @@ export const useProfileViewModel = () => {
   }, [loadProfile]);
 
   const updateTransferLimit = useCallback(async (transferLimit: number) => {
-    await updateProfile({ transferLimit });
+    await updateTransferLimitService(transferLimit);
     await loadProfile();
   }, [loadProfile]);
 

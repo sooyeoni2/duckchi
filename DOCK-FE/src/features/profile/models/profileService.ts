@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { axiosClient } from '../../../core/network/axiosClient';
+import { useAuthStore } from '../../auth/models/authStore';
 import type {
   Account,
   AcquiredBadge,
@@ -29,6 +30,7 @@ const profileBadgeSchema = z.object({
   code: z.string(),
   name: z.string(),
   isAcquired: z.boolean(),
+  acquiredAt: z.string().nullable().optional(),
   requiredAt: z.string(),
   imageUrl: z.string().nullable().optional(),
 });
@@ -98,7 +100,7 @@ const toProfileBadge = (raw: z.infer<typeof profileBadgeSchema>): ProfileBadge =
   code: raw.code,
   name: raw.name,
   isAcquired: raw.isAcquired,
-  acquiredAt: raw.isAcquired ? toDate(raw.requiredAt) : null,
+  acquiredAt: raw.acquiredAt ? toDate(raw.acquiredAt) : null,
   imageUrl: raw.imageUrl ?? null,
 });
 
@@ -135,15 +137,7 @@ let mockProfile = profileDetailSchema.parse({
   transferLimit: 30000,
   createdAt: '2026-03-04T12:41:30+09:00',
   profileImageUrl: 'https://api.dicebear.com/9.x/lorelei/png?seed=duckduck&size=150',
-  accounts: [
-    {
-      accountId: 10,
-      bankCode: '088',
-      bankName: '신한은행',
-      accountNumber: '1234************',
-      registeredAt: '2026-03-04T15:30:00+09:00',
-    },
-  ],
+  accounts: [],
   badges: [
     { id: 1, code: 'NOBLE_DUCK', name: '귀족 덕치', isAcquired: false, requiredAt: '2026-03-04T15:30:00+09:00' },
     { id: 2, code: 'ASSASSIN_DUCK', name: '칼입금 암살자', isAcquired: false, requiredAt: '2026-03-04T15:30:00+09:00' },
@@ -182,8 +176,13 @@ const mockBadgeList = badgeListSchema.parse({
 export const fetchProfile = async (): Promise<Profile> => {
   if (USE_MOCK) {
     await new Promise<void>(resolve => setTimeout(resolve, 500));
+    const authUser = useAuthStore.getState().user;
     return {
       ...mockProfile,
+      email: authUser?.email ?? mockProfile.email,
+      name: authUser?.name ?? mockProfile.name,
+      tag: authUser?.tag ?? mockProfile.tag,
+      profileImageUrl: authUser?.profileImageUrl ?? null,
       createdAt: toDate(mockProfile.createdAt),
       accounts: mockProfile.accounts.map(toAccount),
       badges: mockProfile.badges.map(toProfileBadge),
@@ -199,25 +198,13 @@ export const fetchProfile = async (): Promise<Profile> => {
   };
 };
 
-export const updateProfile = async (params: UpdateProfileParams): Promise<ProfileSummary> => {
+export const updateTransferLimit = async (transferLimit: number): Promise<void> => {
   if (USE_MOCK) {
     await new Promise<void>(resolve => setTimeout(resolve, 500));
-    if (params.transferLimit !== undefined) {
-      mockProfile = { ...mockProfile, transferLimit: params.transferLimit };
-    }
-    return {
-      userId: mockProfile.userId,
-      email: mockProfile.email,
-      name: mockProfile.name,
-      tag: mockProfile.tag,
-      profileImageUrl: mockProfile.profileImageUrl,
-      transferLimit: mockProfile.transferLimit,
-      createdAt: toDate(mockProfile.createdAt),
-    };
+    mockProfile = { ...mockProfile, transferLimit };
+    return;
   }
-  const response = await axiosClient.post('/api/v1/profiles/edit', params);
-  const raw = profileSummarySchema.parse(response.data.data);
-  return { ...raw, createdAt: toDate(raw.createdAt) };
+  await axiosClient.patch('/api/v1/profiles/edit', { transferLimit });
 };
 
 export const deleteAccount = async (accountId: number): Promise<void> => {

@@ -52,8 +52,8 @@ export function PayPasswordConfirmScreen() {
       return;
     }
     const res = await setup(password);
-    const goToProfile = () => {
-      refreshProfile();
+    const goToProfile = async () => {
+      await refreshProfile();
       navigation.dispatch(
         CommonActions.reset({
           index: 0,
@@ -64,8 +64,8 @@ export function PayPasswordConfirmScreen() {
         })
       );
     };
-    const goToHome = () => {
-      refreshProfile();
+    const goToHome = async () => {
+      await refreshProfile();
       navigation.replace('App');
     };
     if (res.ok) {
