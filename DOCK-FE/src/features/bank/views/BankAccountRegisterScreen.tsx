@@ -2,7 +2,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { CompositeNavigationProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React from 'react';
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getBankColor } from '../../../core/constants/bankColors';
@@ -26,6 +26,14 @@ export function BankAccountRegisterScreen() {
       { text: '취소', style: 'cancel' },
       { text: '삭제', style: 'destructive', onPress: () => deleteAccount(currentAccount!.accountId) },
     ]);
+  };
+
+  const registerScale = React.useRef(new Animated.Value(1)).current;
+  const handleRegisterPressIn = () => {
+    Animated.spring(registerScale, { toValue: 0.93, useNativeDriver: true, speed: 50, bounciness: 0 }).start();
+  };
+  const handleRegisterPressOut = () => {
+    Animated.spring(registerScale, { toValue: 1, useNativeDriver: true, speed: 30, bounciness: 4 }).start();
   };
 
   const accounts = state.status === 'loaded' ? state.profile.accounts : [];
@@ -87,10 +95,14 @@ export function BankAccountRegisterScreen() {
 
       {/* 하단 버튼 */}
       <View style={styles.bottomArea}>
-        <FilledButton
-          text="계좌 등록하기"
-          onPress={canRegister ? () => navigation.navigate('BankAccountSetup', { returnTo: 'Settings' }) : undefined}
-        />
+        <Animated.View style={{ transform: [{ scale: registerScale }] }}>
+          <FilledButton
+            text="계좌 등록하기"
+            onPress={canRegister ? () => navigation.navigate('BankAccountSetup', { returnTo: 'Settings' }) : undefined}
+            onPressIn={canRegister ? handleRegisterPressIn : undefined}
+            onPressOut={canRegister ? handleRegisterPressOut : undefined}
+          />
+        </Animated.View>
       </View>
     </SafeAreaView>
   );
@@ -113,8 +125,6 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 28,
     paddingHorizontal: 20,
-    borderWidth: 1,
-    borderColor: AppColorStyles.divider,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,

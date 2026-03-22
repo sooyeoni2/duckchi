@@ -26,6 +26,8 @@ import { KBODiaGothicTextStyle } from '../../../core/theme/typography';
 interface FilledButtonProps {
   text: string;
   onPress?: () => void;
+  onPressIn?: () => void;
+  onPressOut?: () => void;
   isLoading?: boolean;
   isFullWidth?: boolean;
   width?: number;
@@ -40,6 +42,8 @@ interface FilledButtonProps {
 export const FilledButton: React.FC<FilledButtonProps> = ({
   text,
   onPress,
+  onPressIn,
+  onPressOut,
   isLoading = false,
   isFullWidth = true,
   width,
@@ -55,6 +59,8 @@ export const FilledButton: React.FC<FilledButtonProps> = ({
   return (
     <TouchableOpacity
       onPress={onPress}
+      onPressIn={onPressIn}
+      onPressOut={onPressOut}
       disabled={disabled}
       activeOpacity={0.8}
       style={[
