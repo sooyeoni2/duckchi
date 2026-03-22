@@ -1,5 +1,7 @@
 package com.duckchi.core.infra.security.jwt;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
@@ -8,6 +10,7 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Date;
 
 @Component
@@ -37,6 +40,32 @@ public class JwtProvider {
         return createToken(userId, refreshExpiration);
     }
 
+    public Long getUserIdFromToken(String token) {
+        return Long.parseLong(parseClaims(token).getSubject());
+    }
+
+    public boolean validateToken(String token) {
+        try {
+            parseClaims(token);
+            return true;
+        } catch (JwtException | IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    public Duration getRemainingValidity(String token) {
+        long remainingMillis = parseClaims(token).getExpiration().getTime() - System.currentTimeMillis();
+        if (remainingMillis <= 0) {
+            return Duration.ZERO;
+        }
+
+        return Duration.ofMillis(remainingMillis);
+    }
+
+    public Duration getRefreshTokenValidity() {
+        return Duration.ofMillis(refreshExpiration);
+    }
+
     private String createToken(Long userId, Long expiration) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expiration);
@@ -49,4 +78,11 @@ public class JwtProvider {
                 .compact();
     }
 
+    private Claims parseClaims(String token) {
+        return Jwts.parser()
+                .verifyWith(key)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+    }
 }
