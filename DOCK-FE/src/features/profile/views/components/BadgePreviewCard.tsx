@@ -19,8 +19,12 @@ interface BadgePreviewCardProps {
 export function BadgePreviewCard({ badges }: BadgePreviewCardProps) {
   const navigation = useNavigation<Nav>();
   const acquiredBadges = badges
-    .filter(b => b.isAcquired && b.acquiredAt)
-    .sort((a, b) => b.acquiredAt!.getTime() - a.acquiredAt!.getTime());
+    .filter(b => b.isAcquired)
+    .sort((a, b) => {
+      if (!b.acquiredAt) return -1;
+      if (!a.acquiredAt) return 1;
+      return b.acquiredAt.getTime() - a.acquiredAt.getTime();
+    });
   const lockedBadges = badges.filter(b => !b.isAcquired);
   const displayBadges = [...acquiredBadges, ...lockedBadges].slice(0, 6);
 

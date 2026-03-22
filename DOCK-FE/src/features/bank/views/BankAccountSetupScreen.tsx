@@ -104,7 +104,13 @@ export function BankAccountSetupScreen() {
       <CustomAppBar
         showBackButton
         backgroundColor={AppColorStyles.background}
-        onBackPress={() => navigation.goBack()}
+        onBackPress={() => {
+          if (returnTo === 'Settings') {
+            navigation.navigate('App', { screen: 'Profile', params: { screen: 'Settings' } } as any);
+          } else {
+            navigation.goBack();
+          }
+        }}
       />
 
       <KeyboardAvoidingView

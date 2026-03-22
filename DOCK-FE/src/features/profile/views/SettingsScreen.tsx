@@ -172,8 +172,6 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: AppColorStyles.surface,
     borderRadius: 18,
-    borderWidth: 1,
-    borderColor: AppColorStyles.divider,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
@@ -204,7 +202,6 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     backgroundColor: AppColorStyles.divider,
-    marginHorizontal: 16,
   },
   versionText: {
     ...KBODiaGothicTextStyle.medium({ fontSize: 15, color: AppColorStyles.textDisabled }),

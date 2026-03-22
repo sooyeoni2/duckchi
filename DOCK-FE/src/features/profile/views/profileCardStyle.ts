@@ -10,8 +10,6 @@ export const profileCardStyle = StyleSheet.create({
     backgroundColor: AppColorStyles.surface,
     borderRadius: 18,
     padding: 20,
-    borderWidth: 1,
-    borderColor: AppColorStyles.divider,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
