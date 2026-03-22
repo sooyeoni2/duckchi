@@ -29,7 +29,7 @@ public class InviteLinkController {
     private final InviteLinkService inviteLinkService;
 
     @PostMapping("/{roomId}/link")
-    @Operation(summary = "ROOM-02 Create invite link")
+    @Operation(summary = "ROOM-02: 초대 링크 생성/공유 API ")
     public ResponseEntity<ApiResponseDto<CreateInviteLinkResponse>> createInviteLink(
             @PathVariable Long roomId,
             @RequestHeader(value = USER_ID_HEADER, required = false) String userIdHeader
@@ -40,7 +40,7 @@ public class InviteLinkController {
     }
 
     @GetMapping("/{inviteToken}")
-    @Operation(summary = "ROOM-03 Validate invite link")
+    @Operation(summary = "ROOM-03: 초대 링크 검증 및 프리뷰 API ")
     public ResponseEntity<ApiResponseDto<ValidateInviteLinkResponse>> validateInviteLink(
             @PathVariable String inviteToken,
             @RequestHeader(value = USER_ID_HEADER, required = false) String userIdHeader

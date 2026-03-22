@@ -2,6 +2,8 @@ package com.duckchi.core.domain.auth.service;
 
 import com.duckchi.core.domain.auth.dto.request.KakaoLoginRequest;
 import com.duckchi.core.domain.auth.dto.response.LoginResponse;
+import com.duckchi.core.domain.account.repository.UserAccountRepository;
+import com.duckchi.core.domain.account.type.AccountStatus;
 import com.duckchi.core.domain.user.entity.User;
 import com.duckchi.core.domain.user.repository.UserRepository;
 import com.duckchi.core.global.error.CustomException;
@@ -28,6 +30,7 @@ import java.util.Random;
 public class AuthService {
 
     private final UserRepository userRepository;
+    private final UserAccountRepository userAccountRepository;
     private final KakaoClient kakaoClient;
     private final JwtProvider jwtProvider;
     private final MemberClient memberClient;
@@ -61,6 +64,11 @@ public class AuthService {
 
             String accessToken = jwtProvider.createAccessToken(user.getId());
             String refreshToken = jwtProvider.createRefreshToken(user.getId());
+            boolean hasBankAccount = userAccountRepository.existsByUserIdAndStatusAndDeletedAtIsNull(
+                    user.getId(),
+                    AccountStatus.VERIFIED
+            );
+            boolean hasPayPassword = StringUtils.hasText(user.getPayPassword());
 
             return LoginResponse.builder()
                     .newUser(isNewUser)
@@ -68,8 +76,11 @@ public class AuthService {
                     .refreshToken(refreshToken)
                     .user(LoginResponse.UserResponse.builder()
                             .userId(user.getId())
+                            .email(user.getEmail())
                             .name(user.getName())
                             .tag(user.getTag())
+                            .hasBankAccount(hasBankAccount)
+                            .hasPayPassword(hasPayPassword)
                             .build())
                     .build();
         } catch (Exception e) {

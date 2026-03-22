@@ -1,4 +1,5 @@
 import { axiosClient } from '../../../core/network/axiosClient';
+import { mockAddAccount } from '../../profile/models/profileService';
 import type { RegisterBankAccountResult } from './bankTypes';
 
 const MOCK_BANK_NAMES: Record<string, string> = {
@@ -58,7 +59,10 @@ export const verify1Won = async (accountId: number, verificationCode: string): P
       throw err;
     }
     mockVerifyAttempts = 0;
-    mockPendingAccount = null;
+    if (mockPendingAccount) {
+      mockAddAccount(mockPendingAccount);
+      mockPendingAccount = null;
+    }
     return;
   }
   await axiosClient.post(`/api/v1/auth/bank-accounts/${accountId}/verify-1won`, {

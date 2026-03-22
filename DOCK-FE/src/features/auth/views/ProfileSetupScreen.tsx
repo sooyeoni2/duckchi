@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+  Image,
   View,
   Text,
   TextInput,
@@ -25,7 +26,8 @@ const ProfileSetupScreen: React.FC<Props> = ({ navigation }) => {
   const user = useAuthStore((s) => s.user);
   const { submitting, submit } = useProfileSetupViewModel(navigation);
   const name = user?.name ?? '';
-  const canConfirm = name.trim().length > 0 && !submitting;
+  const profileImageUrl = user?.profileImageUrl ?? null;
+  const canConfirm = !!name && !submitting;
 
   const handleConfirm = () => {
     if (!canConfirm) return;
@@ -43,11 +45,12 @@ const ProfileSetupScreen: React.FC<Props> = ({ navigation }) => {
         {/* 프로필 이미지 */}
         <View style={styles.profileSection}>
           <View style={styles.profileCircle}>
-            <Ionicons name="person" size={60 * s} color="#CCCCCC" />
+            {profileImageUrl ? (
+              <Image source={{ uri: profileImageUrl }} style={styles.profileImage} />
+            ) : (
+              <Ionicons name="person" size={60 * s} color="#CCCCCC" />
+            )}
           </View>
-          <TouchableOpacity style={styles.cameraBtn} activeOpacity={0.8}>
-            <Ionicons name="camera" size={16 * s} color="#727272" />
-          </TouchableOpacity>
         </View>
 
         {/* 입력 영역 */}
@@ -94,9 +97,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: H * 0.06,
   },
+  profileImage: {
+    width: 126 * s,
+    height: 126 * s,
+    borderRadius: 63 * s,
+  },
   profileCircle: {
     width: 126 * s,
-    height: 121 * s,
+    height: 126 * s,
     borderRadius: 63 * s,
     backgroundColor: '#F9F9F9',
     shadowColor: '#000000',

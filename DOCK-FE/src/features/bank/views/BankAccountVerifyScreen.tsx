@@ -2,7 +2,9 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, Keyboard, Pressable, StyleSheet, Text, TextInput, TouchableWithoutFeedback, View } from 'react-native';
+import { Alert, Dimensions, Keyboard, Pressable, StyleSheet, Text, TextInput, TouchableWithoutFeedback, View } from 'react-native';
+
+const { height: H } = Dimensions.get('window');
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { RootStackParamList } from '../../../core/navigation/types';
@@ -42,7 +44,7 @@ export function BankAccountVerifyScreen() {
     }
     const timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
     return () => clearInterval(timer);
-  }, [timeLeft]);
+  }, [navigation, returnTo, timeLeft]);
 
   const minutes = String(Math.floor(timeLeft / 60)).padStart(2, '0');
   const seconds = String(timeLeft % 60).padStart(2, '0');
@@ -86,6 +88,7 @@ export function BankAccountVerifyScreen() {
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <View style={{ height: H }}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <CustomAppBar
           showBackButton
@@ -121,8 +124,10 @@ export function BankAccountVerifyScreen() {
                 ref={inputRef}
                 value={code}
                 onChangeText={text => {
-                  setCode(text.slice(0, 4));
+                  const next = text.slice(0, 4);
+                  setCode(next);
                   if (codeError) setCodeError('');
+                  if (next.length === 4) Keyboard.dismiss();
                 }}
                 maxLength={4}
                 autoFocus
@@ -144,6 +149,7 @@ export function BankAccountVerifyScreen() {
           />
         </View>
       </SafeAreaView>
+      </View>
     </TouchableWithoutFeedback>
   );
 }
@@ -165,15 +171,17 @@ const styles = StyleSheet.create({
   },
   accountCard: {
     backgroundColor: AppColorStyles.surface,
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 16,
+    borderRadius: 18,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 20,
     marginBottom: 56,
-    shadowColor: AppColorStyles.gray2,
+    borderWidth: 1,
+    borderColor: AppColorStyles.divider,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
     elevation: 2,
     gap: 10,
   },
@@ -227,10 +235,10 @@ const styles = StyleSheet.create({
   },
   bottomArea: {
     paddingHorizontal: 24,
-    paddingBottom: 24,
+    paddingBottom: H * 0.05,
     paddingTop: 8,
     position: 'absolute',
-    bottom: 60,
+    bottom: 0,
     left: 0,
     right: 0,
   },

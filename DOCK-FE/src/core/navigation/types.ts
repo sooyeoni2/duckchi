@@ -17,6 +17,7 @@ export type RootStackParamList = {
   };
   PayPasswordSetup: { bankName?: string; maskedAccountNo?: string; returnTo?: 'App' | 'Settings' | 'NewUser' } | undefined;
   PayPasswordConfirm: { firstPassword: string; bankName?: string; maskedAccountNo?: string; returnTo?: 'App' | 'Settings' | 'NewUser' };
+  PayPasswordInput: undefined;
 };
 
 export type ProfileStackParamList = {
@@ -25,6 +26,18 @@ export type ProfileStackParamList = {
   Settings: undefined;
   BankAccountRegister: undefined;
   TransferLimit: undefined;
+};
+
+export type RoomStackParamList = {
+  RoomList: undefined;
+  RoomDetail: { roomId: number; showTransfer?: boolean };
+  RoomCreate: undefined;
+  RoomRestart: { roomId: number };
+  RoomMoreOptions: { roomId: number };
+  AutoTransferAgree: { roomId: number };
+  AdminDelegation: { roomId: number };
+  RoomEdit: { roomId: number };
+  SettlementRequestList: { roomId: number };
 };
 
 export type AuthStackParamList = {
@@ -37,7 +50,7 @@ export type AuthStackParamList = {
 
 export type AppTabParamList = {
   Home: undefined;
-  Room: undefined;
+  Room: { screen: keyof RoomStackParamList } | undefined;
   Report: undefined;
   Profile: { screen: keyof ProfileStackParamList } | undefined;
 };

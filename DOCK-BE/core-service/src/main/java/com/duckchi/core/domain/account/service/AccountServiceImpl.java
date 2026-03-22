@@ -1,16 +1,24 @@
 package com.duckchi.core.domain.account.service;
 
 import com.duckchi.core.domain.account.dto.request.RegisterBankAccountRequest;
+import com.duckchi.core.domain.account.dto.request.SetPayPasswordRequest;
 import com.duckchi.core.domain.account.dto.request.VerifyOneWonRequest;
+import com.duckchi.core.domain.account.dto.request.VerifyPayPasswordRequest;
 import com.duckchi.core.domain.account.dto.response.AccountLockInfoResponse;
+import com.duckchi.core.domain.account.dto.response.PayPasswordFailResponse;
 import com.duckchi.core.domain.account.dto.response.RegisterBankAccountResponse;
 import com.duckchi.core.domain.account.dto.response.VerifyOneWonResponse;
 import com.duckchi.core.domain.account.entity.UserAccount;
 import com.duckchi.core.domain.account.repository.UserAccountRepository;
 import com.duckchi.core.domain.account.type.AccountStatus;
 import com.duckchi.core.domain.account.type.BankCode;
+import com.duckchi.core.domain.account.type.PayPasswordFailureAction;
+import com.duckchi.core.domain.account.type.PayPasswordFailureResult;
+import com.duckchi.core.domain.user.entity.User;
+import com.duckchi.core.domain.user.repository.UserRepository;
 import com.duckchi.core.global.error.CustomException;
 import com.duckchi.core.global.error.ErrorCode;
+import com.duckchi.core.global.security.PayPasswordSecurityHelper;
 import com.duckchi.core.infra.finance.FinanceClient;
 import com.duckchi.core.infra.finance.FinanceExceptionParser;
 import com.duckchi.core.infra.finance.OneVerifyHeaderFactory;
@@ -37,15 +45,16 @@ import java.time.LocalDateTime;
 @Transactional
 public class AccountServiceImpl implements AccountService {
 
-//    private final UserRepository userRepository;
+    private final UserRepository userRepository;
     private static final String AUTH_TEXT = "SSAFY";
-    private static final String TEMP_USER_KEY = "06ac95e7-e593-4f3f-8cc6-7f5d4ff47400";
     private final AccountStatusService accountStatusService;
+    private final PayPasswordStatusService payPasswordStatusService;
     private final UserAccountRepository userAccountRepository;
     private final OneVerifyRedisRepository oneVerifyRedisRepository;
     private final FinanceClient financeClient;
     private final OneVerifyHeaderFactory oneVerifyHeaderFactory;
     private final FinanceExceptionParser financeExceptionParser;
+    private final PayPasswordSecurityHelper payPasswordSecurityHelper;
 
     //계좌 등록
     @Override
@@ -96,7 +105,7 @@ public class AccountServiceImpl implements AccountService {
                             .build()
             );
             //1원 송금 + Redis Pending 저장
-            sendOneWon(userAccount);
+            sendOneWon(userAccount,userId);
 
             //DB에 등록한 계좌 정보 response로 반환
             return new RegisterBankAccountResponse(
@@ -114,9 +123,11 @@ public class AccountServiceImpl implements AccountService {
 
     //1원 송금 + Redis Pending 저장 (두 동작은 종속된 동작이므로)
     @Override
-    public void sendOneWon(UserAccount userAccount) {
+    public void sendOneWon(UserAccount userAccount,Long userId) {
+        User user = getUser(userId);
+        String SSAFY_USER_KEY = user.getSsafyUserKey();
         OpenAccountAuthRequest financeRequest = new OpenAccountAuthRequest(
-                oneVerifyHeaderFactory.create("openAccountAuth", TEMP_USER_KEY),
+                oneVerifyHeaderFactory.create("openAccountAuth", SSAFY_USER_KEY),
                 userAccount.getAccountNumber(),
                 AUTH_TEXT
         );
@@ -135,7 +146,8 @@ public class AccountServiceImpl implements AccountService {
     //1원 송금 검증
     @Override
     public VerifyOneWonResponse verifyOneWon(Long userId, Long accountId, VerifyOneWonRequest request) {
-
+        User user = getUser(userId);
+        String SSAFY_USER_KEY = user.getSsafyUserKey();
         //UserAccount 가져오기
         UserAccount userAccount = userAccountRepository
                 .findByIdAndUserIdAndDeletedAtIsNull(accountId,userId)
@@ -168,7 +180,7 @@ public class AccountServiceImpl implements AccountService {
 
         //금융망 1원 송금 검증 api 호출 request 생성
         CheckAuthCodeRequest financeRequest = new CheckAuthCodeRequest(
-                oneVerifyHeaderFactory.create("checkAuthCode", TEMP_USER_KEY),
+                oneVerifyHeaderFactory.create("checkAuthCode", SSAFY_USER_KEY),
                 userAccount.getAccountNumber(),
                 AUTH_TEXT,
                 request.verificationCode()
@@ -219,6 +231,54 @@ public class AccountServiceImpl implements AccountService {
         }
     }
 
+    //결제 비밀번호 설정
+    @Override
+    public void setPayPassword(Long userId, SetPayPasswordRequest request) {
+        //유저 가져오기
+        User user = getUser(userId);
+        //이미 비밀번호가 설정되었는지 확인
+        if (user.hasPayPassword()){
+            throw new CustomException(ErrorCode.PAY_PASSWORD_ALREADY_SET);
+        }
+        //비밃번호 암호화
+        String encodedPassword = payPasswordSecurityHelper.encode(request.password());
+        //비밀번호 설정
+        user.updatePayPassword(encodedPassword);
+    }
+
+    //결제 비밀번호 검증
+    @Override
+    @Transactional
+    public void verifyPayPassword(Long userId, VerifyPayPasswordRequest request) {
+        //유저 가져오기
+        User user = getUser(userId);
+        //결제 비밀번호가 설정되지 않은 경우
+        if (!user.hasPayPassword()) {
+            throw new CustomException(ErrorCode.PAY_PASSWORD_NOT_FOUND);
+        }
+        //encoding된 비밀번호랑 매치되는지 확인
+        boolean matched = payPasswordSecurityHelper.matches(
+                request.password(),
+                user.getPayPassword()
+        );
+
+        //결제 비밀번호 검증
+        if(matched) {
+            user.resetPayPasswordFailCnt();
+            return;
+        } else {
+            UserAccount userAccount = userAccountRepository.findByUserIdAndStatusAndDeletedAtIsNull(userId,AccountStatus.VERIFIED)
+                    .orElseThrow(() -> new CustomException(ErrorCode.ACCOUNT_INVALID));
+            PayPasswordFailureResult result = payPasswordStatusService.recordFailure(userId,userAccount.getId());
+            //결제 비밀번호 실패 횟수 data에 담기
+            PayPasswordFailResponse data = new PayPasswordFailResponse(result.failCount());
+            if (result.action() == PayPasswordFailureAction.RESET_REQUIRED){
+                throw new CustomException(ErrorCode.PAY_PASSWORD_RESET);
+            }
+            throw new CustomException(ErrorCode.PAY_PASSWORD_MISMATCH,data);
+        }
+    }
+
     //계좌 삭제
     @Override
     public void deleteBankAccount(Long userId, Long accountId) {
@@ -234,4 +294,11 @@ public class AccountServiceImpl implements AccountService {
         int visibleLength = Math.min(4, accountNumber.length());
         return accountNumber.substring(0, visibleLength) + "*".repeat(accountNumber.length() - visibleLength);
     }
+
+    //유저 찾기
+    private User getUser(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.AUTH_UNAUTHORIZED));
+    }
+
 }

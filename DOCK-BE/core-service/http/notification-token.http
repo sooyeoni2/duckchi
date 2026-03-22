@@ -1,0 +1,10 @@
+### FCM 토큰 등록
+POST http://localhost:8080/api/v1/notifications/token
+Content-Type: application/json
+X-User-Id: 1
+
+{
+  "deviceId": "android-device-uuid-sample",
+  "token": "fcm-token-sample",
+  "notificationEnabled": true
+}

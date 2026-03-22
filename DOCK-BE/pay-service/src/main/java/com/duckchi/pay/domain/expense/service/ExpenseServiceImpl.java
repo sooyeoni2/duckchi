@@ -1,10 +1,13 @@
 package com.duckchi.pay.domain.expense.service;
 
 import com.duckchi.pay.domain.expense.dto.external.UserFinanceProfileResponse;
+import com.duckchi.pay.domain.expense.dto.external.UserProfileBatchRequest;
+import com.duckchi.pay.domain.expense.dto.external.UserProfileSnapshotResponse;
 import com.duckchi.pay.domain.expense.dto.request.AccountHistoryRequest;
-import com.duckchi.pay.domain.expense.dto.request.ExpenseRegistrationRequest;
+import com.duckchi.pay.domain.expense.dto.request.ExpenseUpsertRequest;
 import com.duckchi.pay.domain.expense.dto.response.AccountHistoryResponse;
 import com.duckchi.pay.domain.expense.dto.response.ExpenseDetailResponse;
+import com.duckchi.pay.domain.expense.dto.response.ExpenseParticipantOptionResponse;
 import com.duckchi.pay.domain.expense.dto.response.ExpenseResponse;
 import com.duckchi.pay.domain.expense.entity.Expense;
 import com.duckchi.pay.domain.expense.entity.ExpenseItem;
@@ -27,7 +30,11 @@ import jakarta.persistence.PersistenceContext;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,12 +43,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-/**
- * 결제안 등록, 조회, 수정, 삭제와 계좌 거래 내역 조회를 처리하는 서비스 구현체이다.
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
+/**
+ * 결제안 서비스 구현체.
+ * 외부 금융 조회, 방 멤버 검증, 결제안 생성/수정/조회 조합 역할.
+ */
 public class ExpenseServiceImpl implements ExpenseService {
 
     private final FinanceClient financeClient;
@@ -56,11 +64,12 @@ public class ExpenseServiceImpl implements ExpenseService {
     @Value("${finance.api.key}")
     private String apiKey;
 
-    /**
-     * 로그인 사용자의 금융 프로필을 기준으로 최근 계좌 거래 내역을 조회한다.
-     */
     @Override
     @Transactional(readOnly = true)
+    /**
+     * 대표 계좌 기준 거래 내역 조회 로직.
+     * 코어 서비스 금융 프로필 검증 후 금융망 조회 수행 역할.
+     */
     public List<AccountHistoryResponse> getAccountHistory(Long userId, AccountHistoryRequest request) {
         UserFinanceProfileResponse financeProfile = getUserFinanceProfile(userId);
 
@@ -107,7 +116,6 @@ public class ExpenseServiceImpl implements ExpenseService {
                             .transactionMemo(detail.getTransactionSummary())
                             .amount(Integer.parseInt(detail.getTransactionBalance()))
                             .transactionAt(parseLocalDateTime(detail.getTransactionDate(), detail.getTransactionTime()))
-                            .counterAccountNo(detail.getTransactionAccountNo())
                             .build())
                     .toList();
         } catch (Exception e) {
@@ -116,19 +124,45 @@ public class ExpenseServiceImpl implements ExpenseService {
         }
     }
 
+    @Override
+    @Transactional(readOnly = true)
     /**
-     * 결제안을 저장하고 참여자 및 품목 정보를 함께 구성한다.
+     * 결제 참여자 선택 목록 조회 로직.
+     * 방 멤버 검증 후 코어 서비스 사용자 스냅샷 매핑 역할.
      */
+    public List<ExpenseParticipantOptionResponse> getExpenseParticipants(Long userId, Long roomId) {
+        validateRoomMember(roomId, userId);
+
+        List<Long> roomParticipantUserIds = roomParticipantRepository.findUserIdsByRoomId(roomId);
+        Map<Long, UserProfileSnapshotResponse> profileMap = getUserProfiles(roomParticipantUserIds);
+
+        return roomParticipantUserIds.stream()
+                .map(profileMap::get)
+                .filter(Objects::nonNull)
+                .map(profile -> ExpenseParticipantOptionResponse.builder()
+                        .userId(profile.getUserId())
+                        .userName(profile.getUserName())
+                        .userTag(profile.getUserTag())
+                        .profileImageUrl(profile.getProfileImageUrl())
+                        .build())
+                .toList();
+    }
+
     @Override
     @Transactional
-    public Long registerExpense(Long userId, ExpenseRegistrationRequest request) {
-        validateRegistration(request);
+    /**
+     * 결제안 등록 로직.
+     * 회차/참여자 정합성 검증 후 참여자 및 품목 하위 엔티티 구성 역할.
+     */
+    public Long registerExpense(Long userId, Long roomId, ExpenseUpsertRequest request) {
+        validateRegistration(userId, roomId, request);
+        Map<Long, UserProfileSnapshotResponse> profileMap = getUserProfiles(collectReferencedUserIds(userId, request));
 
         Expense expense = Expense.builder()
-                .roomId(request.getRoomId())
+                .roomId(roomId)
                 .roomSessionId(request.getRoomSessionId())
                 .payerUserId(userId)
-                .payerUserName(extractPayerName(userId, request.getParticipants()))
+                .payerUserName(resolveRequiredProfile(profileMap, userId).getUserName())
                 .inputType(request.getInputType())
                 .title(request.getTitle())
                 .totalAmount(request.getTotalAmount())
@@ -136,38 +170,44 @@ public class ExpenseServiceImpl implements ExpenseService {
                 .receiptImageUrl(request.getReceiptImageUrl())
                 .build();
 
-        addParticipantsAndItems(request, expense);
+        addParticipantsAndItems(request, expense, profileMap);
         return expenseRepository.save(expense).getId();
     }
 
-    /**
-     * 모임방 전체 결제안 목록을 조회한다.
-     */
     @Override
     @Transactional(readOnly = true)
-    public List<ExpenseResponse> getExpensesByRoom(Long roomId) {
+    /**
+     * 모임방 전체 결제안 목록 조회 로직.
+     * 방 멤버만 조회 가능하도록 보호 역할.
+     */
+    public List<ExpenseResponse> getExpensesByRoom(Long userId, Long roomId) {
+        validateRoomMember(roomId, userId);
         return expenseRepository.findAllByRoomIdOrderByCreatedAtDesc(roomId).stream()
                 .map(this::toExpenseResponse)
                 .toList();
     }
 
-    /**
-     * 모임방 내에서 로그인 사용자가 생성한 결제안만 조회한다.
-     */
     @Override
     @Transactional(readOnly = true)
+    /**
+     * 내가 만든 결제안 목록 조회 로직.
+     * 방 멤버 검증 후 결제자 기준 필터링 역할.
+     */
     public List<ExpenseResponse> getMyExpensesByRoom(Long userId, Long roomId) {
+        validateRoomMember(roomId, userId);
         return expenseRepository.findAllByRoomIdAndPayerUserIdOrderByCreatedAtDesc(roomId, userId).stream()
                 .map(this::toExpenseResponse)
                 .toList();
     }
 
-    /**
-     * 결제안 상세 정보를 참여자 및 품목 단위로 조합해 반환한다.
-     */
     @Override
     @Transactional(readOnly = true)
-    public ExpenseDetailResponse getExpenseDetail(Long roomId, Long expenseId) {
+    /**
+     * 결제안 상세 조회 로직.
+     * 방 멤버 검증 후 참여자/품목 분담 상세 조립 역할.
+     */
+    public ExpenseDetailResponse getExpenseDetail(Long userId, Long roomId, Long expenseId) {
+        validateRoomMember(roomId, userId);
         Expense expense = findExpenseWithRoomCheck(roomId, expenseId);
         return ExpenseDetailResponse.builder()
                 .expenseId(expense.getId())
@@ -206,26 +246,29 @@ public class ExpenseServiceImpl implements ExpenseService {
                 .build();
     }
 
-    /**
-     * 결제안을 삭제한다.
-     */
     @Override
     @Transactional
+    /**
+     * 결제안 삭제 로직.
+     * 생성자 권한과 수정 가능 상태 확인 역할.
+     */
     public void deleteExpense(Long userId, Long roomId, Long expenseId) {
         Expense expense = findExpenseWithRoomCheck(roomId, expenseId);
         validateEditableByRequester(userId, expense);
         expenseRepository.delete(expense);
     }
 
-    /**
-     * 결제안을 수정하고 참여자 및 품목 구성을 새 요청 기준으로 다시 생성한다.
-     */
     @Override
     @Transactional
-    public void updateExpense(Long userId, Long roomId, Long expenseId, ExpenseRegistrationRequest request) {
+    /**
+     * 결제안 수정 로직.
+     * 기존 하위 분담 제거 후 새 요청 기준 재구성 역할.
+     */
+    public void updateExpense(Long userId, Long roomId, Long expenseId, ExpenseUpsertRequest request) {
         Expense expense = findExpenseWithRoomCheck(roomId, expenseId);
         validateEditableByRequester(userId, expense);
-        validateRegistration(request);
+        validateRegistration(userId, roomId, request);
+        Map<Long, UserProfileSnapshotResponse> profileMap = getUserProfiles(collectReferencedUserIds(userId, request));
 
         expense.updateBasicInfo(
                 request.getTitle(),
@@ -238,12 +281,9 @@ public class ExpenseServiceImpl implements ExpenseService {
         expense.getItems().clear();
         entityManager.flush();
 
-        addParticipantsAndItems(request, expense);
+        addParticipantsAndItems(request, expense, profileMap);
     }
 
-    /**
-     * 수정 및 삭제 가능 여부를 검사한다.
-     */
     private void validateEditableByRequester(Long userId, Expense expense) {
         if (!expense.getPayerUserId().equals(userId)) {
             throw new CustomException(ErrorCode.COMMON_FORBIDDEN);
@@ -255,66 +295,166 @@ public class ExpenseServiceImpl implements ExpenseService {
     }
 
     /**
-     * 결제안 등록/수정 요청의 방, 참여자, 금액 정합성을 검증한다.
+     * 등록/수정 공통 사전 검증 로직.
+     * 회차, 방 멤버, 참여자 합계, 품목 정합성 확인 역할.
      */
-    private void validateRegistration(ExpenseRegistrationRequest request) {
+    private void validateRegistration(Long userId, Long roomId, ExpenseUpsertRequest request) {
+        validateRoomAndSession(roomId, request);
+        validateRoomMember(roomId, userId);
+
+        Set<Long> participantUserIds = validateParticipantsIntegrity(roomId, request);
+
+        if (request.getItems() != null) {
+            validateItemsIntegrity(roomId, request.getItems(), participantUserIds);
+        }
+    }
+
+    /**
+     * 모임방과 회차 일치 여부 검증 로직.
+     * 잘못된 회차 식별자 조합 차단 역할.
+     */
+    private void validateRoomAndSession(Long roomId, ExpenseUpsertRequest request) {
         RoomSession session = roomSessionRepository.findById(request.getRoomSessionId())
                 .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
-        if (!session.getRoomId().equals(request.getRoomId())) {
+        // Room 객체와 Long을 직접 비교하면 항상 false이므로, ID끼리 비교해야 한다.
+        if (!session.getRoom().getId().equals(roomId)) {
             throw new CustomException(ErrorCode.ROOM_SESSION_MISMATCH);
         }
+    }
+
+    /**
+     * 참여자 분담 정합성 검증 로직.
+     * 분담 합계와 방 멤버 포함 여부 확인 역할.
+     */
+    private Set<Long> validateParticipantsIntegrity(Long roomId, ExpenseUpsertRequest request) {
+        validateUniqueParticipantIds(request);
 
         int totalSplit = request.getParticipants().stream()
-                .mapToInt(ExpenseRegistrationRequest.ParticipantRequest::getSplitAmount)
+                .mapToInt(ExpenseUpsertRequest.ParticipantSplitRequest::getSplitAmount)
                 .sum();
         if (totalSplit != request.getTotalAmount()) {
             throw new CustomException(ErrorCode.EXPENSE_AMOUNT_MISMATCH);
         }
 
-        List<Long> memberIds = roomParticipantRepository.findUserIdsByRoomId(request.getRoomId());
+        List<Long> memberIds = roomParticipantRepository.findUserIdsByRoomId(roomId);
         Set<Long> memberSet = new HashSet<>(memberIds);
+        Set<Long> participantUserIds = new HashSet<>();
+
         request.getParticipants().forEach(participant -> {
             if (!memberSet.contains(participant.getUserId())) {
                 throw new CustomException(ErrorCode.ROOM_PARTICIPANT_NOT_FOUND);
             }
+            participantUserIds.add(participant.getUserId());
         });
 
-        if (request.getItems() != null) {
-            request.getItems().forEach(item -> {
-                int itemSum = item.getSplits().stream()
-                        .mapToInt(split -> split.getSplitAmount())
-                        .sum();
-                if (itemSum != item.getTotalAmount()) {
-                    throw new CustomException(ErrorCode.EXPENSE_AMOUNT_MISMATCH);
-                }
-            });
-        }
+        return participantUserIds;
     }
 
     /**
-     * 참여자 및 품목 정보를 결제 엔티티에 연결한다.
+     * 품목별 분담 정합성 검증 로직.
+     * 품목 합계와 품목 참여자 유효성 확인 역할.
      */
-    private void addParticipantsAndItems(ExpenseRegistrationRequest request, Expense expense) {
-        request.getParticipants().forEach(participant -> expense.getParticipants().add(
-                ExpenseParticipant.builder()
-                        .expense(expense)
-                        .userId(participant.getUserId())
-                        .userName(participant.getUserName())
-                        .userTag(participant.getUserTag())
-                        .profileImageUrl(participant.getProfileImageUrl())
-                        .splitAmount(participant.getSplitAmount())
-                        .build()
-        ));
+    private void validateItemsIntegrity(
+            Long roomId,
+            List<ExpenseUpsertRequest.ItemUpsertRequest> items,
+            Set<Long> participantUserIds
+    ) {
+        List<Long> memberIds = roomParticipantRepository.findUserIdsByRoomId(roomId);
+        Set<Long> memberSet = new HashSet<>(memberIds);
+
+        items.forEach(item -> {
+            validateItemSplitExistence(item);
+            validateItemAmount(item);
+            validateItemParticipants(item, memberSet, participantUserIds);
+        });
+    }
+
+    private void validateItemSplitExistence(ExpenseUpsertRequest.ItemUpsertRequest item) {
+        if (item.getSplits() == null || item.getSplits().isEmpty()) {
+            throw new CustomException(ErrorCode.COMMON_INVALID_INPUT);
+        }
+    }
+
+    private void validateItemAmount(ExpenseUpsertRequest.ItemUpsertRequest item) {
+        int itemSum = item.getSplits().stream()
+                .mapToInt(ExpenseUpsertRequest.ItemSplitRequest::getSplitAmount)
+                .sum();
+        if (itemSum != item.getTotalAmount()) {
+            throw new CustomException(ErrorCode.EXPENSE_AMOUNT_MISMATCH);
+        }
+    }
+
+    private void validateItemParticipants(
+            ExpenseUpsertRequest.ItemUpsertRequest item,
+            Set<Long> memberSet,
+            Set<Long> participantUserIds
+    ) {
+        Set<Long> itemSplitUserIds = new HashSet<>();
+        item.getSplits().forEach(split -> {
+            if (!memberSet.contains(split.getUserId())) {
+                throw new CustomException(ErrorCode.ROOM_PARTICIPANT_NOT_FOUND);
+            }
+            if (!participantUserIds.contains(split.getUserId())) {
+                throw new CustomException(ErrorCode.COMMON_INVALID_INPUT);
+            }
+            if (!itemSplitUserIds.add(split.getUserId())) {
+                throw new CustomException(ErrorCode.COMMON_INVALID_INPUT);
+            }
+        });
+    }
+
+    /**
+     * 방 멤버 권한 검증 로직.
+     * 방 외부 사용자 접근 차단 역할.
+     */
+    private void validateRoomMember(Long roomId, Long userId) {
+        if (!roomParticipantRepository.existsByRoom_IdAndUserId(roomId, userId)) {
+            throw new CustomException(ErrorCode.ROOM_MEMBER_ONLY);
+        }
+    }
+
+    private void validateUniqueParticipantIds(ExpenseUpsertRequest request) {
+        Set<Long> participantUserIds = new HashSet<>();
+        request.getParticipants().forEach(participant -> {
+            if (!participantUserIds.add(participant.getUserId())) {
+                throw new CustomException(ErrorCode.COMMON_INVALID_INPUT);
+            }
+        });
+    }
+
+    /**
+     * 참여자/품목 하위 엔티티 조립 로직.
+     * 요청 DTO를 JPA 저장 구조로 변환하는 역할.
+     */
+    private void addParticipantsAndItems(
+            ExpenseUpsertRequest request,
+            Expense expense,
+            Map<Long, UserProfileSnapshotResponse> profileMap
+    ) {
+        request.getParticipants().forEach(participant -> {
+            UserProfileSnapshotResponse profile = resolveRequiredProfile(profileMap, participant.getUserId());
+            expense.getParticipants().add(
+                    ExpenseParticipant.builder()
+                            .expense(expense)
+                            .userId(participant.getUserId())
+                            .userName(profile.getUserName())
+                            .userTag(profile.getUserTag())
+                            .profileImageUrl(profile.getProfileImageUrl())
+                            .splitAmount(participant.getSplitAmount())
+                            .build()
+            );
+        });
 
         if (request.getItems() != null && !request.getItems().isEmpty()) {
-            mapItems(request, expense);
+            mapItems(request, expense, profileMap);
         }
     }
 
-    /**
-     * 품목별 분담 정보를 엔티티 구조로 변환한다.
-     */
-    private void mapItems(ExpenseRegistrationRequest request, Expense expense) {
+    private void mapItems(
+            ExpenseUpsertRequest request,
+            Expense expense,
+            Map<Long, UserProfileSnapshotResponse> profileMap
+    ) {
         request.getItems().forEach(itemRequest -> {
             ExpenseItem item = ExpenseItem.builder()
                     .expense(expense)
@@ -323,24 +463,25 @@ public class ExpenseServiceImpl implements ExpenseService {
                     .quantity(itemRequest.getQuantity())
                     .build();
 
-            itemRequest.getSplits().forEach(split -> item.getItemParticipants().add(
-                    ExpenseItemParticipant.builder()
-                            .expenseItem(item)
-                            .userId(split.getUserId())
-                            .userName(resolveParticipantName(request.getParticipants(), split.getUserId()))
-                            .userTag("#000")
-                            .splitAmount(split.getSplitAmount())
-                            .quantity(split.getQuantity())
-                            .build()
-            ));
+            itemRequest.getSplits().forEach(split -> {
+                UserProfileSnapshotResponse profile = resolveRequiredProfile(profileMap, split.getUserId());
+                item.getItemParticipants().add(
+                        ExpenseItemParticipant.builder()
+                                .expenseItem(item)
+                                .userId(split.getUserId())
+                                .userName(profile.getUserName())
+                                .userTag(profile.getUserTag())
+                                .profileImageUrl(profile.getProfileImageUrl())
+                                .splitAmount(split.getSplitAmount())
+                                .quantity(split.getQuantity())
+                                .build()
+                );
+            });
 
             expense.getItems().add(item);
         });
     }
 
-    /**
-     * 방 ID와 결제안 ID의 관계를 검증하며 결제안을 조회한다.
-     */
     private Expense findExpenseWithRoomCheck(Long roomId, Long expenseId) {
         Expense expense = expenseRepository.findById(expenseId)
                 .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
@@ -350,9 +491,6 @@ public class ExpenseServiceImpl implements ExpenseService {
         return expense;
     }
 
-    /**
-     * core-service 내부 API를 호출해 사용자 금융 프로필을 조회한다.
-     */
     private UserFinanceProfileResponse getUserFinanceProfile(Long userId) {
         try {
             ApiResponseDto<UserFinanceProfileResponse> response = coreClient.getUserFinanceProfile(userId);
@@ -375,7 +513,81 @@ public class ExpenseServiceImpl implements ExpenseService {
     }
 
     /**
-     * 목록 조회용 응답 DTO로 변환한다.
+     * 코어 서비스 사용자 프로필 배치 조회 로직.
+     * 참여자 이름, 태그, 프로필 이미지 보강 역할.
+     */
+    private Map<Long, UserProfileSnapshotResponse> getUserProfiles(List<Long> userIds) {
+        List<Long> distinctUserIds = userIds.stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+        if (distinctUserIds.isEmpty()) {
+            return Map.of();
+        }
+
+        try {
+            ApiResponseDto<List<UserProfileSnapshotResponse>> response = coreClient.getUserProfiles(
+                    UserProfileBatchRequest.builder()
+                            .userIds(distinctUserIds)
+                            .build()
+            );
+
+            if (response == null || !response.isSuccess() || response.getData() == null) {
+                throw new CustomException(ErrorCode.COMMON_INTERNAL_ERROR);
+            }
+
+            Map<Long, UserProfileSnapshotResponse> profileMap = new LinkedHashMap<>();
+            response.getData().forEach(profile -> profileMap.put(profile.getUserId(), profile));
+
+            if (profileMap.size() != distinctUserIds.size() || !profileMap.keySet().containsAll(distinctUserIds)) {
+                throw new CustomException(ErrorCode.COMMON_INTERNAL_ERROR);
+            }
+
+            return profileMap;
+        } catch (CustomException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Failed to fetch user profiles from core-service. userIds={}", distinctUserIds, e);
+            throw new CustomException(ErrorCode.COMMON_INTERNAL_ERROR);
+        }
+    }
+
+
+
+
+
+
+    private List<Long> collectReferencedUserIds(Long payerUserId, ExpenseUpsertRequest request) {
+        Set<Long> referencedUserIds = new LinkedHashSet<>();
+        referencedUserIds.add(payerUserId);
+        request.getParticipants().forEach(participant -> referencedUserIds.add(participant.getUserId()));
+
+        if (request.getItems() != null) {
+            request.getItems().forEach(item -> {
+                if (item.getSplits() != null) {
+                    item.getSplits().forEach(split -> referencedUserIds.add(split.getUserId()));
+                }
+            });
+        }
+
+        return List.copyOf(referencedUserIds);
+    }
+
+    private UserProfileSnapshotResponse resolveRequiredProfile(
+            Map<Long, UserProfileSnapshotResponse> profileMap,
+            Long userId
+    ) {
+        UserProfileSnapshotResponse profile = profileMap.get(userId);
+        if (profile == null) {
+            throw new CustomException(ErrorCode.COMMON_INTERNAL_ERROR);
+        }
+        return profile;
+    }
+
+    /**
+     * 결제안 목록 응답 변환 로직.
+     * 화면 표시용 요약 DTO 생성 역할.
      */
     private ExpenseResponse toExpenseResponse(Expense expense) {
         return ExpenseResponse.builder()
@@ -391,34 +603,6 @@ public class ExpenseServiceImpl implements ExpenseService {
                 .build();
     }
 
-    /**
-     * 참여자 목록에서 결제자 이름을 추출한다.
-     */
-    private String extractPayerName(Long userId, List<ExpenseRegistrationRequest.ParticipantRequest> participants) {
-        return participants.stream()
-                .filter(participant -> participant.getUserId().equals(userId))
-                .map(ExpenseRegistrationRequest.ParticipantRequest::getUserName)
-                .findFirst()
-                .orElse("알 수 없는 결제자");
-    }
-
-    /**
-     * 참여자 목록에서 특정 사용자 이름을 찾는다.
-     */
-    private String resolveParticipantName(
-            List<ExpenseRegistrationRequest.ParticipantRequest> participants,
-            Long userId
-    ) {
-        return participants.stream()
-                .filter(participant -> participant.getUserId().equals(userId))
-                .map(ExpenseRegistrationRequest.ParticipantRequest::getUserName)
-                .findFirst()
-                .orElse("알 수 없는 참여자");
-    }
-
-    /**
-     * 금융망 응답의 날짜/시간 문자열을 LocalDateTime으로 변환한다.
-     */
     private LocalDateTime parseLocalDateTime(String date, String time) {
         return LocalDateTime.parse(date + time, DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
     }

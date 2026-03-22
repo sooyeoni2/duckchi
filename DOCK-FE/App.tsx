@@ -14,6 +14,7 @@ import { BankAccountVerifyScreen } from './src/features/bank/views/BankAccountVe
 import { BankAccountCompleteScreen } from './src/features/bank/views/BankAccountCompleteScreen';
 import { PayPasswordSetupScreen } from './src/features/bank/views/PayPasswordSetupScreen';
 import { PayPasswordConfirmScreen } from './src/features/bank/views/PayPasswordConfirmScreen';
+import { PayPasswordInputScreen } from './src/features/bank/views/PayPasswordInputScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -40,7 +41,10 @@ function App() {
     <SafeAreaProvider>
       <StatusBar barStyle="dark-content" backgroundColor="#F2F3F5" />
       <NavigationContainer>
-        <Stack.Navigator screenOptions={{ headerShown: false, animation: 'none' }} initialRouteName={isLoggedIn ? 'App' : 'Onboarding'}>
+        <Stack.Navigator
+          screenOptions={{ headerShown: false, animation: 'none' }}
+          initialRouteName={isLoggedIn ? 'App' : 'Onboarding'}
+        >
           <Stack.Screen name="Onboarding">
             {({ navigation }) => (
               <OnboardingScreen onStart={() => navigation.replace('Auth')} />
@@ -53,6 +57,7 @@ function App() {
           <Stack.Screen name="BankAccountComplete" component={BankAccountCompleteScreen} />
           <Stack.Screen name="PayPasswordSetup" component={PayPasswordSetupScreen} />
           <Stack.Screen name="PayPasswordConfirm" component={PayPasswordConfirmScreen} />
+          <Stack.Screen name="PayPasswordInput" component={PayPasswordInputScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>

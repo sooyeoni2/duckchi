@@ -1,7 +1,7 @@
 import { useCallback, useEffect } from 'react';
 import { create } from 'zustand';
 
-import { deleteAccount as deleteAccountService, fetchProfile, updateProfile } from '../models/profileService';
+import { deleteAccount as deleteAccountService, fetchProfile, updateTransferLimit as updateTransferLimitService } from '../models/profileService';
 import type { Profile } from '../models/profileTypes';
 
 type ProfileState =
@@ -13,11 +13,13 @@ type ProfileState =
 interface ProfileStore {
   state: ProfileState;
   setState: (state: ProfileState) => void;
+  reset: () => void;
 }
 
 const useProfileStore = create<ProfileStore>(set => ({
   state: { status: 'idle' },
   setState: state => set({ state }),
+  reset: () => set({ state: { status: 'idle' } }),
 }));
 
 export const useProfileViewModel = () => {
@@ -41,7 +43,7 @@ export const useProfileViewModel = () => {
   }, [loadProfile]);
 
   const updateTransferLimit = useCallback(async (transferLimit: number) => {
-    await updateProfile({ transferLimit });
+    await updateTransferLimitService(transferLimit);
     await loadProfile();
   }, [loadProfile]);
 
@@ -56,5 +58,7 @@ export const useProfileViewModel = () => {
     }
   }, [loadProfile]);
 
-  return { state, refresh, deleteAccount, updateTransferLimit };
+  const reset = useProfileStore(s => s.reset);
+
+  return { state, refresh, reset, deleteAccount, updateTransferLimit };
 };

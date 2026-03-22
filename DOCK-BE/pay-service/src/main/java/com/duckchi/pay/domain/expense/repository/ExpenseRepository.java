@@ -2,13 +2,17 @@ package com.duckchi.pay.domain.expense.repository;
 
 import com.duckchi.pay.domain.expense.entity.Expense;
 import com.duckchi.pay.domain.room.repository.projection.RoomExpenseSummaryProjection;
+import jakarta.persistence.LockModeType;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 /**
- * 결제안 조회에 필요한 JPA 저장소이다.
+ * 결제 내역 레포지토리
+ * JPA 기반의 데이터 액세스 계층임.
  */
 public interface ExpenseRepository extends JpaRepository<Expense, Long> {
 
@@ -23,6 +27,20 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
     List<Expense> findAllByRoomIdAndPayerUserIdOrderByCreatedAtDesc(Long roomId, Long payerUserId);
 
     /**
+     * SET-01 요청 시 동일 결제에 대한 동시 정산 요청 경쟁을 막기 위해 결제를 비관적 락으로 조회한다.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select e from Expense e where e.id in :expenseIds")
+    List<Expense> findAllByIdInForUpdate(@Param("expenseIds") List<Long> expenseIds);
+
+    /**
+     * SET-02 송금 완료 처리 시 결제 상태를 안전하게 전이하기 위해 결제 행을 비관적 락으로 조회한다.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select e from Expense e where e.id = :expenseId")
+    Optional<Expense> findByIdForUpdate(@Param("expenseId") Long expenseId);
+
+    /**
      * 여러 모임방의 총 결제 금액과 결제안 개수를 방 단위로 집계한다.
      */
     @Query("""
@@ -34,4 +52,6 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
             group by e.roomId
             """)
     List<RoomExpenseSummaryProjection> findRoomExpenseSummaries(@Param("roomIds") List<Long> roomIds);
+
+    long countByRoomIdAndStatus(Long roomId, String status);
 }

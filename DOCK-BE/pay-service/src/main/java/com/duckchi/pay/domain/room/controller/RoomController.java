@@ -1,6 +1,7 @@
 package com.duckchi.pay.domain.room.controller;
 
 import com.duckchi.pay.domain.room.dto.request.CreateRoomRequest;
+import com.duckchi.pay.domain.room.dto.request.StartRoomRequest;
 import com.duckchi.pay.domain.room.dto.request.UpdateRoomRequest;
 import com.duckchi.pay.domain.room.dto.response.CreateRoomResponse;
 import com.duckchi.pay.domain.room.dto.response.RoomListResponse;
@@ -18,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -39,7 +41,7 @@ public class RoomController {
     private final RoomService roomService;
 
     @PostMapping
-    @Operation(summary = "ROOM-01 Create room")
+    @Operation(summary = "ROOM-01: 모임 방 생성 API ")
     public ResponseEntity<ApiResponseDto<CreateRoomResponse>> createRoom(
             @RequestHeader(value = USER_ID_HEADER, required = false) String userIdHeader,
             @Valid @RequestBody CreateRoomRequest request
@@ -50,7 +52,7 @@ public class RoomController {
     }
 
     @PatchMapping("/{roomId}/auto-debit/consents")
-    @Operation(summary = "ROOM-04 Update auto debit consent")
+    @Operation(summary = "ROOM-04: 자동이체 동의/거절 API ")
     public ResponseEntity<ApiResponseDto<UpdateAutoDebitConsentResponse>> updateAutoDebitConsent(
             @PathVariable Long roomId,
             @RequestParam AutoDebitConsentStatus status,
@@ -72,6 +74,17 @@ public class RoomController {
         return ResponseEntity.ok(ApiResponseDto.success(response));
     }
 
+    @PatchMapping("/{roomId}/my-transfer-agree")
+    @Operation(summary = "ROOM-14 모임방 자동이체 동의 여부 수정")
+    public ResponseEntity<ApiResponseDto<UpdateAutoDebitConsentResponse>> toggleAutoDebitConsent(
+            @PathVariable("roomId") Long roomId,
+            @RequestHeader(value = USER_ID_HEADER, required = false) String userIdHeader
+    ) {
+        Long currentUserId = resolveRequiredUserId(userIdHeader);
+        UpdateAutoDebitConsentResponse response = roomService.toggleAutoDebitConsent(roomId, currentUserId);
+        return ResponseEntity.ok(ApiResponseDto.success(response));
+    }
+
     @PatchMapping("/{roomId}")
     @Operation(summary = "ROOM-05 모임 정보 수정")
     public ResponseEntity<ApiResponseDto<String>> updateRoom(
@@ -84,7 +97,7 @@ public class RoomController {
         return ResponseEntity.ok(ApiResponseDto.success("수정이 완료되었습니다."));
     }
 
-    @org.springframework.web.bind.annotation.DeleteMapping("/{roomId}/members/left")
+    @DeleteMapping("/{roomId}/members/left")
     @Operation(summary = "ROOM-06 모임 방 나가기")
     public ResponseEntity<ApiResponseDto<String>> leaveRoom(
             @PathVariable Long roomId,
@@ -95,7 +108,7 @@ public class RoomController {
         return ResponseEntity.ok(ApiResponseDto.success("모임 방을 성공적으로 나갔습니다."));
     }
 
-    @org.springframework.web.bind.annotation.DeleteMapping("/{roomId}/delete")
+    @DeleteMapping("/{roomId}/delete")
     @Operation(summary = "ROOM-07 모임 방 삭제")
     public ResponseEntity<ApiResponseDto<String>> deleteRoom(
             @PathVariable Long roomId,
@@ -104,6 +117,43 @@ public class RoomController {
         Long currentUserId = resolveRequiredUserId(userIdHeader);
         roomService.deleteRoom(roomId, currentUserId);
         return ResponseEntity.ok(ApiResponseDto.success("모임 방이 성공적으로 삭제되었습니다."));
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // ROOM-17: 모임 시작 / ROOM-18: 모임 종료
+    // ──────────────────────────────────────────────────────────────
+
+    /**
+     * [ROOM-17] 모임을 시작한다.
+     * 별도 페이지에서 카테고리와 세부 내용을 입력받아 전달받는다.
+     * 성공하면 isProgress=true로 전환되며, FE에서 종료 버튼으로 UI가 바뀐다.
+     */
+    @PostMapping("/{roomId}/start")
+    @Operation(summary = "ROOM-17 모임 시작")
+    public ResponseEntity<ApiResponseDto<String>> startRoom(
+            @PathVariable Long roomId,
+            @RequestHeader(value = USER_ID_HEADER, required = false) String userIdHeader,
+            @Valid @RequestBody StartRoomRequest request
+    ) {
+        Long currentUserId = resolveRequiredUserId(userIdHeader);
+        roomService.startRoom(roomId, currentUserId, request);
+        return ResponseEntity.ok(ApiResponseDto.success("모임이 시작되었습니다."));
+    }
+
+    /**
+     * [ROOM-18] 모임을 종료한다.
+     * 정산 요청 중(REQUESTED)인 결제가 없을 때만 종료 가능하다.
+     * 성공하면 isProgress=false로 전환되며, FE에서 시작 버튼으로 UI가 바뀐다.
+     */
+    @PostMapping("/{roomId}/end")
+    @Operation(summary = "ROOM-18 모임 종료")
+    public ResponseEntity<ApiResponseDto<String>> endRoom(
+            @PathVariable Long roomId,
+            @RequestHeader(value = USER_ID_HEADER, required = false) String userIdHeader
+    ) {
+        Long currentUserId = resolveRequiredUserId(userIdHeader);
+        roomService.endRoom(roomId, currentUserId);
+        return ResponseEntity.ok(ApiResponseDto.success("모임이 종료되었습니다."));
     }
 
     private Long resolveRequiredUserId(String userIdHeader) {
