@@ -44,7 +44,7 @@ export function BankAccountVerifyScreen() {
     }
     const timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
     return () => clearInterval(timer);
-  }, [timeLeft]);
+  }, [navigation, returnTo, timeLeft]);
 
   const minutes = String(Math.floor(timeLeft / 60)).padStart(2, '0');
   const seconds = String(timeLeft % 60).padStart(2, '0');

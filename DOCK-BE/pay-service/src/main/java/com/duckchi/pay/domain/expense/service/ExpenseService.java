@@ -8,6 +8,10 @@ import com.duckchi.pay.domain.expense.dto.response.ExpenseParticipantOptionRespo
 import com.duckchi.pay.domain.expense.dto.response.ExpenseResponse;
 import java.util.List;
 
+/**
+ * 결제 도메인 핵심 서비스 인터페이스.
+ * 결제안 조회, 등록, 수정, 삭제와 거래 내역 조회 역할.
+ */
 public interface ExpenseService {
 
     List<AccountHistoryResponse> getAccountHistory(Long userId, AccountHistoryRequest request);
@@ -16,11 +20,11 @@ public interface ExpenseService {
 
     Long registerExpense(Long userId, Long roomId, ExpenseUpsertRequest request);
 
-    List<ExpenseResponse> getExpensesByRoom(Long roomId);
+    List<ExpenseResponse> getExpensesByRoom(Long userId, Long roomId);
 
     List<ExpenseResponse> getMyExpensesByRoom(Long userId, Long roomId);
 
-    ExpenseDetailResponse getExpenseDetail(Long roomId, Long expenseId);
+    ExpenseDetailResponse getExpenseDetail(Long userId, Long roomId, Long expenseId);
 
     void deleteExpense(Long userId, Long roomId, Long expenseId);
 

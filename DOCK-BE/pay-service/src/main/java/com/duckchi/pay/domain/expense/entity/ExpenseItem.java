@@ -1,14 +1,28 @@
 package com.duckchi.pay.domain.expense.entity;
 
-import jakarta.persistence.*;
-import lombok.*;
-import java.util.ArrayList;
-import java.util.List;
-
 import static jakarta.persistence.FetchType.LAZY;
 
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import java.util.ArrayList;
+import java.util.List;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
 /**
- * 결제 품목 엔티티 (OCR 상세 내역).
+ * 결제 품목 엔티티.
+ * 품목 이름, 총액, 수량과 품목 참여자 분담 목록 보관 역할.
  */
 @Entity
 @Table(name = "expense_items")

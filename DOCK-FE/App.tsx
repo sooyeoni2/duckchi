@@ -41,7 +41,10 @@ function App() {
     <SafeAreaProvider>
       <StatusBar barStyle="dark-content" backgroundColor="#F2F3F5" />
       <NavigationContainer>
-        <Stack.Navigator screenOptions={{ headerShown: false, animation: 'none' }} initialRouteName={isLoggedIn ? 'App' : 'Onboarding'}>
+        <Stack.Navigator
+          screenOptions={{ headerShown: false, animation: 'none' }}
+          initialRouteName={isLoggedIn ? 'App' : 'Onboarding'}
+        >
           <Stack.Screen name="Onboarding">
             {({ navigation }) => (
               <OnboardingScreen onStart={() => navigation.replace('Auth')} />

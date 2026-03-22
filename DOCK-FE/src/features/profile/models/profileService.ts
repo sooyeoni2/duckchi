@@ -201,8 +201,18 @@ export const fetchProfile = async (): Promise<Profile> => {
 export const updateTransferLimit = async (transferLimit: number): Promise<void> => {
   if (USE_MOCK) {
     await new Promise<void>(resolve => setTimeout(resolve, 500));
-    mockProfile = { ...mockProfile, transferLimit };
-    return;
+    if (params.transferLimit !== undefined) {
+      mockProfile = { ...mockProfile, transferLimit: params.transferLimit };
+    }
+    return {
+      userId: mockProfile.userId,
+      email: mockProfile.email,
+      name: mockProfile.name,
+      tag: mockProfile.tag,
+      profileImageUrl: mockProfile.profileImageUrl,
+      transferLimit: mockProfile.transferLimit,
+      createdAt: toDate(mockProfile.createdAt),
+    };
   }
   await axiosClient.patch('/api/v1/profiles/edit', { transferLimit });
 };
