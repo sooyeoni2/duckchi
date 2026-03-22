@@ -1,7 +1,9 @@
 package com.duckchi.core.domain.auth.service;
 
 import com.duckchi.core.domain.auth.dto.request.KakaoLoginRequest;
+import com.duckchi.core.domain.auth.dto.request.TokenRefreshRequest;
 import com.duckchi.core.domain.auth.dto.response.LoginResponse;
+import com.duckchi.core.domain.auth.dto.response.TokenRefreshResponse;
 import com.duckchi.core.domain.account.repository.UserAccountRepository;
 import com.duckchi.core.domain.account.type.AccountStatus;
 import com.duckchi.core.domain.user.entity.User;
@@ -12,7 +14,10 @@ import com.duckchi.core.infra.client.KakaoClient;
 import com.duckchi.core.infra.finance.MemberClient;
 import com.duckchi.core.infra.finance.dto.request.MemberRequest;
 import com.duckchi.core.infra.finance.dto.response.MemberResponse;
+import com.duckchi.core.infra.redis.AuthTokenRedisRepository;
 import com.duckchi.core.infra.security.jwt.JwtProvider;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,6 +39,7 @@ public class AuthService {
     private final KakaoClient kakaoClient;
     private final JwtProvider jwtProvider;
     private final MemberClient memberClient;
+    private final AuthTokenRedisRepository authTokenRedisRepository;
 
     @Value("${finance.api.key}")
     private String financeApiKey;
@@ -44,7 +50,7 @@ public class AuthService {
     public LoginResponse login(KakaoLoginRequest request) {
         try {
             // 1. 카카오 액세스 토큰 획득
-            String kakaoAccessToken = kakaoClient.getAccessToken(request.getAuthorizationCode(), request.getRedirectUri());
+            String kakaoAccessToken = kakaoClient.getAccessToken(request.getAuthorizationCode(), resolveRedirectUri(request));
 
             Map<String, Object> userInfo = kakaoClient.getUserInfo(kakaoAccessToken);
             String socialId = String.valueOf(userInfo.get("id"));
@@ -64,6 +70,11 @@ public class AuthService {
 
             String accessToken = jwtProvider.createAccessToken(user.getId());
             String refreshToken = jwtProvider.createRefreshToken(user.getId());
+            authTokenRedisRepository.saveRefreshToken(
+                    user.getId(),
+                    refreshToken,
+                    jwtProvider.getRefreshTokenValidity()
+            );
             boolean hasBankAccount = userAccountRepository.existsByUserIdAndStatusAndDeletedAtIsNull(
                     user.getId(),
                     AccountStatus.VERIFIED
@@ -86,6 +97,50 @@ public class AuthService {
         } catch (Exception e) {
             log.error("Kakao login error", e);
             throw new CustomException(ErrorCode.AUTH_LOGIN_FAILED);
+        }
+    }
+
+    public TokenRefreshResponse refresh(TokenRefreshRequest request) {
+        try {
+            Long userId = jwtProvider.getUserIdFromToken(request.refreshToken());
+
+            String savedRefreshToken = authTokenRedisRepository.findRefreshToken(userId)
+                    .orElseThrow(() -> new CustomException(ErrorCode.AUTH_SESSION_EXPIRED));
+
+            if (!savedRefreshToken.equals(request.refreshToken())) {
+                authTokenRedisRepository.deleteRefreshToken(userId);
+                throw new CustomException(ErrorCode.AUTH_ABNORMAL_TOKEN_USAGE);
+            }
+
+            String accessToken = jwtProvider.createAccessToken(userId);
+            return new TokenRefreshResponse(accessToken);
+        } catch (ExpiredJwtException e) {
+            throw new CustomException(ErrorCode.AUTH_SESSION_EXPIRED);
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new CustomException(ErrorCode.AUTH_INVALID_REFRESH_TOKEN);
+        } catch (CustomException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Token refresh error", e);
+            throw new CustomException(ErrorCode.AUTH_TOKEN_REISSUE_FAILED);
+        }
+    }
+
+    public void logout(String authorizationHeader) {
+        String accessToken = extractBearerToken(authorizationHeader);
+        if (!StringUtils.hasText(accessToken)) {
+            return;
+        }
+
+        try {
+            Long userId = jwtProvider.getUserIdFromToken(accessToken);
+            authTokenRedisRepository.deleteRefreshToken(userId);
+            authTokenRedisRepository.blacklistAccessToken(
+                    accessToken,
+                    jwtProvider.getRemainingValidity(accessToken)
+            );
+        } catch (JwtException | IllegalArgumentException e) {
+            log.info("Ignoring logout request with invalid or expired access token.");
         }
     }
 
@@ -151,5 +206,13 @@ public class AuthService {
             sb.append(chars.charAt(random.nextInt(chars.length())));
         }
         return sb.toString();
+    }
+
+    private String extractBearerToken(String authorizationHeader) {
+        if (!StringUtils.hasText(authorizationHeader) || !authorizationHeader.startsWith("Bearer ")) {
+            return null;
+        }
+
+        return authorizationHeader.substring(7);
     }
 }
