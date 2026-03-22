@@ -23,7 +23,7 @@ const MOCK_BANK_NAMES: Record<string, string> = {
   '999': '싸피은행',
 };
 
-const USE_MOCK = true;
+const USE_MOCK = false;
 
 let mockPendingAccount: RegisterBankAccountResult | null = null;
 let mockVerifyAttempts = 0;
