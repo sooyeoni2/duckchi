@@ -10,8 +10,8 @@ export const ENDPOINTS = {
   auth: {
     kakaoLogin: '/api/v1/auth/oauth/login',
     profileSetup: '/api/v1/auth/profile/nickname',
-    logout: '/api/v1/auth/logout',
-    refresh: '/api/v1/auth/refresh',
+    logout: '/api/v1/auth/oauth/logout',
+    refresh: '/api/v1/auth/token/refresh',
   },
 };
 

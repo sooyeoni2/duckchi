@@ -9,8 +9,6 @@ import type {
   LockedBadge,
   Profile,
   ProfileBadge,
-  ProfileSummary,
-  UpdateProfileParams,
 } from './profileTypes';
 
 // ─────────────────────────────────────────
@@ -45,16 +43,6 @@ const profileDetailSchema = z.object({
   profileImageUrl: z.string().nullable(),
   accounts: z.array(accountSchema),
   badges: z.array(profileBadgeSchema),
-});
-
-const profileSummarySchema = z.object({
-  userId: z.number(),
-  email: z.string(),
-  name: z.string(),
-  tag: z.string(),
-  profileImageUrl: z.string().nullable(),
-  transferLimit: z.number(),
-  createdAt: z.string(),
 });
 
 const acquiredBadgeSchema = z.object({

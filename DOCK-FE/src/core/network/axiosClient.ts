@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { API_BASE_URL, API_TIMEOUT } from '../constants/apiConstants';
-import { getAccessToken } from './tokenManager';
+import { attachAuthHeader } from './interceptors/authInterceptor';
+import { createAuthErrorHandler } from './interceptors/errorInterceptor';
 
 export const axiosClient = axios.create({
   baseURL: API_BASE_URL,
@@ -10,10 +11,8 @@ export const axiosClient = axios.create({
   },
 });
 
-axiosClient.interceptors.request.use(config => {
-  const token = getAccessToken();
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+axiosClient.interceptors.request.use(attachAuthHeader);
+axiosClient.interceptors.response.use(
+  response => response,
+  createAuthErrorHandler(axiosClient),
+);
