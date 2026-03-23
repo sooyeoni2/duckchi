@@ -52,4 +52,8 @@ public class RoomParticipant {
     public void updateAgreement(boolean agreed) {
         this.isAgreed = agreed;
     }
+
+    public void changeAdminRole(boolean isAdmin) {
+        this.isAdmin = isAdmin;
+    }
 }
