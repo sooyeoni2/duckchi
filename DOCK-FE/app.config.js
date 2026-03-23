@@ -28,6 +28,7 @@ module.exports = {
       googleServicesFile: './android/app/google-services.json',
     },
     "plugins": [
+    "@notifee/react-native",
     "@react-native-firebase/app",
     "@react-native-firebase/messaging"
   ],
