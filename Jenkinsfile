@@ -64,6 +64,9 @@ pipeline {
                         duckchi-cd-release|*/duckchi-cd-release)
                           ./gradlew clean bootJar -x test
                           ;;
+                        duckchi-ci|*/duckchi-ci)
+                          ./gradlew clean build -x test
+                          ;;
                         *)
                           ./gradlew clean build
                           ;;

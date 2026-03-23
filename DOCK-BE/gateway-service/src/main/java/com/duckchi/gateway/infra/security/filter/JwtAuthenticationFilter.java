@@ -1,5 +1,6 @@
 package com.duckchi.gateway.infra.security.filter;
 
+import com.duckchi.gateway.infra.redis.AuthTokenRedisRepository;
 import lombok.RequiredArgsConstructor;
 import com.duckchi.gateway.infra.security.jwt.JwtProvider;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
@@ -36,6 +37,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     );
 
     private final JwtProvider jwtProvider;
+    private final AuthTokenRedisRepository authTokenRedisRepository;
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
@@ -55,7 +57,9 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         }
 
         String token = extractBearerToken(sanitizedRequest);
-        if (!StringUtils.hasText(token) || !jwtProvider.validateToken(token)) {
+        if (!StringUtils.hasText(token)
+                || authTokenRedisRepository.isBlacklisted(token)
+                || !jwtProvider.validateToken(token)) {
             return writeUnauthorizedResponse(sanitizedExchange);
         }
 

@@ -44,7 +44,7 @@ export function BankAccountVerifyScreen() {
     }
     const timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
     return () => clearInterval(timer);
-  }, [timeLeft]);
+  }, [navigation, returnTo, timeLeft]);
 
   const minutes = String(Math.floor(timeLeft / 60)).padStart(2, '0');
   const seconds = String(timeLeft % 60).padStart(2, '0');
@@ -171,15 +171,17 @@ const styles = StyleSheet.create({
   },
   accountCard: {
     backgroundColor: AppColorStyles.surface,
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 16,
+    borderRadius: 18,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 20,
     marginBottom: 56,
-    shadowColor: AppColorStyles.gray2,
+    borderWidth: 1,
+    borderColor: AppColorStyles.divider,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
     elevation: 2,
     gap: 10,
   },
