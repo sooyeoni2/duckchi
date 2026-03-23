@@ -91,21 +91,19 @@ export function SettlementRowCard({
 
 const styles = StyleSheet.create({
   rowCard: {
-    minHeight: 87 * s,
-    borderRadius: 14,
+    height: 87 * s,
+    borderRadius: 10 * s,
     backgroundColor: AppColorStyles.white,
     paddingHorizontal: 14 * s,
-    marginBottom: 8,
+    marginBottom: 16 * s,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: AppColorStyles.divider,
     shadowColor: '#676767',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOpacity: 0.15,
+    shadowRadius: 2,
+    elevation: 1,
   },
   rowCardLast: {
     marginBottom: 0,
@@ -134,7 +132,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   rowAmount: {
-    marginRight: 2 * s,
     ...KBODiaGothicTextStyle.bold({
       fontSize: 20 * s,
       lineHeight: 20 * s,

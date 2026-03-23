@@ -654,7 +654,7 @@ const styles = StyleSheet.create({
   sceneCenterCard: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 20 * s,
+    paddingHorizontal: 21 * s,
     paddingVertical: 28 * s,
     borderRadius: 18 * s,
     backgroundColor: AppColorStyles.surface,
