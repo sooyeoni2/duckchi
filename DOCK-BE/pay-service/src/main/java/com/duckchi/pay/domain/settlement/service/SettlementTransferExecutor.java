@@ -36,13 +36,17 @@ public class SettlementTransferExecutor {
     private final ExpenseRepository expenseRepository;
     private final CoreClient coreClient;
     private final FinanceClient financeClient;
+    private final SettlementTransferIdempotencyService settlementTransferIdempotencyService;
 
     @Value("${finance.api.key:test-key}")
     private String financeApiKey;
     /**
      * 외부 금융 송금과 DB 상태 전이를 한 건 단위로 확정하기 위해 REQUIRES_NEW로 분리한다.
      */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void transferOne(Long currentUserId, Long settlementId) {
+        String financeRequestUniqueNo = settlementTransferIdempotencyService.ensureFinanceRequestUniqueNo(settlementId);
+
         Settlement settlement = settlementRepository.findByIdForUpdate(settlementId)
                 .orElseThrow(() -> new CustomException(ErrorCode.SETTLEMENT_NOT_FOUND));
 
@@ -56,7 +60,8 @@ public class SettlementTransferExecutor {
                 FINANCE_TRANSFER_API,
                 FINANCE_TRANSFER_API,
                 financeApiKey,
-                payerProfile.getSsafyUserKey()
+                payerProfile.getSsafyUserKey(),
+                financeRequestUniqueNo
         );
 
         TransferRequest transferRequest = TransferRequest.builder()
@@ -164,3 +169,4 @@ public class SettlementTransferExecutor {
         expense.markSettled();
     }
 }
+

@@ -27,7 +27,7 @@ spring:
 finance:
   api:
     base-url: https://finopenapi.ssafy.io
-  key: ${FINANCE_API_KEY}
+    key: ${FINANCE_API_KEY}
 
 ocr:
   naver:
