@@ -245,7 +245,10 @@ export const PaymentTabContent = React.forwardRef<
     onLayoutChange?.(buildLayoutState(scene));
   }, [onLayoutChange, scene]);
 
-  const expenses = state.status === 'loaded' ? state.expenses : [];
+  const expenses = React.useMemo(
+    () => (state.status === 'loaded' ? state.expenses : []),
+    [state],
+  );
   const pendingExpenses = React.useMemo(
     () => expenses.filter((expense) => expense.status === 'PENDING'),
     [expenses],

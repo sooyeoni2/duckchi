@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { RootStackParamList } from '../../../core/navigation/types';
 import { usePaymentConfirmStore } from '../../../features/room/models/paymentConfirmStore';
+import { usePayPasswordViewModel } from '../viewmodels/usePayPasswordViewModel';
 import { AppColorStyles } from '../../../core/theme/colors';
 import { KBODiaGothicTextStyle } from '../../../core/theme/typography';
 import { CustomAppBar } from '../../../shared/components/app_bar/CustomAppBar';
@@ -24,12 +25,12 @@ const { height: H } = Dimensions.get('window');
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 const PASSWORD_LENGTH = 6;
-const MOCK_PASSWORD = '000000';
 
 export function PayPasswordInputScreen() {
   const navigation = useNavigation<Nav>();
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const { verify } = usePayPasswordViewModel();
 
   const handleChangeText = (text: string) => {
     setPassword(text);
@@ -39,9 +40,10 @@ export function PayPasswordInputScreen() {
 
   const confirm = usePaymentConfirmStore((s) => s.confirm);
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (password.length !== PASSWORD_LENGTH) return;
-    if (password !== MOCK_PASSWORD) {
+    const result = await verify(password);
+    if (!result.ok) {
       setErrorMessage('비밀번호가 올바르지 않습니다.');
       setPassword('');
       return;

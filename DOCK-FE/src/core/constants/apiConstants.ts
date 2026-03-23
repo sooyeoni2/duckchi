@@ -1,24 +1,22 @@
 import Constants from 'expo-constants';
 
-// export const API_BASE_URL = 'http://192.168.100.139:8080';
-export const API_BASE_URL = 'http://127.0.0.1:8080';
+const expoConfig = Constants.expoConfig ?? (Constants as any).manifest ?? {};
+const extra = expoConfig?.extra ?? {};
 
+export const API_BASE_URL = extra.apiBaseUrl ?? 'http://10.0.2.2:8080';
 export const API_TIMEOUT = 10000;
 
 export const ENDPOINTS = {
   auth: {
     kakaoLogin: '/api/v1/auth/oauth/login',
     profileSetup: '/api/v1/auth/profile/nickname',
-    logout: '/api/v1/auth/logout',
-    refresh: '/api/v1/auth/refresh',
+    logout: '/api/v1/auth/oauth/logout',
+    refresh: '/api/v1/auth/token/refresh',
   },
   notifications: {
     token: '/api/v1/notifications/token',
   },
 };
-
-const expoConfig = Constants.expoConfig ?? (Constants as any).manifest ?? {};
-const extra = expoConfig?.extra ?? {};
 
 export const KAKAO_CLIENT_ID: string = extra.kakaoClientId ?? '';
 export const KAKAO_WEB_REDIRECT_URI: string = extra.kakaoRedirectUri ?? '';

@@ -77,7 +77,7 @@ export function BankAccountSetupScreen() {
     const res = await register(selectedBank.code, trimmed);
 
     if (res.ok) {
-      navigation.replace('BankAccountVerify', {
+      navigation.navigate('BankAccountVerify', {
         accountId: res.result.accountId,
         bankCode: selectedBank.code,
         bankName: res.result.bankName,
@@ -104,7 +104,13 @@ export function BankAccountSetupScreen() {
       <CustomAppBar
         showBackButton
         backgroundColor={AppColorStyles.background}
-        onBackPress={() => navigation.goBack()}
+        onBackPress={() => {
+          if (returnTo === 'Settings') {
+            navigation.navigate('App', { screen: 'Profile', params: { screen: 'Settings' } } as any);
+          } else {
+            navigation.goBack();
+          }
+        }}
       />
 
       <KeyboardAvoidingView
@@ -207,10 +213,15 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     marginHorizontal: 4,
     marginBottom: 8,
-    borderRadius: 10,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: AppColorStyles.gray4,
+    borderColor: AppColorStyles.divider,
     backgroundColor: AppColorStyles.surface,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
   },
   bankTileSelected: {
     borderColor: AppColorStyles.black,

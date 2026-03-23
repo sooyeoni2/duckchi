@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { API_BASE_URL, API_TIMEOUT } from '../constants/apiConstants';
-import { getAccessToken } from './tokenManager';
+import { attachAuthHeader } from './interceptors/authInterceptor';
+import { createAuthErrorHandler } from './interceptors/errorInterceptor';
 
 export const axiosClient = axios.create({
   baseURL: API_BASE_URL,
@@ -10,15 +11,8 @@ export const axiosClient = axios.create({
   },
 });
 
-// 공통 클라이언트에서 access token을 자동으로 붙여 gateway 인증 흐름을 일관되게 맞춘다.
-axiosClient.interceptors.request.use((config) => {
-  const accessToken = getAccessToken();
-  if (accessToken) {
-    config.headers.Authorization = `Bearer ${accessToken}`;
-  }
-
-  console.log('[API REQUEST]', config.method, `${config.baseURL}${config.url}`);
-  console.log('[API AUTH]', !!config.headers.Authorization);
-
-  return config;
-});
+axiosClient.interceptors.request.use(attachAuthHeader);
+axiosClient.interceptors.response.use(
+  response => response,
+  createAuthErrorHandler(axiosClient),
+);

@@ -7,3 +7,6 @@ spring:
 
 server:
   port: 8082
+finance:
+  api:
+    base-url: ${FINANCE_API_BASE_URL:https://finopenapi.ssafy.io}

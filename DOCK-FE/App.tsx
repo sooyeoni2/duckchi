@@ -5,10 +5,13 @@ import React, { useEffect } from 'react';
 import { Alert, StatusBar } from 'react-native';
 import messaging from '@react-native-firebase/messaging';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { useAuthStore } from './src/features/auth/models/authStore';
 import { AppNavigator } from './src/core/navigation/AppNavigator';
 import { AuthNavigator } from './src/core/navigation/AuthNavigator';
+import { navigationRef } from './src/core/navigation/navigationRef';
 import { RootStackParamList } from './src/core/navigation/types';
-import { useAuthStore } from './src/features/auth/models/authStore';
+import { OnboardingScreen } from './src/features/onboarding/OnboardingScreen';
+
 import { BankAccountSetupScreen } from './src/features/bank/views/BankAccountSetupScreen';
 import { BankAccountVerifyScreen } from './src/features/bank/views/BankAccountVerifyScreen';
 import { BankAccountCompleteScreen } from './src/features/bank/views/BankAccountCompleteScreen';
@@ -52,17 +55,18 @@ function App() {
   return (
     <SafeAreaProvider>
       <StatusBar barStyle="dark-content" backgroundColor="#F2F3F5" />
-      <NavigationContainer>
-        <Stack.Navigator screenOptions={{ headerShown: false, animation: 'none' }}>
-          {!isLoggedIn ? (
-            <>
-              <Stack.Screen name="Auth" component={AuthNavigator} />
-            </>
-          ) : (
-            <>
-              <Stack.Screen name="App" component={AppNavigator} />
-            </>
-          )}
+      <NavigationContainer ref={navigationRef}>
+        <Stack.Navigator
+          screenOptions={{ headerShown: false, animation: 'none' }}
+          initialRouteName={isLoggedIn ? 'App' : 'Onboarding'}
+        >
+          <Stack.Screen name="Onboarding">
+            {({ navigation }) => (
+              <OnboardingScreen onStart={() => navigation.replace('Auth')} />
+            )}
+          </Stack.Screen>
+          <Stack.Screen name="Auth" component={AuthNavigator} />
+          <Stack.Screen name="App" component={AppNavigator} />
           <Stack.Screen name="BankAccountSetup" component={BankAccountSetupScreen} />
           <Stack.Screen name="BankAccountVerify" component={BankAccountVerifyScreen} />
           <Stack.Screen name="BankAccountComplete" component={BankAccountCompleteScreen} />

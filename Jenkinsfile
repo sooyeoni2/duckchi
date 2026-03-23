@@ -61,8 +61,11 @@ pipeline {
                       chmod +x ./gradlew
 
                       case "${JOB_NAME}" in
-                        duckchi-cd-develop|*/duckchi-cd-develop)
+                        duckchi-cd-release|*/duckchi-cd-release)
                           ./gradlew clean bootJar -x test
+                          ;;
+                        duckchi-ci|*/duckchi-ci)
+                          ./gradlew clean build -x test
                           ;;
                         *)
                           ./gradlew clean build
@@ -116,7 +119,7 @@ pipeline {
         stage('Validate CD Prerequisites') {
             when {
                 expression {
-                    return env.JOB_NAME == 'duckchi-cd-develop' || env.JOB_NAME?.endsWith('/duckchi-cd-develop')
+                    return env.JOB_NAME == 'duckchi-cd-release' || env.JOB_NAME?.endsWith('/duckchi-cd-release')
                 }
             }
             steps {
@@ -132,7 +135,7 @@ pipeline {
         stage('Prepare Docker Artifacts') {
             when {
                 expression {
-                    return env.JOB_NAME == 'duckchi-cd-develop' || env.JOB_NAME?.endsWith('/duckchi-cd-develop')
+                    return env.JOB_NAME == 'duckchi-cd-release' || env.JOB_NAME?.endsWith('/duckchi-cd-release')
                 }
             }
             steps {
@@ -159,7 +162,7 @@ pipeline {
         stage('Build And Push Backend Images') {
             when {
                 expression {
-                    return env.JOB_NAME == 'duckchi-cd-develop' || env.JOB_NAME?.endsWith('/duckchi-cd-develop')
+                    return env.JOB_NAME == 'duckchi-cd-release' || env.JOB_NAME?.endsWith('/duckchi-cd-release')
                 }
             }
             steps {
@@ -193,7 +196,7 @@ pipeline {
         stage('Deploy To EC2') {
             when {
                 expression {
-                    return env.JOB_NAME == 'duckchi-cd-develop' || env.JOB_NAME?.endsWith('/duckchi-cd-develop')
+                    return env.JOB_NAME == 'duckchi-cd-release' || env.JOB_NAME?.endsWith('/duckchi-cd-release')
                 }
             }
             steps {
