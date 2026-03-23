@@ -1,5 +1,7 @@
 package com.duckchi.pay.domain.room.service;
 
+import com.duckchi.pay.domain.expense.dto.external.UserProfileBatchRequest;
+import com.duckchi.pay.domain.expense.dto.external.UserProfileSnapshotResponse;
 import com.duckchi.pay.domain.expense.repository.ExpenseRepository;
 import com.duckchi.pay.domain.room.dto.request.CreateRoomRequest;
 import com.duckchi.pay.domain.room.dto.request.DelegateAdminRequest;
@@ -7,7 +9,9 @@ import com.duckchi.pay.domain.room.dto.request.StartRoomRequest;
 import com.duckchi.pay.domain.room.dto.request.UpdateRoomRequest;
 import com.duckchi.pay.domain.room.dto.response.CreateRoomResponse;
 import com.duckchi.pay.domain.room.dto.response.RoomListResponse;
+import com.duckchi.pay.domain.room.dto.response.RoomParticipantListResponse;
 import com.duckchi.pay.domain.room.dto.response.UpdateAutoDebitConsentResponse;
+import com.duckchi.pay.infra.client.CoreClient;
 import com.duckchi.pay.domain.room.entity.Room;
 import com.duckchi.pay.domain.room.entity.RoomParticipant;
 import com.duckchi.pay.domain.room.entity.RoomSession;
@@ -39,6 +43,7 @@ public class RoomServiceImpl implements RoomService {
     private final RoomParticipantRepository roomParticipantRepository;
     private final ExpenseRepository expenseRepository;
     private final RoomSessionRepository roomSessionRepository;
+    private final CoreClient coreClient;
 
     @Override
     @Transactional
@@ -308,11 +313,8 @@ public class RoomServiceImpl implements RoomService {
 
     /*
      * [ROOM-17] 모임을 시작한다.
-     * 
      * @param roomId 모임방 ID
-     * 
      * @param currentUserId 현재 인증된 사용자 ID
-     * 
      * @param request 카테고리와 세부 내용이 담긴 요청 DTO
      */
     @Override
@@ -362,9 +364,7 @@ public class RoomServiceImpl implements RoomService {
 
     /*
      * [ROOM-18] 모임을 종료한다.
-     * 
      * @param roomId 모임방 ID
-     * 
      * @param currentUserId 현재 인증된 사용자 ID
      */
     @Override
@@ -422,19 +422,8 @@ public class RoomServiceImpl implements RoomService {
         }
     }
 
-    // ──────────────────────────────────────────────────────────────
-    // ROOM-15: 방장 위임
-    // ──────────────────────────────────────────────────────────────
-
-    /**
+    /*
      * [ROOM-15] 방장 권한을 다른 멤버에게 위임한다.
-     *
-     * 비즈니스 규칙:
-     * 1. 인증된 사용자만 호출 가능 (null 검증).
-     * 2. 본인에게 위임할 수 없다 (400 Bad Request).
-     * 3. 요청자가 해당 방의 방장이어야 한다 (403 Forbidden).
-     * 4. 위임 대상이 해당 방의 참여자여야 한다 (404 Not Found).
-     * 5. 기존 방장은 일반 멤버로, 대상 멤버는 방장으로 역할이 변경된다.
      */
     @Override
     @Transactional
@@ -473,5 +462,75 @@ public class RoomServiceImpl implements RoomService {
         // 방장 권한을 교환한다: 기존 방장 → 일반 멤버, 대상 멤버 → 방장
         currentParticipant.changeAdminRole(false);
         targetParticipant.changeAdminRole(true);
+    }
+
+    /*
+     * [ROOM-16] 모임 참여 인원을 조회한다.
+     */
+    @Override
+    public List<RoomParticipantListResponse> getParticipantList(Long roomId, Long currentUserId) {
+        if (currentUserId == null) {
+            throw new CustomException(ErrorCode.COMMON_UNAUTHORIZED);
+        }
+
+        // 방 존재 여부 확인 (논리 삭제 포함)
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
+        if (room.getDeletedAt() != null) {
+            throw new CustomException(ErrorCode.ROOM_NOT_FOUND);
+        }
+
+        // 요청자가 해당 방의 멤버인지 확인
+        roomParticipantRepository.findByRoom_IdAndUserId(roomId, currentUserId)
+                .orElseThrow(() -> new CustomException(
+                        "해당 모임의 멤버만 참여자 목록을 조회할 수 있습니다.",
+                        ErrorCode.ROOM_MEMBER_ONLY));
+
+        // 해당 방의 모든 참여자 엔티티 조회
+        List<RoomParticipant> participants = roomParticipantRepository.findByRoom_Id(roomId);
+
+        if (participants.isEmpty()) {
+            return List.of();
+        }
+
+        // Core Service에서 프로필 정보 일괄 조회
+        List<Long> userIds = participants.stream()
+                .map(RoomParticipant::getUserId)
+                .toList();
+
+        UserProfileBatchRequest profileRequest = UserProfileBatchRequest.builder()
+                .userIds(userIds)
+                .build();
+
+        // Core Service 호출 및 응답 처리
+        final Map<Long, UserProfileSnapshotResponse> profileMap = new java.util.HashMap<>();
+        try {
+            var response = coreClient.getUserProfiles(profileRequest);
+            if (response != null && response.isSuccess() && response.getData() != null) {
+                response.getData().forEach(profile -> 
+                    profileMap.put(profile.getUserId(), profile)
+                );
+            }
+        } catch (Exception e) {
+            // 외부 API 통신 실패 시 로그를 남기고, 프로필 정보 없이 진행 (혹은 기획에 따라 예외를 던짐)
+            // 현재 구조에서는 이름이 "Unknown", 프로필은 null로 내려가게 함으로써 장애 격리(Fault Tolerance) 처리를 적용함.
+            org.slf4j.LoggerFactory.getLogger(RoomServiceImpl.class)
+                    .error("Failed to fetch user profiles from core-service for room: {}", roomId, e);
+        }
+
+        // 참여자 엔티티와 프로필 정보를 매핑하여 응답 DTO 리스트 생성
+        return participants.stream()
+                .map(participant -> {
+                    UserProfileSnapshotResponse profile = profileMap.get(participant.getUserId());
+                    return RoomParticipantListResponse.builder()
+                            .userId(participant.getUserId())
+                            .profileUrl(profile != null ? profile.getProfileImageUrl() : null)
+                            .name(profile != null
+                                    ? profile.getUserName() + "#" + profile.getUserTag()
+                                    : "Unknown")
+                            .role(participant.isAdmin() ? "ADMIN" : "MEMBER")
+                            .build();
+                })
+                .toList();
     }
 }

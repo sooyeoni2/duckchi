@@ -6,6 +6,7 @@ import com.duckchi.pay.domain.room.dto.request.StartRoomRequest;
 import com.duckchi.pay.domain.room.dto.request.UpdateRoomRequest;
 import com.duckchi.pay.domain.room.dto.response.CreateRoomResponse;
 import com.duckchi.pay.domain.room.dto.response.RoomListResponse;
+import com.duckchi.pay.domain.room.dto.response.RoomParticipantListResponse;
 import com.duckchi.pay.domain.room.dto.response.UpdateAutoDebitConsentResponse;
 import com.duckchi.pay.domain.room.service.RoomService;
 import com.duckchi.pay.domain.room.type.AutoDebitConsentStatus;
@@ -172,6 +173,21 @@ public class RoomController {
         Long currentUserId = resolveRequiredUserId(userIdHeader);
         roomService.delegateAdmin(roomId, currentUserId, request);
         return ResponseEntity.ok(ApiResponseDto.success("방장 위임이 성공적으로 이루어졌습니다."));
+    }
+
+    /*
+     * [ROOM-16] 모임 참여 인원을 조회한다.
+     * 요청자는 해당 방의 멤버여야 한다.
+     */
+    @GetMapping("/{roomId}/participants-lists")
+    @Operation(summary = "ROOM-16 모임 참여 인원 조회")
+    public ResponseEntity<ApiResponseDto<List<RoomParticipantListResponse>>> getParticipantList(
+            @PathVariable Long roomId,
+            @RequestHeader(value = USER_ID_HEADER, required = false) String userIdHeader
+    ) {
+        Long currentUserId = resolveRequiredUserId(userIdHeader);
+        List<RoomParticipantListResponse> response = roomService.getParticipantList(roomId, currentUserId);
+        return ResponseEntity.ok(ApiResponseDto.success(response));
     }
 
     private Long resolveRequiredUserId(String userIdHeader) {
