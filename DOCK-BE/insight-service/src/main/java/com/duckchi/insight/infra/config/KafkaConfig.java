@@ -1,4 +1,4 @@
-package com.duckchi.insight.global.config;
+package com.duckchi.insight.infra.config;
 
 import java.util.HashMap;
 import java.util.Map;
