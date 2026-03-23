@@ -51,7 +51,9 @@ export function BankAccountCompleteScreen() {
   const handleNext = async () => {
     if (isNewUserFlow && transferLimit) {
       const amount = Number(transferLimit.replace(/,/g, ''));
-      await updateTransferLimit(amount);
+      try {
+        await updateTransferLimit(amount);
+      } catch {}
     }
     setHasBankAccount();
     navigation.replace('PayPasswordSetup', { bankName, maskedAccountNo, returnTo });

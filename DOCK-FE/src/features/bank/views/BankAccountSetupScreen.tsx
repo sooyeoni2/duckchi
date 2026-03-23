@@ -77,7 +77,7 @@ export function BankAccountSetupScreen() {
     const res = await register(selectedBank.code, trimmed);
 
     if (res.ok) {
-      navigation.replace('BankAccountVerify', {
+      navigation.navigate('BankAccountVerify', {
         accountId: res.result.accountId,
         bankCode: selectedBank.code,
         bankName: res.result.bankName,

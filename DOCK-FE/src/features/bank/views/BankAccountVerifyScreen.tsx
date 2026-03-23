@@ -2,7 +2,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, Dimensions, Keyboard, Pressable, StyleSheet, Text, TextInput, TouchableWithoutFeedback, View } from 'react-native';
+import { Alert, BackHandler, Dimensions, Keyboard, Pressable, StyleSheet, Text, TextInput, TouchableWithoutFeedback, View } from 'react-native';
 
 const { height: H } = Dimensions.get('window');
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -34,6 +34,11 @@ export function BankAccountVerifyScreen() {
   const [codeError, setCodeError] = useState('');
   const [timeLeft, setTimeLeft] = useState(TIMER_SECONDS);
   const inputRef = useRef<TextInput>(null);
+
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => true);
+    return () => sub.remove();
+  }, []);
 
   useEffect(() => {
     if (timeLeft <= 0) {
@@ -91,9 +96,8 @@ export function BankAccountVerifyScreen() {
       <View style={{ height: H }}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <CustomAppBar
-          showBackButton
+          showBackButton={false}
           backgroundColor={AppColorStyles.background}
-          onBackPress={() => navigation.replace('BankAccountSetup', { returnTo })}
         />
 
         <View style={styles.content}>
