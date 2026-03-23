@@ -49,7 +49,7 @@ class SettlementEventConsumerTest {
         producerProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, embeddedKafkaBroker.getBrokersAsString());
         producerProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         producerProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
-        
+
         DefaultKafkaProducerFactory<String, SettlementFinishedEvent> pf = new DefaultKafkaProducerFactory<>(producerProps);
         KafkaTemplate<String, SettlementFinishedEvent> template = new KafkaTemplate<>(pf);
 
@@ -75,10 +75,10 @@ class SettlementEventConsumerTest {
             assertThat(logExists).isTrue();
 
             var spend = userMonthlySpendRepository
-                    .findByUserIdAndSpendMonthAndStatTypeAndStatValue(userId, 
-                            LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM")), 
+                    .findByUserIdAndSpendMonthAndStatTypeAndStatValue(userId,
+                            LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM")),
                             "TOTAL", "ALL");
-            
+
             assertThat(spend).isPresent();
             assertThat(spend.get().getTotalAmount()).isEqualTo(25000);
         });
