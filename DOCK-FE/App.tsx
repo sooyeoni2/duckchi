@@ -28,7 +28,6 @@ import { PayPasswordConfirmScreen } from './src/features/bank/views/PayPasswordC
 import { PayPasswordInputScreen } from './src/features/bank/views/PayPasswordInputScreen';
 import { PayPasswordSetupScreen } from './src/features/bank/views/PayPasswordSetupScreen';
 import { useAuthStore } from './src/features/auth/models/authStore';
-import { NotificationPlaceholderScreen } from './src/features/notification/views/NotificationPlaceholderScreen';
 import { OnboardingScreen } from './src/features/onboarding/OnboardingScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -117,7 +116,6 @@ function App() {
           </Stack.Screen>
           <Stack.Screen name="Auth" component={AuthNavigator} />
           <Stack.Screen name="App" component={AppNavigator} />
-          <Stack.Screen name="NotificationPlaceholder" component={NotificationPlaceholderScreen} />
           <Stack.Screen name="BankAccountSetup" component={BankAccountSetupScreen} />
           <Stack.Screen name="BankAccountVerify" component={BankAccountVerifyScreen} />
           <Stack.Screen name="BankAccountComplete" component={BankAccountCompleteScreen} />
