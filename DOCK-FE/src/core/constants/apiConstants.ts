@@ -1,6 +1,8 @@
 import Constants from 'expo-constants';
 
-export const API_BASE_URL = 'http://192.168.100.139:8081';
+// export const API_BASE_URL = 'http://192.168.100.139:8080';
+export const API_BASE_URL = 'http://127.0.0.1:8080';
+
 export const API_TIMEOUT = 10000;
 
 export const ENDPOINTS = {
@@ -9,6 +11,9 @@ export const ENDPOINTS = {
     profileSetup: '/api/v1/auth/profile/nickname',
     logout: '/api/v1/auth/logout',
     refresh: '/api/v1/auth/refresh',
+  },
+  notifications: {
+    token: '/api/v1/notifications/token',
   },
 };
 
