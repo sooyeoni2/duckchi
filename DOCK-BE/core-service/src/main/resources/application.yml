@@ -7,3 +7,16 @@ spring:
 
 server:
   port: 8081
+
+aws:
+  s3:
+    access-key: ${AWS_ACCESS_KEY:}
+    secret-key: ${AWS_SECRET_KEY:}
+    region: ${AWS_REGION:ap-northeast-2}
+    bucket: ${AWS_S3_BUCKET:}
+    public-base-url: ${AWS_S3_PUBLIC_BASE_URL:}
+    profile-prefix: ${AWS_S3_PROFILE_PREFIX:profiles}
+    presigned-url-expiration-minutes: ${AWS_S3_PRESIGNED_URL_EXPIRATION_MINUTES:10}
+
+app:
+  default-profile-image-url: ${DEFAULT_PROFILE_IMAGE_URL:https://api.dicebear.com/9.x/lorelei/png?seed=duckchi&size=150}
