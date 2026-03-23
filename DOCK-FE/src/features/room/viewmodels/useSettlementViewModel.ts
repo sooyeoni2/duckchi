@@ -149,7 +149,10 @@ export const useSettlementViewModel = () => {
     return () => clearInterval(timer);
   }, []);
 
-  const loadedItems = state.status === 'loaded' ? state.items : [];
+  const loadedItems = useMemo(
+    () => (state.status === 'loaded' ? state.items : []),
+    [state],
+  );
 
   const inProgressCount = useMemo(
     () => loadedItems.filter(item => item.status === 'IN_PROGRESS').length,

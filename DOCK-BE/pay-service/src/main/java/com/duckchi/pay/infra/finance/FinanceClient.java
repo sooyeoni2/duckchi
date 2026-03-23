@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 @FeignClient(
     name = "finance-client", 
     url = "${finance.api.base-url}", // 환경변수 주입을 통해 운영/로컬 환경 유연하게 대응함.
-    path = "/ssafy/api/v1/edu/demandDeposit", // 금융망 도메인별 공통 경로를 상단에 추상화하여 중복 제거함.
+    path = "/ssafy/api/v1/edu/demandDeposit",// 금융망 도메인별 공통 경로를 상단에 추상화하여 중복 제거함.// 금융망 도메인별 공통 경로를 상단에 추상화하여 중복 제거함.
     configuration = FinanceFeignConfig.class
 )
 public interface FinanceClient {

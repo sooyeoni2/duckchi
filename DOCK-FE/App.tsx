@@ -4,11 +4,13 @@ import { useFonts } from 'expo-font';
 import React from 'react';
 import { StatusBar } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { useAuthStore } from './src/features/auth/models/authStore';
 import { AppNavigator } from './src/core/navigation/AppNavigator';
 import { AuthNavigator } from './src/core/navigation/AuthNavigator';
+import { navigationRef } from './src/core/navigation/navigationRef';
 import { RootStackParamList } from './src/core/navigation/types';
 import { OnboardingScreen } from './src/features/onboarding/OnboardingScreen';
-import { useAuthStore } from './src/features/auth/models/authStore';
+
 import { BankAccountSetupScreen } from './src/features/bank/views/BankAccountSetupScreen';
 import { BankAccountVerifyScreen } from './src/features/bank/views/BankAccountVerifyScreen';
 import { BankAccountCompleteScreen } from './src/features/bank/views/BankAccountCompleteScreen';
@@ -19,7 +21,7 @@ import { PayPasswordInputScreen } from './src/features/bank/views/PayPasswordInp
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 function App() {
-  // const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
+  const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
   const [fontsLoaded, fontError] = useFonts({
     'KBO Dia Gothic Light': require('./src/assets/fonts/KBO Dia Gothic Light.otf'),
     'KBO Dia Gothic Medium': require('./src/assets/fonts/KBO Dia Gothic Medium.otf'),
@@ -40,8 +42,11 @@ function App() {
   return (
     <SafeAreaProvider>
       <StatusBar barStyle="dark-content" backgroundColor="#F2F3F5" />
-      <NavigationContainer>
-        <Stack.Navigator screenOptions={{ headerShown: false, animation: 'none' }} initialRouteName="App">
+      <NavigationContainer ref={navigationRef}>
+        <Stack.Navigator
+          screenOptions={{ headerShown: false, animation: 'none' }}
+          initialRouteName={isLoggedIn ? 'App' : 'Onboarding'}
+        >
           <Stack.Screen name="Onboarding">
             {({ navigation }) => (
               <OnboardingScreen onStart={() => navigation.replace('Auth')} />

@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+  Animated,
   ActivityIndicator,
   StyleSheet,
   StyleProp,
@@ -51,10 +52,21 @@ export const FilledButton: React.FC<FilledButtonProps> = ({
   textStyle,
 }) => {
   const disabled = isLoading || !onPress;
+  const scale = React.useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    Animated.spring(scale, { toValue: 0.93, useNativeDriver: true, speed: 50, bounciness: 0 }).start();
+  };
+  const handlePressOut = () => {
+    Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 30, bounciness: 4 }).start();
+  };
 
   return (
+    <Animated.View style={{ transform: [{ scale }] }}>
     <TouchableOpacity
       onPress={onPress}
+      onPressIn={disabled ? undefined : handlePressIn}
+      onPressOut={disabled ? undefined : handlePressOut}
       disabled={disabled}
       activeOpacity={0.8}
       style={[
@@ -86,6 +98,7 @@ export const FilledButton: React.FC<FilledButtonProps> = ({
         </View>
       )}
     </TouchableOpacity>
+    </Animated.View>
   );
 };
 
