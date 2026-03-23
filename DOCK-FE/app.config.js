@@ -24,8 +24,13 @@ module.exports = {
     ...appJson.expo,
     android: {
       ...appJson.expo.android,
-      usesCleartextTraffic: true,
+        usesCleartextTraffic: true,
+      googleServicesFile: './android/app/google-services.json',
     },
+    "plugins": [
+    "@react-native-firebase/app",
+    "@react-native-firebase/messaging"
+  ],
     extra: {
       apiBaseUrl: process.env.API_BASE_URL ?? 'http://10.0.2.2:8080',
       kakaoClientId: process.env.KAKAO_CLIENT_ID,

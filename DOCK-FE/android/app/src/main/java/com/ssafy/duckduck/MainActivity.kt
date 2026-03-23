@@ -1,4 +1,4 @@
-package com.frontend
+package com.ssafy.duckduck
 
 import android.os.Bundle
 import com.facebook.react.ReactActivity

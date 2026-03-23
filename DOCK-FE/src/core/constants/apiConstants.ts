@@ -13,6 +13,9 @@ export const ENDPOINTS = {
     logout: '/api/v1/auth/oauth/logout',
     refresh: '/api/v1/auth/token/refresh',
   },
+  notifications: {
+    token: '/api/v1/notifications/token',
+  },
 };
 
 export const KAKAO_CLIENT_ID: string = extra.kakaoClientId ?? '';
