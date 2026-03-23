@@ -1,3 +1,5 @@
+// 파싱된 알림을 어떤 화면으로 보낼지 결정 
+
 import type {
   AppNotification,
   NotificationAction,

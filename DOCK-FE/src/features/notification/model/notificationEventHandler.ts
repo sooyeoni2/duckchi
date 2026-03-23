@@ -1,3 +1,5 @@
+// Notifee 알림 본문 클릭, 액션 버튼 클릭 이벤트를 처리
+
 import { EventType, type EventDetail } from '@notifee/react-native';
 import { enqueueNotificationOpen, type NotificationMessage } from '@core/notifications';
 import {

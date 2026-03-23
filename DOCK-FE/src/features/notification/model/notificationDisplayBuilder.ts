@@ -1,3 +1,5 @@
+// Notifee로 표시할 로컬 알림 payload를 생성
+
 import type { NotificationPressAction } from '@notifee/react-native';
 import notifee, { AndroidCategory, AndroidImportance, AndroidStyle } from '@notifee/react-native';
 import { DEFAULT_NOTIFICATION_CHANNEL_ID } from '@core/notifications';

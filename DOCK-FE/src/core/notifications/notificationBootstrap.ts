@@ -1,3 +1,6 @@
+//알림 진입점들을 한 곳에서 묶음
+//처리하는 것 : foreground 메세지 수신 / background 알림 클릭 / quit 상태 초기 알림 진입 
+
 import messaging, { type FirebaseMessagingTypes } from '@react-native-firebase/messaging';
 import { enqueueNotificationOpen } from './notificationQueue';
 import { toNotificationMessage, toNotificationOpenEvent } from './notificationGateway';

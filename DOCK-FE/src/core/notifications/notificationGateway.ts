@@ -1,3 +1,5 @@
+//Firebase의 RemoteMessage를 앱 공통 메세지 형태로 변환 
+
 import type { FirebaseMessagingTypes } from '@react-native-firebase/messaging';
 import type { NotificationMessage, NotificationOpenEvent, NotificationOpenSource } from './notificationTypes';
 

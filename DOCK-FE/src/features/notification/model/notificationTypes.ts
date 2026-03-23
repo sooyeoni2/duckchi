@@ -1,5 +1,8 @@
+//앱이 타입들의 정의
+
 import type { NotificationMessage } from '@core/notifications';
 
+//알림 타입 정의
 export type AppNotificationType =
   | 'SETTLEMENT_REQUEST_REMINDER'
   | 'SETTLEMENT_REQUEST_AUTO_TRANSFER'
@@ -8,6 +11,7 @@ export type AppNotificationType =
   | 'MEETING_STATUS_CHANGED'
   | 'N_BBANG_RESULT';
 
+//알림 이동 목적지 타입 정의
 export type NotificationTargetScreen =
   | 'AUTO_TRANSFER_AGREE'
   | 'SETTLEMENT_REQUEST_LIST'
@@ -31,6 +35,7 @@ export interface SettlementRequestReminderNotification
   targetScreen?: NotificationTargetScreen;
 }
 
+// 정산 요청 알림 - 자동이체
 export interface SettlementRequestAutoTransferNotification
   extends AppNotificationBase {
   type: 'SETTLEMENT_REQUEST_AUTO_TRANSFER';
@@ -39,23 +44,27 @@ export interface SettlementRequestAutoTransferNotification
   requestSummary?: string;
 }
 
+// 정산 요청 알림 - 원클릭 이체
 export interface SettlementRequestOneClickTransferNotification
   extends AppNotificationBase {
   type: 'SETTLEMENT_REQUEST_ONE_CLICK_TRANSFER';
   settlementRequestId: number;
 }
 
+// 정산 완료 알림
 export interface SettlementCompletedNotification extends AppNotificationBase {
   type: 'SETTLEMENT_COMPLETED';
   settlementRequestId?: number;
 }
 
+// 모임 시작,완료 알림
 export interface MeetingStatusChangedNotification extends AppNotificationBase {
   type: 'MEETING_STATUS_CHANGED';
   meetingStatus: 'STARTED' | 'ENDED';
   roomName?: string;
 }
 
+// N빵 알림
 export interface NBbangResultNotification extends AppNotificationBase {
   type: 'N_BBANG_RESULT';
   selectedParticipantNames: string[];
@@ -69,6 +78,7 @@ export type AppNotification =
   | MeetingStatusChangedNotification
   | NBbangResultNotification;
 
+// 네비게이션 스택 목적지
 export type NotificationNavigationTarget =
   | {
       kind: 'home';
@@ -104,6 +114,7 @@ export type NotificationNavigationTarget =
       };
     };
 
+// 알림액션 타입 정의
 export interface NotificationAction {
   id:
     | 'OPEN_DEFAULT_DESTINATION'

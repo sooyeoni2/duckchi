@@ -1,3 +1,6 @@
+//앱 공통 알림 메시지 타입 정의
+//알림 열림 이벤트 타입 정의
+
 export type NotificationOpenSource =
   | 'foreground'
   | 'background_notification_press'

@@ -1,3 +1,5 @@
+//navigation이 준비되기 전에 들어온 알림 열림 이벤트를 임시 저장
+//quit 상태에서 앱이 막 켜졌을 때는 화면 이동을 바로 할 수 없을때, 이벤트를 큐에 저장
 import type { NotificationOpenEvent } from './notificationTypes';
 
 // 네비게이션이 아직 준비되지 않았을 때 알림 열림 이벤트를 잠시 저장한다.

@@ -1,3 +1,5 @@
+//알림 표시 전에 필요한 공통 준비 작업 담당
+
 import notifee, { AndroidImportance } from '@notifee/react-native';
 
 export const DEFAULT_NOTIFICATION_CHANNEL_ID = 'default';

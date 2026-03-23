@@ -1,3 +1,5 @@
+// route mapper 결과를 실제 React navigation action으로 실행
+
 import { CommonActions } from '@react-navigation/native';
 import type { NotificationMessage, NotificationOpenEvent } from '@core/notifications';
 import { navigationRef } from '@core/navigation/navigationRef';
