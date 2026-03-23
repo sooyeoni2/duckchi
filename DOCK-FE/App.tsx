@@ -6,6 +6,7 @@ import { StatusBar } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppNavigator } from './src/core/navigation/AppNavigator';
 import { AuthNavigator } from './src/core/navigation/AuthNavigator';
+import { navigationRef } from './src/core/navigation/navigationRef';
 import { RootStackParamList } from './src/core/navigation/types';
 import { OnboardingScreen } from './src/features/onboarding/OnboardingScreen';
 import { useAuthStore } from './src/features/auth/models/authStore';
@@ -40,7 +41,7 @@ function App() {
   return (
     <SafeAreaProvider>
       <StatusBar barStyle="dark-content" backgroundColor="#F2F3F5" />
-      <NavigationContainer>
+      <NavigationContainer ref={navigationRef}>
         <Stack.Navigator
           screenOptions={{ headerShown: false, animation: 'none' }}
           initialRouteName={isLoggedIn ? 'App' : 'Onboarding'}
