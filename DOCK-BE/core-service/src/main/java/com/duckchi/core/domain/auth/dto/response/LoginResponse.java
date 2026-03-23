@@ -20,6 +20,7 @@ public class LoginResponse {
         private String email;
         private String name;
         private String tag;
+        private String profileImageUrl;
         private boolean hasBankAccount;
         private boolean hasPayPassword;
     }

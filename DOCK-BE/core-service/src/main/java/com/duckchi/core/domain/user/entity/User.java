@@ -75,4 +75,9 @@ public class User {
         this.payPasswordFailCnt = 0;
     }
 
+    public void updateProfile(String name, String profileImageUrl) {
+        this.name = name;
+        this.profileImageUrl = profileImageUrl;
+    }
+
 }

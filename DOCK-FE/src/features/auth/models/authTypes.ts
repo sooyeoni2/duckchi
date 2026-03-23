@@ -1,4 +1,4 @@
-/* AUTH-01 카카오 OAuth 로그인 */
+/* AUTH-01 Kakao OAuth Login */
 
 export interface KakaoLoginRequest {
   authorizationCode: string;
@@ -16,11 +16,22 @@ export interface AuthUser {
   hasPayPassword?: boolean;
 }
 
-/* AUTH-02 프로필 설정 */
+/* AUTH-02 Profile Setup */
+
+export interface ProfileImageUploadUrlRequest {
+  fileName: string;
+  contentType: string;
+}
+
+export interface ProfileImageUploadUrlResponse {
+  uploadUrl: string;
+  key: string;
+  fileUrl: string;
+}
 
 export interface ProfileSetupRequest {
   name: string;
-  profileImageKey: string;
+  profileImageKey?: string;
 }
 
 export interface ProfileSetupResponse {

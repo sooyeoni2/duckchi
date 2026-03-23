@@ -9,6 +9,7 @@ export const API_TIMEOUT = 10000;
 export const ENDPOINTS = {
   auth: {
     kakaoLogin: '/api/v1/auth/oauth/login',
+    profileImageUploadUrl: '/api/v1/auth/profile/image/upload-url',
     profileSetup: '/api/v1/auth/profile/nickname',
     logout: '/api/v1/auth/oauth/logout',
     refresh: '/api/v1/auth/token/refresh',
