@@ -63,7 +63,7 @@ public class SpendingInsightService {
     public MonthlySummaryResponse getMonthlySummary(Long userId, String targetMonth) {
         // 이번 달 총액
         int currentTotal = getAmountOrDefault(userId, targetMonth, "TOTAL", "ALL");
-        
+
         // 이전 달 계산 (yyyy-MM -> YearMonth 활용)
         String previousMonth = YearMonth.parse(targetMonth).minusMonths(1).toString();
         int previousTotal = getAmountOrDefault(userId, previousMonth, "TOTAL", "ALL");
@@ -130,16 +130,16 @@ public class SpendingInsightService {
 
         // 2. 월간 통계 업데이트 (누적 집계)
         String spendMonth = event.getEndedAt().format(DateTimeFormatter.ofPattern("yyyy-MM"));
-        
+
         // (1) 전체 지출 누적
         updateMonthlySpend(event.getUserId(), spendMonth, "TOTAL", "ALL", event.getAmount());
-        
+
         // (2) 카테고리별 지출 누적
         updateMonthlySpend(event.getUserId(), spendMonth, "CATEGORY", event.getCategory(), event.getAmount());
-        
+
         // (3) 방별 지출 누적 (stat_value에 ID 저장)
         updateMonthlySpend(event.getUserId(), spendMonth, "ROOM", String.valueOf(event.getRoomId()), event.getAmount());
-        
+
         log.info("지출 분석 처리 완료 - 사용자: {}, 금액: {}", event.getUserId(), event.getAmount());
     }
 
