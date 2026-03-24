@@ -1,5 +1,6 @@
 package com.duckchi.pay.domain.settlement.service;
 
+import com.duckchi.pay.domain.badge.service.BadgeTriggerService;
 import com.duckchi.pay.domain.expense.entity.Expense;
 import com.duckchi.pay.domain.expense.entity.ExpenseParticipant;
 import com.duckchi.pay.domain.expense.repository.ExpenseParticipantRepository;
@@ -51,6 +52,7 @@ public class SettlementServiceImpl implements SettlementService {
     private final RoomRepository roomRepository;
     private final RoomParticipantRepository roomParticipantRepository;
     private final SettlementTransferExecutor settlementTransferExecutor;
+    private final BadgeTriggerService badgeTriggerService;
 
     @Override
     @Transactional
@@ -173,6 +175,14 @@ public class SettlementServiceImpl implements SettlementService {
         if (!settlementRepository.existsByExpenseIdAndStatus(expense.getId(), SETTLEMENT_PENDING_STATUS)) {
             expense.markSettled();
         }
+
+        // [BADGE 트리거] 수동 정산 완료도 '정산 완료'이므로 뱃지 진행도 갱신
+        badgeTriggerService.triggerSettlementCompleted(
+                settlement.getPayerUserId(),
+                settlement.getPayableAmount(),
+                settlement.getCreatedAt(),
+                completedAt
+        );
 
         return new SettlementManualTransferResponse(
                 settlement.getId(),
