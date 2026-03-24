@@ -38,17 +38,16 @@ import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StopWatch;
 import org.springframework.util.StringUtils;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
-/**
- * 결제안 서비스 구현체.
- * 오케스트레이션 역할을 수행하며 실제 검증/변환은 Validator/Mapper에 위임.
- */
 public class ExpenseServiceImpl implements ExpenseService {
 
     private final FinanceClient financeClient;
@@ -58,6 +57,7 @@ public class ExpenseServiceImpl implements ExpenseService {
 
     private final ExpenseValidator expenseValidator;
     private final ExpenseMapper expenseMapper;
+    private final CacheManager cacheManager;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -68,8 +68,28 @@ public class ExpenseServiceImpl implements ExpenseService {
     @Override
     @Transactional(readOnly = true)
     public List<AccountHistoryResponse> getAccountHistory(Long userId, AccountHistoryRequest request) {
-        UserFinanceProfileResponse financeProfile = getUserFinanceProfile(userId);
+        StopWatch stopWatch = new StopWatch("Account History Pipeline");
+        boolean isRefresh = request != null && request.isRefresh();
+        
+        // 1. 캐시 시도
+        Cache cache = cacheManager.getCache("accountHistory");
+        if (!isRefresh && cache != null) {
+            stopWatch.start("Cache Lookup");
+            Cache.ValueWrapper valueWrapper = cache.get(userId);
+            if (valueWrapper != null) {
+                @SuppressWarnings("unchecked")
+                List<AccountHistoryResponse> cachedData = (List<AccountHistoryResponse>) valueWrapper.get();
+                stopWatch.stop();
+                log.info("Cache HIT for userId: {}. Response Time: {}ms", userId, stopWatch.getTotalTimeMillis());
+                return cachedData;
+            }
+            stopWatch.stop();
+        }
 
+        // 2. 캐시 미스 또는 새로고침 요청 시 직접 조회
+        log.info("Cache MISS/REFRESH for userId: {}. Fetching from Finance API...", userId);
+        stopWatch.start("Preparation");
+        UserFinanceProfileResponse financeProfile = getUserFinanceProfile(userId);
         if (request != null && StringUtils.hasText(request.getAccountNo()) 
                 && !financeProfile.getAccountNo().equals(request.getAccountNo())) {
             throw new CustomException(ErrorCode.FINANCE_INVALID_ACCOUNT);
@@ -91,25 +111,45 @@ public class ExpenseServiceImpl implements ExpenseService {
                 .transactionType("D")
                 .orderByType("DESC")
                 .build();
+        stopWatch.stop();
 
         try {
+            stopWatch.start("External API Call");
             TransactionHistoryResponse response = financeClient.fetchTransactionHistory(externalRequest);
+            stopWatch.stop();
+
             if (response == null || response.getRec() == null || response.getRec().getList() == null) {
                 return List.of();
             }
-            return response.getRec().getList().stream()
+
+            stopWatch.start("Data Mapping & Cache Update");
+            List<AccountHistoryResponse> result = response.getRec().getList().stream()
                     .map(detail -> AccountHistoryResponse.builder()
                             .transactionMemo(detail.getTransactionSummary())
                             .amount(Integer.parseInt(detail.getTransactionBalance()))
                             .transactionAt(parseLocalDateTime(detail.getTransactionDate(), detail.getTransactionTime()))
                             .build())
                     .toList();
+            
+            // 캐시 덮어쓰기 (Update)
+            if (cache != null) {
+                cache.put(userId, result);
+            }
+            stopWatch.stop();
+
+            log.info("Cache MISS Pipeline Completed. Total: {}ms [API: {}ms, Mapping: {}ms]",
+                    stopWatch.getTotalTimeMillis(),
+                    stopWatch.getTaskInfo()[stopWatch.getTaskCount()-2].getTimeMillis(),
+                    stopWatch.getLastTaskTimeMillis());
+
+            return result;
         } catch (Exception e) {
             log.error("Finance history fetch failed.", e);
             throw new CustomException(ErrorCode.FINANCE_API_ERROR);
         }
     }
 
+    // ... (나머지 메서드 생략)
     @Override
     @Transactional(readOnly = true)
     public List<ExpenseParticipantOptionResponse> getExpenseParticipants(Long userId, Long roomId) {

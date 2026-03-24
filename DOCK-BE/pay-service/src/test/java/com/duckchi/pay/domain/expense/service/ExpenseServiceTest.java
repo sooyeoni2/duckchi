@@ -43,6 +43,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.cache.CacheManager;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
@@ -74,6 +75,9 @@ class ExpenseServiceTest {
 
     @Spy
     private ExpenseMapper expenseMapper;
+
+    @Mock
+    private CacheManager cacheManager;
 
     @Mock
     private EntityManager entityManager;
