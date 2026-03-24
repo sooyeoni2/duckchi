@@ -113,7 +113,11 @@ export function PaymentAccountHistoryListView({
           <PaymentAccountHistoryCard
             key={history.historyId}
             history={history}
-            onAddToCart={() => onSelectHistory(history.historyId)}
+            onAddToCart={() => {
+              if (history.historyId) {
+                onSelectHistory(history.historyId);
+              }
+            }}
           />
         ))
       )}

@@ -1,5 +1,8 @@
 package com.duckchi.core.domain.account.service;
 
+import com.duckchi.core.domain.badge.dto.request.BadgeCheckRequest;
+import com.duckchi.core.domain.badge.enums.BadgeEventType;
+import com.duckchi.core.domain.badge.service.BadgeCheckService;
 import com.duckchi.core.domain.account.dto.request.RegisterBankAccountRequest;
 import com.duckchi.core.domain.account.dto.request.SetPayPasswordRequest;
 import com.duckchi.core.domain.account.dto.request.VerifyOneWonRequest;
@@ -55,6 +58,7 @@ public class AccountServiceImpl implements AccountService {
     private final OneVerifyHeaderFactory oneVerifyHeaderFactory;
     private final FinanceExceptionParser financeExceptionParser;
     private final PayPasswordSecurityHelper payPasswordSecurityHelper;
+    private final BadgeCheckService badgeCheckService;
 
     //계좌 등록
     @Override
@@ -199,9 +203,18 @@ public class AccountServiceImpl implements AccountService {
             if (financeResponse.rec() == null || !"SUCCESS".equalsIgnoreCase(financeResponse.rec().status())) {
                 throw new CustomException(ErrorCode.ACCOUNT_VERIFICATION_FAILED);
             }
-            //userAccount 검증 처리
+             //userAccount 검증 처리
             userAccount.verify();
             oneVerifyRedisRepository.delete(accountId);
+
+            // [BADGE 트리거] 계좌 등록 완료 시 뱃지 진행도 갱신 (MANSOUR_DUCK)
+            // Core 서비스 내부 호출이므로 직접 BadgeCheckService를 호출한다.
+            int totalAccounts = (int) userAccountRepository.countByUserIdAndStatusAndDeletedAtIsNull(userId, AccountStatus.VERIFIED);
+            badgeCheckService.checkAndAwardBadges(BadgeCheckRequest.builder()
+                    .userId(userId)
+                    .eventType(BadgeEventType.ACCOUNT_REGISTERED)
+                    .totalAccounts(totalAccounts)
+                    .build());
 
             return new VerifyOneWonResponse(userAccount.getId(), true);
         } catch (CustomException ex) {

@@ -7,7 +7,7 @@ import {
   KAKAO_WEB_REDIRECT_URI,
 } from '@core/constants/apiConstants';
 import { kakaoLogin } from '../models/authService';
-import { useAuthStore } from '../models/authStore';
+import { saveTokenToStorage, useAuthStore } from '../models/authStore';
 import type { AuthStackParamList } from '@core/navigation/types';
 
 type Navigation = NativeStackNavigationProp<AuthStackParamList, 'KakaoLogin'>;
@@ -54,6 +54,7 @@ export const useKakaoLoginViewModel = (navigation: Navigation) => {
         });
         const { isNewUser, user } = result;
         setAuth(result.accessToken, result.refreshToken, user);
+        await saveTokenToStorage(result.refreshToken, user);
         if (isNewUser || !user.name) {
           navigation.replace('Terms');
         } else if (!user.hasBankAccount) {

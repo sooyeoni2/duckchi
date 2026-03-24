@@ -92,7 +92,7 @@ export function usePaymentManualEntryViewModel(roomId: number) {
     setState({ status: 'idle' });
   }, []);
 
-  const updateItemName = React.useCallback((itemName: string) => {
+  const updateTitle = React.useCallback((title: string) => {
     setState((previousState) => {
       if (previousState.status !== 'loaded') {
         return previousState;
@@ -102,7 +102,7 @@ export function usePaymentManualEntryViewModel(roomId: number) {
         status: 'loaded',
         draft: {
           ...previousState.draft,
-          itemName,
+          title,
         },
       };
     });
@@ -154,7 +154,7 @@ export function usePaymentManualEntryViewModel(roomId: number) {
     }
 
     if (
-      state.draft.itemName.trim().length === 0 ||
+      state.draft.title.trim().length === 0 ||
       state.draft.totalAmount <= 0 ||
       state.draft.participants.every((participant) => !participant.isSelected)
     ) {
@@ -210,7 +210,7 @@ export function usePaymentManualEntryViewModel(roomId: number) {
     state,
     loadDraft,
     resetDraft,
-    updateItemName,
+    updateTitle,
     updateTotalAmount,
     toggleParticipant,
     prepareSplitStep,

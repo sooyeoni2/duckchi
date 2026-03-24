@@ -1,17 +1,20 @@
 import React, { useState } from 'react';
-import { Animated, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Animated, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { MaterialCommunityIcons as MaterialDesignIcons } from '@expo/vector-icons';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 
 import { AppColorStyles } from '../../../../core/theme/colors';
 import { KBODiaGothicTextStyle } from '../../../../core/theme/typography';
+import { createProfileImageUploadUrl, uploadProfileImageToS3 } from '../../../auth/models/authService';
 import type { Profile } from '../../models/profileTypes';
 
 interface ProfileHeaderProps {
   profile: Pick<Profile, 'name' | 'tag' | 'email' | 'profileImageUrl'>;
+  onUpdateProfileImage: (profileImageKey: string) => Promise<void>;
 }
 
-export function ProfileHeader({ profile }: ProfileHeaderProps) {
+export function ProfileHeader({ profile, onUpdateProfileImage }: ProfileHeaderProps) {
   const [tagWidth, setTagWidth] = useState(0);
   const imageScale = React.useRef(new Animated.Value(1)).current;
 
@@ -22,10 +25,39 @@ export function ProfileHeader({ profile }: ProfileHeaderProps) {
     Animated.spring(imageScale, { toValue: 1, useNativeDriver: true, speed: 30, bounciness: 4 }).start();
   };
 
+  const handleImagePress = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('권한 필요', '사진 접근 권한이 필요합니다.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (result.canceled || !result.assets[0]) return;
+
+    const asset = result.assets[0];
+    const contentType = asset.mimeType ?? 'image/jpeg';
+    const fileName = asset.fileName ?? 'profile.jpg';
+
+    try {
+      const { uploadUrl, key } = await createProfileImageUploadUrl({ fileName, contentType });
+      await uploadProfileImageToS3(uploadUrl, asset.uri, contentType);
+      await onUpdateProfileImage(key);
+    } catch {
+      Alert.alert('오류', '프로필 이미지 변경에 실패했습니다.');
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Animated.View style={{ transform: [{ scale: imageScale }] }}>
-      <TouchableOpacity style={styles.imageWrapper} activeOpacity={0.8} onPressIn={handleImagePressIn} onPressOut={handleImagePressOut}>
+      <TouchableOpacity style={styles.imageWrapper} activeOpacity={0.8} onPress={handleImagePress} onPressIn={handleImagePressIn} onPressOut={handleImagePressOut}>
         {profile.profileImageUrl ? (
           <Image source={{ uri: profile.profileImageUrl }} style={styles.image} />
         ) : (
