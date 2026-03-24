@@ -94,11 +94,11 @@ export function PaymentManualEntrySetupView({
 
   const { draft } = state;
   const isNextDisabled =
-    draft.itemName.trim().length === 0 ||
+    draft.title.trim().length === 0 ||
     draft.totalAmount <= 0 ||
     selectedParticipantCount === 0;
 
-  return (
+    return (
     <View>
       <View style={styles.section}>
         <Text
@@ -107,11 +107,12 @@ export function PaymentManualEntrySetupView({
             color: AppColorStyles.black,
           })}
         >
-          장바구니 항목명
+          정산 제목
         </Text>
         <TextInput
-          value={draft.itemName}
+          value={draft.title}
           onChangeText={onItemNameChange}
+
           placeholder="항목명을 입력해 주세요"
           placeholderTextColor={AppColorStyles.textHint}
           style={[

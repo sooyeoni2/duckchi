@@ -6,8 +6,12 @@ import {
 import type {
   AccountHistoryEntryDraft,
   AccountHistoryItem,
+  ManualEntryParticipant,
 } from '../models/paymentTypes';
 
+/**
+ * 계좌 내역 flow의 조회 상태.
+ */
 export type PaymentAccountHistoryState =
   | { status: 'idle' }
   | { status: 'loading' }
@@ -15,6 +19,9 @@ export type PaymentAccountHistoryState =
   | { status: 'empty' }
   | { status: 'error'; message: string };
 
+/**
+ * 계좌 내역 기반 정산 초안 상태.
+ */
 export type PaymentAccountHistoryDraftState =
   | { status: 'idle' }
   | { status: 'loading'; historyId: string }
@@ -30,37 +37,34 @@ const distributeAmountEvenly = (
   draft: AccountHistoryEntryDraft,
 ): AccountHistoryEntryDraft => {
   const selectedParticipants = draft.participants.filter(
-    (participant) => participant.isSelected,
+    (p: ManualEntryParticipant) => p.isSelected,
   );
 
   if (selectedParticipants.length === 0) {
     return {
       ...draft,
-      participants: draft.participants.map((participant) => ({
-        ...participant,
+      participants: draft.participants.map((p: ManualEntryParticipant) => ({
+        ...p,
         splitAmount: 0,
       })),
     };
   }
 
-  const baseAmount = Math.floor(draft.amount / selectedParticipants.length);
-  let remainingAmount = draft.amount % selectedParticipants.length;
+  const baseAmount = Math.floor(draft.totalAmount / selectedParticipants.length);
+  let remainingAmount = draft.totalAmount % selectedParticipants.length;
 
   return {
     ...draft,
-    participants: draft.participants.map((participant) => {
-      if (!participant.isSelected) {
-        return {
-          ...participant,
-          splitAmount: 0,
-        };
+    participants: draft.participants.map((p: ManualEntryParticipant) => {
+      if (!p.isSelected) {
+        return { ...p, splitAmount: 0 };
       }
 
       const bonusAmount = remainingAmount > 0 ? 1 : 0;
       remainingAmount = Math.max(remainingAmount - 1, 0);
 
       return {
-        ...participant,
+        ...p,
         splitAmount: baseAmount + bonusAmount,
       };
     }),
@@ -86,7 +90,8 @@ export function usePaymentAccountHistoryViewModel(roomId: number) {
     setHistoryState({ status: 'loading' });
 
     try {
-      const histories = await getAccountHistories(roomId);
+      // API 호출 시 roomId는 string이어야 하므로 변환 (API 명세 준수)
+      const histories = await getAccountHistories(roomId.toString());
 
       if (histories.length === 0) {
         setHistoryState({ status: 'empty' });
@@ -113,10 +118,13 @@ export function usePaymentAccountHistoryViewModel(roomId: number) {
       setDraftState({ status: 'loading', historyId });
 
       try {
-        const draft = await getAccountHistoryEntryDraft(roomId, historyId);
+        const draft = await getAccountHistoryEntryDraft(roomId.toString());
+        // historyId를 draft에 강제 주입 (View 레이어 호환성)
+        const enrichedDraft = { ...draft, historyId };
+        
         setDraftState({
           status: 'loaded',
-          draft,
+          draft: enrichedDraft,
         });
       } catch (error) {
         setDraftState({
@@ -125,14 +133,14 @@ export function usePaymentAccountHistoryViewModel(roomId: number) {
           message:
             error instanceof Error
               ? error.message
-              : '장바구니 등록 폼을 불러오지 못했습니다.',
+              : '정산 등록 폼을 불러오지 못했습니다.',
         });
       }
     },
     [roomId],
   );
 
-  const updateItemName = React.useCallback((itemName: string) => {
+  const updateTitle = React.useCallback((title: string) => {
     setDraftState((previousState) => {
       if (previousState.status !== 'loaded') {
         return previousState;
@@ -142,7 +150,7 @@ export function usePaymentAccountHistoryViewModel(roomId: number) {
         status: 'loaded',
         draft: {
           ...previousState.draft,
-          itemName,
+          title,
         },
       };
     });
@@ -158,14 +166,14 @@ export function usePaymentAccountHistoryViewModel(roomId: number) {
         status: 'loaded',
         draft: {
           ...previousState.draft,
-          participants: previousState.draft.participants.map((participant) =>
-            participant.userId === userId
+          participants: previousState.draft.participants.map((p: ManualEntryParticipant) =>
+            p.userId === userId
               ? {
-                  ...participant,
-                  isSelected: !participant.isSelected,
-                  splitAmount: participant.isSelected ? 0 : participant.splitAmount,
+                  ...p,
+                  isSelected: !p.isSelected,
+                  splitAmount: p.isSelected ? 0 : p.splitAmount,
                 }
-              : participant,
+              : p,
           ),
         },
       };
@@ -178,9 +186,9 @@ export function usePaymentAccountHistoryViewModel(roomId: number) {
     }
 
     if (
-      draftState.draft.itemName.trim().length === 0 ||
-      draftState.draft.amount <= 0 ||
-      draftState.draft.participants.every((participant) => !participant.isSelected)
+      draftState.draft.title.trim().length === 0 ||
+      draftState.draft.totalAmount <= 0 ||
+      draftState.draft.participants.every((p: ManualEntryParticipant) => !p.isSelected)
     ) {
       return false;
     }
@@ -204,13 +212,13 @@ export function usePaymentAccountHistoryViewModel(roomId: number) {
           status: 'loaded',
           draft: {
             ...previousState.draft,
-            participants: previousState.draft.participants.map((participant) =>
-              participant.userId === userId
+            participants: previousState.draft.participants.map((p: ManualEntryParticipant) =>
+              p.userId === userId
                 ? {
-                    ...participant,
+                    ...p,
                     splitAmount: parseAmount(text),
                   }
-                : participant,
+                : p,
             ),
           },
         };
@@ -225,12 +233,12 @@ export function usePaymentAccountHistoryViewModel(roomId: number) {
 
   const selectedParticipants =
     draftState.status === 'loaded'
-      ? draftState.draft.participants.filter((participant) => participant.isSelected)
+      ? draftState.draft.participants.filter((p: ManualEntryParticipant) => p.isSelected)
       : [];
 
   const selectedParticipantCount = selectedParticipants.length;
   const splitAmountTotal = selectedParticipants.reduce(
-    (sum, participant) => sum + participant.splitAmount,
+    (sum: number, p: ManualEntryParticipant) => sum + p.splitAmount,
     0,
   );
 
@@ -240,7 +248,7 @@ export function usePaymentAccountHistoryViewModel(roomId: number) {
     loadHistories,
     refreshHistories: loadHistories,
     openDraft,
-    updateItemName,
+    updateTitle,
     toggleParticipant,
     prepareSplitStep,
     updateParticipantSplitAmount,

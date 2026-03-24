@@ -115,7 +115,7 @@ export function PaymentManualEntrySplitView({
               color: AppColorStyles.black,
             })}
           >
-            {state.draft.itemName}
+            {state.draft.title}
           </Text>
         </View>
       </View>

@@ -422,9 +422,9 @@ export function usePaymentOcrViewModel(roomId: number) {
                   participantUserIds: item.assignment.participantUserIds.filter((id) =>
                     selectedUserIds.includes(id),
                   ),
-                  quantityAllocations: item.assignment.quantityAllocations.filter(
+                  quantityAllocations: item.assignment.quantityAllocations?.filter(
                     (allocation) => selectedUserIds.includes(allocation.userId),
-                  ),
+                  ) ?? [],
                 },
               };
             })
@@ -573,13 +573,13 @@ export function usePaymentOcrViewModel(roomId: number) {
                   assignment: {
                     mode: assignSheetState.mode,
                     participantUserIds:
-                      assignSheetState.mode === 'PERSON'
+                      (assignSheetState.mode === 'PERSON' || assignSheetState.mode === 'MANUAL_SPLIT')
                         ? assignSheetState.participantUserIds
                         : assignSheetState.quantityAllocations
                             .filter((allocation) => allocation.quantity > 0)
                             .map((allocation) => allocation.userId),
                     quantityAllocations:
-                      assignSheetState.mode === 'QUANTITY'
+                      (assignSheetState.mode === 'QUANTITY' || assignSheetState.mode === 'QUANTITY_SPLIT')
                         ? assignSheetState.quantityAllocations
                         : [],
                   },

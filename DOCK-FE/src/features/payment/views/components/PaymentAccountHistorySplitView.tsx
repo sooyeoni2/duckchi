@@ -26,15 +26,17 @@ interface PaymentAccountHistorySplitViewProps {
 const formatAmount = (amount: number): string =>
   `${amount.toLocaleString('ko-KR')}원`;
 
-const formatDateTime = (date: Date): string => {
+const formatDateTime = (dateSource: string | Date): string => {
+  const date = typeof dateSource === 'string' ? new Date(dateSource) : dateSource;
+  if (isNaN(date.getTime())) return '날짜 정보 없음';
+
   const year = date.getFullYear();
   const month = `${date.getMonth() + 1}`.padStart(2, '0');
   const day = `${date.getDate()}`.padStart(2, '0');
   const hour = `${date.getHours()}`.padStart(2, '0');
   const minute = `${date.getMinutes()}`.padStart(2, '0');
-  const second = `${date.getSeconds()}`.padStart(2, '0');
 
-  return `${year}.${month}.${day} ${hour}:${minute}:${second}`;
+  return `${year}.${month}.${day} ${hour}:${minute}`;
 };
 
 const toAmountInputValue = (amount: number): string =>
@@ -102,7 +104,7 @@ export function PaymentAccountHistorySplitView({
     (participant) => participant.isSelected,
   );
   const isSubmitDisabled =
-    selectedParticipants.length === 0 || splitAmountTotal !== draft.amount;
+    selectedParticipants.length === 0 || splitAmountTotal !== draft.totalAmount;
 
   return (
     <View>
@@ -152,7 +154,7 @@ export function PaymentAccountHistorySplitView({
               color: AppColorStyles.textHint,
             })}
           >
-            {formatAmount(draft.amount)}
+            {formatAmount(draft.totalAmount)}
           </Text>
         </View>
       </View>
@@ -173,7 +175,7 @@ export function PaymentAccountHistorySplitView({
               color: AppColorStyles.black,
             })}
           >
-            {draft.itemName}
+            {draft.title}
           </Text>
         </View>
       </View>
@@ -194,7 +196,7 @@ export function PaymentAccountHistorySplitView({
               color: AppColorStyles.gray1,
             })}
           >
-            {formatAmount(draft.amount)}
+            {formatAmount(draft.totalAmount)}
           </Text>
         </View>
       </View>
@@ -285,7 +287,7 @@ export function PaymentAccountHistorySplitView({
           style={KBODiaGothicTextStyle.bold({
             fontSize: 18,
             color:
-              splitAmountTotal === draft.amount
+              splitAmountTotal === draft.totalAmount
                 ? AppColorStyles.black
                 : AppColorStyles.danger,
           })}
@@ -294,7 +296,7 @@ export function PaymentAccountHistorySplitView({
         </Text>
       </View>
 
-      {splitAmountTotal !== draft.amount && (
+      {splitAmountTotal !== draft.totalAmount && (
         <Text
           style={PretendardTextStyle.medium({
             fontSize: 13,
