@@ -50,7 +50,15 @@ public enum ErrorCode {
     NOTIFICATION_TEST_SEND_FAILED("NOTIFICATION-500-2", HttpStatus.INTERNAL_SERVER_ERROR, "FCM 테스트 알림 발송에 실패했습니다."),
 
     // USER
-    USER_NOT_FOUND("USER-404-1", HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다.");
+    USER_NOT_FOUND("USER-404-1", HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."),
+
+    // BADGE
+    // [BADGE-04] 뱃지 획득 이력을 찾을 수 없는 경우 (user_badges 조회 실패)
+    BADGE_USER_NOT_FOUND("BADGE-404-1", HttpStatus.NOT_FOUND, "뱃지를 찾을 수 없습니다."),
+    // [BADGE-03] 뱃지 마스터 정의를 찾을 수 없는 경우 (badges 코드 조회 실패)
+    BADGE_NOT_FOUND("BADGE-404-2", HttpStatus.NOT_FOUND, "뱃지를 찾을 수 없습니다."),
+    // [BADGE-04] 이미 읽음 처리된 뱃지를 다시 읽음 처리하려는 경우
+    BADGE_ALREADY_READ("BADGE-409-1", HttpStatus.CONFLICT, "이미 확인된 뱃지입니다.");
     private final String code; //에러코드
     private final HttpStatus httpStatus; //http상태코드
     private final String msg; //에러메세지
