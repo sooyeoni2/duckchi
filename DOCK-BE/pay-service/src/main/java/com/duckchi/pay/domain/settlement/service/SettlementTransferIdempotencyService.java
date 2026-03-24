@@ -18,8 +18,10 @@ public class SettlementTransferIdempotencyService {
     private final SettlementRepository settlementRepository;
 
     /**
-     * SET-02 재시도에서도 동일 송금 요청키를 재사용할 수 있도록 settlement에 선저장한다.
-     * 별도 트랜잭션으로 먼저 커밋해, 외부 호출 타임아웃/예외가 나도 키가 유실되지 않게 보장한다.
+     * settlement 단위 금융 요청 고유번호를 보장한다.
+     * - 최초 호출: 고유번호 생성 후 settlement에 저장
+     * - 재시도 호출: 기존 저장값 재사용(멱등성 보강)
+     * - REQUIRES_NEW로 먼저 커밋해 외부 API 실패 시에도 키 유실을 방지한다.
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public String ensureFinanceRequestUniqueNo(Long settlementId) {

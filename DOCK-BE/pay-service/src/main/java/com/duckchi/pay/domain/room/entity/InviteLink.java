@@ -90,6 +90,10 @@ public class InviteLink {
         return InviteLinkStatus.ACTIVE;
     }
 
+    public void increaseUsedCount() {
+        this.usedCount += 1;
+    }
+
     @PrePersist
     void onCreate() {
         if (createdAt == null) {
