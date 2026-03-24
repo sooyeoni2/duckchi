@@ -10,4 +10,8 @@ public interface RoomSessionRepository extends JpaRepository<RoomSession, Long> 
     
     // 특정 방의 진행 중인(종료되지 않은) 세션을 조회한다.
     Optional<RoomSession> findByRoom_IdAndEndedAtIsNull(Long roomId);
+
+    // 진행 중 세션이 없을 때 fallback으로 최신 세션을 조회한다.
+    Optional<RoomSession> findTopByRoom_IdOrderByStartedAtDesc(Long roomId);
 }
+
