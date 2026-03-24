@@ -40,11 +40,12 @@ public enum ErrorCode {
     SETTLEMENT_FORBIDDEN_PAYER("SET-403-2", HttpStatus.FORBIDDEN, "해당 정산의 송금 권한이 없습니다."),
     SETTLEMENT_ALREADY_COMPLETED("SET-409-5", HttpStatus.CONFLICT, "이미 송금 완료된 정산이 포함되어 있습니다."),
     SETTLEMENT_TRANSFER_PARTIAL("SET-409-6", HttpStatus.CONFLICT, "일부 정산 송금에 실패했습니다."),
+    SETTLEMENT_NOT_REQUESTED("SET-409-7", HttpStatus.CONFLICT, "정산 요청 전 결제는 정산 현황을 조회할 수 없습니다."),
 
     //ROOM
     ROOM_SESSION_MISMATCH("ROOM-400-4", HttpStatus.BAD_REQUEST, "해당 회차는 요청된 모임방에 속해있지 않습니다."),
     ROOM_PARTICIPANT_NOT_FOUND("ROOM-404-2", HttpStatus.NOT_FOUND, "모임에 참여하지 않은 사용자가 포함되어 있습니다."),
-    ROOM_MEMBER_ONLY("ROOM-403-1", HttpStatus.FORBIDDEN, "해당 모임의 멤버만 초대 링크를 생성할 수 있습니다."),
+    ROOM_MEMBER_ONLY("ROOM-403-1", HttpStatus.FORBIDDEN, "해당 모임의 멤버만 접근할 수 있습니다."),
     ROOM_NOT_FOUND("ROOM-404-1", HttpStatus.NOT_FOUND, "모임을 찾을 수 없습니다."),
     ROOM_INVALID_INVITE_LINK("ROOM-400-3", HttpStatus.BAD_REQUEST, "초대 링크가 유효하지 않거나 만료되었습니다."),
     ROOM_ALREADY_PARTICIPANT("ROOM-409-1", HttpStatus.CONFLICT, "이미 해당 모임에 참여 중입니다."),
@@ -62,3 +63,6 @@ public enum ErrorCode {
     private final HttpStatus httpStatus; //http상태코드
     private final String msg; //에러메세지
 }
+
+
+

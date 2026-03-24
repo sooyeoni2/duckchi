@@ -2,15 +2,27 @@ package com.duckchi.pay.domain.room.service;
 
 import com.duckchi.pay.domain.expense.dto.external.UserProfileBatchRequest;
 import com.duckchi.pay.domain.expense.dto.external.UserProfileSnapshotResponse;
+import com.duckchi.pay.domain.expense.entity.Expense;
+import com.duckchi.pay.domain.expense.entity.ExpenseItemParticipant;
+import com.duckchi.pay.domain.expense.entity.ExpenseParticipant;
+import com.duckchi.pay.domain.expense.repository.ExpenseItemParticipantRepository;
+import com.duckchi.pay.domain.expense.repository.ExpenseParticipantRepository;
 import com.duckchi.pay.domain.expense.repository.ExpenseRepository;
 import com.duckchi.pay.domain.room.dto.event.RoomLifecycleNotificationEvent;
+import com.duckchi.pay.domain.expense.repository.projection.ExpenseParticipantCountProjection;
+import com.duckchi.pay.domain.expense.repository.projection.ExpenseTitleProjection;
 import com.duckchi.pay.domain.room.dto.request.CreateRoomRequest;
 import com.duckchi.pay.domain.room.dto.request.DelegateAdminRequest;
 import com.duckchi.pay.domain.room.dto.request.StartRoomRequest;
 import com.duckchi.pay.domain.room.dto.request.UpdateRoomRequest;
 import com.duckchi.pay.domain.room.dto.response.CreateRoomResponse;
 import com.duckchi.pay.domain.room.dto.response.RoomListResponse;
+import com.duckchi.pay.domain.room.dto.response.RoomMySetItemResponse;
+import com.duckchi.pay.domain.room.dto.response.RoomMySetResponse;
 import com.duckchi.pay.domain.room.dto.response.RoomParticipantListResponse;
+import com.duckchi.pay.domain.room.dto.response.RoomSettlementDetailResponse;
+import com.duckchi.pay.domain.room.dto.response.RoomSettlementItemSplitResponse;
+import com.duckchi.pay.domain.room.dto.response.RoomSettlementParticipantStatusResponse;
 import com.duckchi.pay.domain.room.dto.response.UpdateAutoDebitConsentResponse;
 import com.duckchi.pay.infra.client.CoreClient;
 import com.duckchi.pay.domain.room.entity.Room;
@@ -23,12 +35,18 @@ import com.duckchi.pay.domain.room.repository.projection.RoomExpenseSummaryProje
 import com.duckchi.pay.domain.room.repository.projection.RoomParticipantUserProjection;
 import com.duckchi.pay.domain.room.repository.projection.RoomSettlementSummaryProjection;
 import com.duckchi.pay.domain.room.type.AutoDebitConsentStatus;
+import com.duckchi.pay.domain.settlement.entity.Settlement;
+import com.duckchi.pay.domain.settlement.repository.SettlementRepository;
 import com.duckchi.pay.global.error.CustomException;
 import com.duckchi.pay.global.error.ErrorCode;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -37,6 +55,7 @@ import com.duckchi.pay.infra.kafka.type.KafkaTopicNames;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -45,9 +64,17 @@ public class RoomServiceImpl implements RoomService {
 
     private static final String DEFAULT_CATEGORY = "기타";
 
+    private static final String SETTLEMENT_COMPLETED_STATUS = "COMPLETED";
+    private static final String SETTLEMENT_PENDING_STATUS = "PENDING";
+    private static final String EXPENSE_PENDING_STATUS = "PENDING";
+    private static final String INPUT_TYPE_OCR = "OCR";
+
     private final RoomRepository roomRepository;
     private final RoomParticipantRepository roomParticipantRepository;
     private final ExpenseRepository expenseRepository;
+    private final ExpenseParticipantRepository expenseParticipantRepository;
+    private final ExpenseItemParticipantRepository expenseItemParticipantRepository;
+    private final SettlementRepository settlementRepository;
     private final RoomSessionRepository roomSessionRepository;
     private final CoreClient coreClient;
     private final OutboxEventCommandService outboxEventCommandService;
@@ -174,6 +201,267 @@ public class RoomServiceImpl implements RoomService {
                 .toList();
     }
 
+    @Override
+    public RoomMySetResponse getMySet(Long roomId, Long currentUserId) {
+        if (currentUserId == null) {
+            throw new CustomException(ErrorCode.COMMON_UNAUTHORIZED);
+        }
+
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
+
+        if (room.getDeletedAt() != null) {
+            throw new CustomException(ErrorCode.ROOM_NOT_FOUND);
+        }
+
+        // ROOM-12는 방 멤버에게만 노출한다.
+        if (!roomParticipantRepository.existsByRoom_IdAndUserId(roomId, currentUserId)) {
+            throw new CustomException("해당 모임의 멤버만 내 정산 목록을 조회할 수 있습니다.", ErrorCode.ROOM_MEMBER_ONLY);
+        }
+
+        RoomSession targetSession = resolveTargetRoomSession(roomId);
+
+        // 아직 생성된 회차가 없으면 빈 목록/0원으로 응답한다.
+        if (targetSession == null) {
+            return new RoomMySetResponse(0, List.of(), 0);
+        }
+
+        Long roomSessionId = targetSession.getId();
+        List<Settlement> settlements = settlementRepository
+                .findByRoomIdAndRoomSessionIdAndPayerUserIdOrderByCreatedAtDescIdDesc(
+                        roomId,
+                        roomSessionId,
+                        currentUserId
+                );
+
+        long roomTotalAmount = safeLongValue(
+                expenseRepository.sumTotalAmountByRoomIdAndRoomSessionId(roomId, roomSessionId));
+
+        if (settlements.isEmpty()) {
+            return new RoomMySetResponse(0, List.of(), safeLongToInt(roomTotalAmount));
+        }
+
+        List<Long> expenseIds = settlements.stream()
+                .map(Settlement::getExpenseId)
+                .distinct()
+                .toList();
+
+        // N+1 조회를 피하기 위해 결제 제목/참여자 수는 배치 조회로 읽는다.
+        Map<Long, String> expenseTitleMap = expenseRepository.findExpenseTitlesByIds(expenseIds).stream()
+                .collect(Collectors.toMap(
+                        ExpenseTitleProjection::getExpenseId,
+                        ExpenseTitleProjection::getTitle
+                ));
+
+        if (expenseTitleMap.size() != expenseIds.size()) {
+            throw new CustomException(ErrorCode.SETTLEMENT_EXPENSE_NOT_FOUND);
+        }
+
+        Map<Long, Long> participantCountMap = new HashMap<>();
+        List<ExpenseParticipantCountProjection> participantCounts =
+                expenseParticipantRepository.countParticipantsByExpenseIds(expenseIds);
+
+        for (ExpenseParticipantCountProjection projection : participantCounts) {
+            participantCountMap.put(projection.getExpenseId(), safeLongValue(projection.getParticipantCount()));
+        }
+
+        List<RoomMySetItemResponse> mySet = settlements.stream()
+                .map(settlement -> {
+                    String expenseTitle = expenseTitleMap.get(settlement.getExpenseId());
+                    if (expenseTitle == null) {
+                        throw new CustomException(ErrorCode.SETTLEMENT_EXPENSE_NOT_FOUND);
+                    }
+
+                    int setUserCount = safeLongToInt(participantCountMap.getOrDefault(settlement.getExpenseId(), 0L));
+                    Integer payableAmountValue = settlement.getPayableAmount();
+                    int payableAmount = payableAmountValue == null ? 0 : payableAmountValue;
+
+                    return new RoomMySetItemResponse(
+                            settlement.getId(),
+                            settlement.getExpenseId(),
+                            expenseTitle,
+                            settlement.getRequesterUserName(),
+                            setUserCount,
+                            payableAmount,
+                            SETTLEMENT_COMPLETED_STATUS.equals(settlement.getStatus()),
+                            settlement.getCreatedAt()
+                    );
+                })
+                .toList();
+
+        long myTotal = safeLongValue(
+                settlementRepository.sumPendingPayableAmountByRoomSessionAndPayer(
+                        roomId,
+                        roomSessionId,
+                        currentUserId
+                ));
+
+        return new RoomMySetResponse(
+                safeLongToInt(myTotal),
+                mySet,
+                safeLongToInt(roomTotalAmount)
+        );
+    }
+
+    @Override
+    public RoomSettlementDetailResponse getSettlementDetail(Long roomId, Long expenseId, Long currentUserId) {
+        if (currentUserId == null) {
+            throw new CustomException(ErrorCode.COMMON_UNAUTHORIZED);
+        }
+
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
+
+        if (room.getDeletedAt() != null) {
+            throw new CustomException(ErrorCode.ROOM_NOT_FOUND);
+        }
+
+        if (!roomParticipantRepository.existsByRoom_IdAndUserId(roomId, currentUserId)) {
+            throw new CustomException("해당 모임의 멤버만 정산 현황을 조회할 수 있습니다.", ErrorCode.ROOM_MEMBER_ONLY);
+        }
+
+        Expense expense = expenseRepository.findByIdAndRoomId(expenseId, roomId)
+                .orElseThrow(() -> new CustomException(ErrorCode.SETTLEMENT_EXPENSE_NOT_FOUND));
+
+        // ROOM-13은 정산 요청이 생성된 결제(REQUESTED/SETTLED)만 조회를 허용한다.
+        if (EXPENSE_PENDING_STATUS.equals(expense.getStatus())) {
+            throw new CustomException(ErrorCode.SETTLEMENT_NOT_REQUESTED);
+        }
+
+        List<ExpenseParticipant> expenseParticipants =
+                expenseParticipantRepository.findByExpense_IdOrderByIdAsc(expenseId);
+
+        List<Settlement> settlements = settlementRepository.findByExpenseIdOrderByCreatedAtAscIdAsc(expenseId);
+
+        Map<Long, Settlement> settlementByPayerUserId = settlements.stream()
+                .collect(Collectors.toMap(
+                        Settlement::getPayerUserId,
+                        Function.identity(),
+                        (existing, ignored) -> existing
+                ));
+
+        boolean isItemized = INPUT_TYPE_OCR.equals(expense.getInputType());
+        Map<Long, List<RoomSettlementItemSplitResponse>> itemSplitsByUserId = isItemized
+                ? buildItemSplitsByUserId(expenseId)
+                : Map.of();
+
+        // 요청자(총무) 본인 row는 settlement가 없어도 COMPLETED로 보정한다.
+        Long requesterUserId = expense.getPayerUserId();
+        List<RoomSettlementParticipantStatusResponse> participantResponses = new ArrayList<>();
+
+        int completedCount = 0;
+        int pendingCount = 0;
+        int myPayableAmount = 0;
+
+        for (ExpenseParticipant participant : expenseParticipants) {
+            boolean isRequesterRow = requesterUserId != null && requesterUserId.equals(participant.getUserId());
+            Settlement settlement = settlementByPayerUserId.get(participant.getUserId());
+
+            String participantStatus = resolveParticipantStatus(isRequesterRow, settlement);
+            if (SETTLEMENT_COMPLETED_STATUS.equals(participantStatus)) {
+                completedCount++;
+            } else {
+                pendingCount++;
+            }
+
+            if (participant.getUserId().equals(currentUserId)) {
+                myPayableAmount = safeIntegerValue(participant.getSplitAmount());
+            }
+
+            List<RoomSettlementItemSplitResponse> itemSplits = isItemized
+                    ? itemSplitsByUserId.getOrDefault(participant.getUserId(), List.of())
+                    : List.of();
+
+            participantResponses.add(new RoomSettlementParticipantStatusResponse(
+                    isRequesterRow ? null : (settlement == null ? null : settlement.getId()),
+                    participant.getUserId(),
+                    participant.getUserName(),
+                    participant.getUserTag(),
+                    participant.getProfileImageUrl(),
+                    safeIntegerValue(participant.getSplitAmount()),
+                    participantStatus,
+                    participant.getUserId().equals(currentUserId),
+                    itemSplits
+            ));
+        }
+
+        LocalDateTime requestedAt = settlements.stream()
+                .map(Settlement::getCreatedAt)
+                .filter(java.util.Objects::nonNull)
+                .min(LocalDateTime::compareTo)
+                .orElse(expense.getCreatedAt());
+
+        String roomNameSnapshot = settlements.stream()
+                .map(Settlement::getRoomName)
+                .filter(StringUtils::hasText)
+                .findFirst()
+                .orElse(room.getName());
+
+        return new RoomSettlementDetailResponse(
+                expense.getId(),
+                roomId,
+                expense.getRoomSessionId(),
+                roomNameSnapshot,
+                expense.getTitle(),
+                safeIntegerValue(expense.getTotalAmount()),
+                expense.getInputType(),
+                isItemized,
+                expense.getStatus(),
+                expense.getPayerUserId(),
+                expense.getPayerUserName(),
+                participantResponses.size(),
+                pendingCount,
+                completedCount,
+                myPayableAmount,
+                currentUserId.equals(expense.getPayerUserId()),
+                requestedAt,
+                participantResponses
+        );
+    }
+
+    /**
+     * ROOM-13 참여자 상태를 계산한다.
+     * 요청자 본인은 settlement row가 없어도 COMPLETED로 보정한다.
+     */
+    private String resolveParticipantStatus(boolean isRequesterRow, Settlement settlement) {
+        if (isRequesterRow) {
+            return SETTLEMENT_COMPLETED_STATUS;
+        }
+
+        if (settlement == null || settlement.getStatus() == null) {
+            return SETTLEMENT_PENDING_STATUS;
+        }
+
+        return settlement.getStatus();
+    }
+
+    /**
+     * ROOM-13 OCR 모드에서 사용자별 품목 분담 정보를 구성한다.
+     */
+    private Map<Long, List<RoomSettlementItemSplitResponse>> buildItemSplitsByUserId(Long expenseId) {
+        List<ExpenseItemParticipant> itemParticipants =
+                expenseItemParticipantRepository.findByExpenseIdWithExpenseItem(expenseId);
+
+        return itemParticipants.stream()
+                .collect(Collectors.groupingBy(
+                        ExpenseItemParticipant::getUserId,
+                        Collectors.mapping(itemParticipant -> new RoomSettlementItemSplitResponse(
+                                        itemParticipant.getExpenseItem().getId(),
+                                        itemParticipant.getExpenseItem().getName(),
+                                        safeIntegerValue(itemParticipant.getQuantity()),
+                                        safeIntegerValue(itemParticipant.getSplitAmount())
+                                ),
+                                Collectors.toList())
+                ));
+    }
+    /**
+     * ROOM-12 회차 선택 규칙: 활성 세션 우선, 없으면 최신 세션 fallback.
+     */
+    private RoomSession resolveTargetRoomSession(Long roomId) {
+        return roomSessionRepository.findByRoom_IdAndEndedAtIsNull(roomId)
+                .or(() -> roomSessionRepository.findTopByRoom_IdOrderByStartedAtDesc(roomId))
+                .orElse(null);
+    }
     private RoomListResponse buildRoomListResponse(
             Room room,
             Map<Long, List<Long>> participantsByRoomId,
@@ -215,6 +503,14 @@ public class RoomServiceImpl implements RoomService {
             return 0;
         }
         return safeLongToInt((completedCount * 100) / targetCount);
+    }
+
+    private int safeIntegerValue(Integer value) {
+        return value == null ? 0 : value;
+    }
+
+    private long safeLongValue(Long value) {
+        return value == null ? 0L : value;
     }
 
     private int safeLongToInt(long value) {
@@ -581,3 +877,16 @@ public class RoomServiceImpl implements RoomService {
                 .toList();
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -60,3 +60,7 @@ export const setupProfile = async (req: ProfileSetupRequest): Promise<ProfileSet
   );
   return data.data;
 };
+
+export const logout = async (): Promise<void> => {
+  await axiosClient.post(ENDPOINTS.auth.logout);
+};
