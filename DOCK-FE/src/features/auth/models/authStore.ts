@@ -1,6 +1,29 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import type { AuthUser } from './authTypes';
 import { setAccessToken } from '@core/network/tokenManager';
+
+const STORAGE_KEY = 'auth_refresh_token';
+const STORAGE_USER_KEY = 'auth_user';
+
+export const saveTokenToStorage = async (refreshToken: string, user: AuthUser) => {
+  await AsyncStorage.multiSet([
+    [STORAGE_KEY, refreshToken],
+    [STORAGE_USER_KEY, JSON.stringify(user)],
+  ]);
+};
+
+export const loadTokenFromStorage = async (): Promise<{ refreshToken: string; user: AuthUser } | null> => {
+  const values = await AsyncStorage.multiGet([STORAGE_KEY, STORAGE_USER_KEY]);
+  const refreshToken = values[0][1];
+  const userStr = values[1][1];
+  if (!refreshToken || !userStr) return null;
+  return { refreshToken, user: JSON.parse(userStr) as AuthUser };
+};
+
+export const clearTokenFromStorage = async () => {
+  await AsyncStorage.multiRemove([STORAGE_KEY, STORAGE_USER_KEY]);
+};
 
 interface AuthState {
   accessToken: string | null;
@@ -37,6 +60,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     })),
   clear: () => {
     setAccessToken(null);
+    clearTokenFromStorage();
     set({ accessToken: null, refreshToken: null, user: null, isLoggedIn: false });
   },
 }));
