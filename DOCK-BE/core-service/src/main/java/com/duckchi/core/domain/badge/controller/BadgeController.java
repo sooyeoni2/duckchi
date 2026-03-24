@@ -1,11 +1,15 @@
 package com.duckchi.core.domain.badge.controller;
 
+import com.duckchi.core.domain.badge.dto.request.BadgeCheckRequest;
+import com.duckchi.core.domain.badge.dto.response.BadgeCheckResponse;
 import com.duckchi.core.domain.badge.dto.response.BadgeListResponse;
 import com.duckchi.core.domain.badge.dto.response.BadgeProgressResponse;
+import com.duckchi.core.domain.badge.service.BadgeCheckService;
 import com.duckchi.core.domain.badge.service.BadgeService;
 import com.duckchi.core.global.response.ApiResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 public class BadgeController {
 
     private final BadgeService badgeService;
+    private final BadgeCheckService badgeCheckService;
 
     /*
      * [BADGE-01] 내 전체 뱃지 목록 조회
@@ -33,6 +38,21 @@ public class BadgeController {
             @RequestHeader("X-User-Id") Long userId
     ) {
         BadgeListResponse response = badgeService.getBadgeList(userId);
+        return ResponseEntity.ok(ApiResponseDto.success(response));
+    }
+
+    /*
+     * [BADGE-02] 뱃지 조건 체크 및 획득 처리
+     * Pay Service 등 외부 서비스에서 이벤트 발생 시 호출한다.
+     * 이벤트 타입(eventType)에 따라 관련 뱃지의 진행도를 갱신하고,
+     * 목표 달성 시 뱃지를 자동 부여한다.
+     */
+    @Operation(summary = "뱃지 조건 체크", description = "이벤트 발생 시 뱃지 조건 달성 여부를 확인하고 조건 충족 시 뱃지를 부여합니다.")
+    @PostMapping("/api/v1/badges/check")
+    public ResponseEntity<ApiResponseDto<BadgeCheckResponse>> checkBadges(
+            @Valid @RequestBody BadgeCheckRequest request
+    ) {
+        BadgeCheckResponse response = badgeCheckService.checkAndAwardBadges(request);
         return ResponseEntity.ok(ApiResponseDto.success(response));
     }
 
