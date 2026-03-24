@@ -20,6 +20,32 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long> {
     List<Settlement> findAllByIdIn(List<Long> settlementIds);
 
     /**
+     * ROOM-12에서 현재 사용자 기준 정산 목록을 최신순으로 조회한다.
+     */
+    List<Settlement> findByRoomIdAndRoomSessionIdAndPayerUserIdOrderByCreatedAtDescIdDesc(
+            Long roomId,
+            Long roomSessionId,
+            Long payerUserId
+    );
+
+    /**
+     * ROOM-12에서 내 미완료 정산 합계를 계산한다.
+     */
+    @Query("""
+            select coalesce(sum(s.payableAmount), 0)
+            from Settlement s
+            where s.roomId = :roomId
+              and s.roomSessionId = :roomSessionId
+              and s.payerUserId = :payerUserId
+              and s.status = 'PENDING'
+            """)
+    Long sumPendingPayableAmountByRoomSessionAndPayer(
+            @Param("roomId") Long roomId,
+            @Param("roomSessionId") Long roomSessionId,
+            @Param("payerUserId") Long payerUserId
+    );
+
+    /**
      * SET-02 송금 처리 시 동시 완료 경쟁을 막기 위해 정산 행을 비관적 락으로 단건 조회한다.
      */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
@@ -33,3 +59,4 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long> {
      */
     List<Settlement> findByExpenseIdOrderByCreatedAtAscIdAsc(Long expenseId);
 }
+
