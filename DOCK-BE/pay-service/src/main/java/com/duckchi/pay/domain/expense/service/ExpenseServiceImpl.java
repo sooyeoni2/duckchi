@@ -1,5 +1,6 @@
 package com.duckchi.pay.domain.expense.service;
 
+import com.duckchi.pay.domain.badge.service.BadgeTriggerService;
 import com.duckchi.pay.domain.expense.dto.external.UserFinanceProfileResponse;
 import com.duckchi.pay.domain.expense.dto.external.UserProfileBatchRequest;
 import com.duckchi.pay.domain.expense.dto.external.UserProfileSnapshotResponse;
@@ -57,6 +58,7 @@ public class ExpenseServiceImpl implements ExpenseService {
     private final RoomSessionRepository roomSessionRepository;
     private final RoomParticipantRepository roomParticipantRepository;
     private final CoreClient coreClient;
+    private final BadgeTriggerService badgeTriggerService;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -171,7 +173,20 @@ public class ExpenseServiceImpl implements ExpenseService {
                 .build();
 
         addParticipantsAndItems(request, expense, profileMap);
-        return expenseRepository.save(expense).getId();
+        Long expenseId = expenseRepository.save(expense).getId();
+
+        // [BADGE 트리거] OCR 영수증 스캔 등록 시 뱃지 진행도 갱신 (SCANNER_DUCK +1)
+        if ("OCR".equals(request.getInputType())) {
+            badgeTriggerService.callBadgeCheckSafely(
+                    com.duckchi.pay.domain.badge.dto.BadgeCheckRequest.builder()
+                            .userId(userId)
+                            .eventType("EXPENSE_OCR_ADDED")
+                            .build(),
+                    "EXPENSE_OCR_ADDED"
+            );
+        }
+
+        return expenseId;
     }
 
     @Override

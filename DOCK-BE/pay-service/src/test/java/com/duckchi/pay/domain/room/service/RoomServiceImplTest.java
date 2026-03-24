@@ -9,6 +9,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.duckchi.pay.domain.badge.service.BadgeTriggerService;
 import com.duckchi.pay.domain.expense.repository.ExpenseRepository;
 import com.duckchi.pay.domain.room.dto.event.RoomLifecycleNotificationEvent;
 import com.duckchi.pay.domain.room.dto.request.CreateRoomRequest;
@@ -50,6 +51,9 @@ class RoomServiceImplTest {
 
     @Mock
     private ExpenseRepository expenseRepository;
+
+    @Mock
+    private BadgeTriggerService badgeTriggerService;
 
     @Mock
     private RoomSessionRepository roomSessionRepository;
