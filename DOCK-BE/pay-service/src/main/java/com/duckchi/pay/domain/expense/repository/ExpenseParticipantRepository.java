@@ -39,6 +39,17 @@ public interface ExpenseParticipantRepository extends JpaRepository<ExpenseParti
             group by ep.expense.id
             """)
     List<ExpenseParticipantCountProjection> countParticipantsByExpenseIds(@Param("expenseIds") List<Long> expenseIds);
+
+    /**
+     * 회차 종료 시 인사이트 서비스로 전송할 사용자별 총 지출 합계액을 조회한다.
+     */
+    @Query("""
+            select ep.userId, sum(ep.splitAmount)
+            from ExpenseParticipant ep
+            where ep.expense.roomSessionId = :roomSessionId
+            group by ep.userId
+            """)
+    List<Object[]> findTotalSpendPerUserBySessionId(@Param("roomSessionId") Long roomSessionId);
 }
 
 

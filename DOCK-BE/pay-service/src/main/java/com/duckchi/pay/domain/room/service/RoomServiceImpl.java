@@ -36,6 +36,7 @@ import com.duckchi.pay.domain.room.repository.projection.RoomExpenseSummaryProje
 import com.duckchi.pay.domain.room.repository.projection.RoomParticipantUserProjection;
 import com.duckchi.pay.domain.room.repository.projection.RoomSettlementSummaryProjection;
 import com.duckchi.pay.domain.room.type.AutoDebitConsentStatus;
+import com.duckchi.pay.domain.settlement.dto.event.SettlementFinishedEvent;
 import com.duckchi.pay.domain.settlement.entity.Settlement;
 import com.duckchi.pay.domain.settlement.repository.SettlementRepository;
 import com.duckchi.pay.global.error.CustomException;
@@ -757,6 +758,34 @@ public class RoomServiceImpl implements RoomService {
                 KafkaTopicNames.ROOM_LIFECYCLE_NOTIFICATION_EVENT,
                 event
         );
+
+        // [INSIGHT 연동] 회차 종료 시 사용자별 총 지출액을 집계하여 인사이트 서비스로 전송한다.
+        if (activeSession != null) {
+            List<Object[]> aggregatedSpends = expenseParticipantRepository.findTotalSpendPerUserBySessionId(activeSession.getId());
+
+            for (Object[] row : aggregatedSpends) {
+                Long userId = (Long) row[0];
+                Integer totalAmount = ((Number) row[1]).intValue();
+
+                SettlementFinishedEvent insightEvent = SettlementFinishedEvent.builder()
+                        .userId(userId)
+                        .roomId(roomId)
+                        .roomSessionId(activeSession.getId())
+                        .roomName(room.getName())
+                        .category(room.getCategory())
+                        .amount(totalAmount)
+                        .endedAt(LocalDateTime.now())
+                        .build();
+
+                outboxEventCommandService.save(
+                        "INSIGHT",
+                        userId,
+                        "SETTLEMENT_FINISHED",
+                        KafkaTopicNames.SETTLEMENT_FINISHED_EVENT,
+                        insightEvent
+                );
+            }
+        }
     }
 
     /*

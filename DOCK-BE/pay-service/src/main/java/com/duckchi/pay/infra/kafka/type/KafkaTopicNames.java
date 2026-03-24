@@ -8,6 +8,9 @@ public final class KafkaTopicNames {
     // 뱃지 조건 체크 이벤트 토픽 이름 (Pay → Core)
     public static final String BADGE_CHECK_EVENT = "badge-check-event";
 
+    // 정산 완료 이벤트 토픽 이름 (Pay → Insight)
+    public static final String SETTLEMENT_FINISHED_EVENT = "settlement-finished-event";
+
     private KafkaTopicNames(){
 
     }
