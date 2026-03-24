@@ -4,24 +4,33 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.duckchi.pay.domain.badge.service.BadgeTriggerService;
 import com.duckchi.pay.domain.expense.repository.ExpenseRepository;
+import com.duckchi.pay.domain.room.dto.event.RoomLifecycleNotificationEvent;
 import com.duckchi.pay.domain.room.dto.request.CreateRoomRequest;
+import com.duckchi.pay.domain.room.dto.request.StartRoomRequest;
 import com.duckchi.pay.domain.room.dto.request.UpdateRoomRequest;
 import com.duckchi.pay.domain.room.dto.response.CreateRoomResponse;
 import com.duckchi.pay.domain.room.dto.response.RoomListResponse;
 import com.duckchi.pay.domain.room.entity.Room;
 import com.duckchi.pay.domain.room.entity.RoomParticipant;
+import com.duckchi.pay.domain.room.entity.RoomSession;
 import com.duckchi.pay.domain.room.repository.RoomParticipantRepository;
 import com.duckchi.pay.domain.room.repository.RoomRepository;
+import com.duckchi.pay.domain.room.repository.RoomSessionRepository;
 import com.duckchi.pay.domain.room.repository.projection.RoomExpenseSummaryProjection;
 import com.duckchi.pay.domain.room.repository.projection.RoomParticipantUserProjection;
 import com.duckchi.pay.domain.room.repository.projection.RoomSettlementSummaryProjection;
 import com.duckchi.pay.global.error.CustomException;
 import com.duckchi.pay.global.error.ErrorCode;
+import com.duckchi.pay.infra.client.CoreClient;
+import com.duckchi.pay.infra.kafka.service.OutboxEventCommandService;
+import com.duckchi.pay.infra.kafka.type.KafkaTopicNames;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,6 +51,18 @@ class RoomServiceImplTest {
 
     @Mock
     private ExpenseRepository expenseRepository;
+
+    @Mock
+    private BadgeTriggerService badgeTriggerService;
+
+    @Mock
+    private RoomSessionRepository roomSessionRepository;
+
+    @Mock
+    private CoreClient coreClient;
+
+    @Mock
+    private OutboxEventCommandService outboxEventCommandService;
 
     @InjectMocks
     private RoomServiceImpl roomService;
@@ -267,6 +288,110 @@ class RoomServiceImplTest {
         roomService.deleteRoom(101L, 7L);
 
         assertTrue(room.getDeletedAt() != null);
+    }
+
+    @Test
+    void startRoom_success_savesOutboxEvent() {
+        // given: 시작 가능한 모임과 참여자 목록이 준비되어 있다.
+        StartRoomRequest request = StartRoomRequest.builder()
+                .category("회식")
+                .description("저녁 모임")
+                .build();
+        Room room = Room.builder()
+                .name("테스트 모임")
+                .category("기존 카테고리")
+                .description("기존 설명")
+                .isProgress(false)
+                .build();
+        ReflectionTestUtils.setField(room, "id", 101L);
+
+        RoomParticipant participant = RoomParticipant.builder()
+                .room(room)
+                .userId(7L)
+                .isAdmin(false)
+                .build();
+
+        when(roomRepository.findById(101L)).thenReturn(java.util.Optional.of(room));
+        when(roomParticipantRepository.findByRoom_IdAndUserId(101L, 7L))
+                .thenReturn(java.util.Optional.of(participant));
+        when(expenseRepository.countByRoomIdAndStatus(101L, "REQUESTED")).thenReturn(0L);
+        when(roomParticipantRepository.findUserIdsByRoomId(101L)).thenReturn(List.of(7L, 8L, 9L));
+
+        // when: 모임 시작을 수행한다.
+        roomService.startRoom(101L, 7L, request);
+
+        // then: 모임 진행 상태와 outbox 저장 요청이 반영된다.
+        assertTrue(room.isProgress());
+        verify(roomSessionRepository).save(any(RoomSession.class));
+
+        ArgumentCaptor<Object> payloadCaptor = ArgumentCaptor.forClass(Object.class);
+        verify(outboxEventCommandService).save(
+                eq("ROOM"),
+                eq(101L),
+                eq("ROOM_STARTED"),
+                eq(KafkaTopicNames.ROOM_LIFECYCLE_NOTIFICATION_EVENT),
+                payloadCaptor.capture()
+        );
+
+        RoomLifecycleNotificationEvent event = (RoomLifecycleNotificationEvent) payloadCaptor.getValue();
+        assertEquals("ROOM_STARTED", event.getEventType());
+        assertEquals(101L, event.getRoomId());
+        assertEquals("테스트 모임", event.getRoomName());
+        assertEquals(7L, event.getTriggeredBy());
+        assertEquals(List.of(7L, 8L, 9L), event.getRecipientUserIds());
+    }
+
+    @Test
+    void endRoom_success_savesOutboxEvent() {
+        // given: 종료 가능한 진행 중 모임과 활성 세션이 준비되어 있다.
+        Room room = Room.builder()
+                .name("테스트 모임")
+                .category("회식")
+                .description("설명")
+                .isProgress(true)
+                .build();
+        ReflectionTestUtils.setField(room, "id", 101L);
+
+        RoomParticipant participant = RoomParticipant.builder()
+                .room(room)
+                .userId(7L)
+                .isAdmin(false)
+                .build();
+
+        RoomSession activeSession = RoomSession.builder()
+                .room(room)
+                .build();
+
+        when(roomRepository.findById(101L)).thenReturn(java.util.Optional.of(room));
+        when(roomParticipantRepository.findByRoom_IdAndUserId(101L, 7L))
+                .thenReturn(java.util.Optional.of(participant));
+        when(expenseRepository.countByRoomIdAndStatus(101L, "REQUESTED")).thenReturn(0L);
+        when(roomSessionRepository.findByRoom_IdAndEndedAtIsNull(101L))
+                .thenReturn(java.util.Optional.of(activeSession));
+        when(roomParticipantRepository.findUserIdsByRoomId(101L)).thenReturn(List.of(7L, 8L));
+
+        // when: 모임 종료를 수행한다.
+        roomService.endRoom(101L, 7L);
+
+        // then: 모임 대기 상태와 outbox 저장 요청이 반영된다.
+        assertEquals(false, room.isProgress());
+        assertTrue(activeSession.getEndedAt() != null);
+
+        ArgumentCaptor<Object> payloadCaptor = ArgumentCaptor.forClass(Object.class);
+        verify(outboxEventCommandService).save(
+                eq("ROOM"),
+                eq(101L),
+                eq("ROOM_ENDED"),
+                eq(KafkaTopicNames.ROOM_LIFECYCLE_NOTIFICATION_EVENT),
+                payloadCaptor.capture()
+        );
+
+        RoomLifecycleNotificationEvent event = (RoomLifecycleNotificationEvent) payloadCaptor.getValue();
+        assertEquals("ROOM_ENDED", event.getEventType());
+        assertEquals(101L, event.getRoomId());
+        assertEquals("테스트 모임", event.getRoomName());
+        assertEquals(7L, event.getTriggeredBy());
+        assertEquals(List.of(7L, 8L), event.getRecipientUserIds());
     }
 
     private RoomParticipantUserProjection participantProjection(Long roomId, Long userId) {

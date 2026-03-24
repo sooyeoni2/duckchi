@@ -6,7 +6,9 @@ import com.duckchi.pay.domain.room.dto.request.StartRoomRequest;
 import com.duckchi.pay.domain.room.dto.request.UpdateRoomRequest;
 import com.duckchi.pay.domain.room.dto.response.CreateRoomResponse;
 import com.duckchi.pay.domain.room.dto.response.RoomListResponse;
+import com.duckchi.pay.domain.room.dto.response.RoomMySetResponse;
 import com.duckchi.pay.domain.room.dto.response.RoomParticipantListResponse;
+import com.duckchi.pay.domain.room.dto.response.RoomSettlementDetailResponse;
 import com.duckchi.pay.domain.room.dto.response.UpdateAutoDebitConsentResponse;
 import com.duckchi.pay.domain.room.service.RoomService;
 import com.duckchi.pay.domain.room.type.AutoDebitConsentStatus;
@@ -73,6 +75,29 @@ public class RoomController {
     ) {
         Long currentUserId = resolveRequiredUserId(userIdHeader);
         List<RoomListResponse> response = roomService.getRoomLists(currentUserId, isProgress);
+        return ResponseEntity.ok(ApiResponseDto.success(response));
+    }
+
+    @GetMapping("/{roomId}/my-set")
+    @Operation(summary = "ROOM-12: 내 정산 목록 조회 API")
+    public ResponseEntity<ApiResponseDto<RoomMySetResponse>> getMySet(
+            @PathVariable Long roomId,
+            @RequestHeader(value = USER_ID_HEADER, required = false) String userIdHeader
+    ) {
+        Long currentUserId = resolveRequiredUserId(userIdHeader);
+        RoomMySetResponse response = roomService.getMySet(roomId, currentUserId);
+        return ResponseEntity.ok(ApiResponseDto.success(response));
+    }
+
+    @GetMapping("/{roomId}/expenses/{expenseId}/settlement-detail")
+    @Operation(summary = "ROOM-13: 정산 현황 조회 API")
+    public ResponseEntity<ApiResponseDto<RoomSettlementDetailResponse>> getSettlementDetail(
+            @PathVariable Long roomId,
+            @PathVariable Long expenseId,
+            @RequestHeader(value = USER_ID_HEADER, required = false) String userIdHeader
+    ) {
+        Long currentUserId = resolveRequiredUserId(userIdHeader);
+        RoomSettlementDetailResponse response = roomService.getSettlementDetail(roomId, expenseId, currentUserId);
         return ResponseEntity.ok(ApiResponseDto.success(response));
     }
 
@@ -201,3 +226,6 @@ public class RoomController {
         }
     }
 }
+
+
+

@@ -2,7 +2,7 @@ import { MaterialCommunityIcons as MaterialDesignIcons } from '@expo/vector-icon
 import { useNavigation } from '@react-navigation/native';
 import type { CompositeNavigationProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -18,6 +18,8 @@ import { AppColorStyles } from '../../../core/theme/colors';
 import { KBODiaGothicTextStyle } from '../../../core/theme/typography';
 import { CustomAppBar } from '../../../shared/components/app_bar/CustomAppBar';
 import { usePopOnTabBlur } from '../../../shared/hooks/usePopOnTabBlur';
+import { logout as logoutService } from '../../auth/models/authService';
+import { useAuthStore } from '../../auth/models/authStore';
 import { useProfileViewModel } from '../viewmodels/useProfileViewModel';
 import { updateNotification } from '../models/notificationService';
 
@@ -61,13 +63,33 @@ function RowDivider() {
 
 export function SettingsScreen() {
   const navigation = useNavigation<Nav>();
-  const [notificationEnabled, setNotificationEnabled] = useState(true);
+  const clearAuth = useAuthStore(s => s.clear);
+  const { state, reset: resetProfile, updateNotificationEnabled } = useProfileViewModel();
+  const [notificationEnabled, setNotificationEnabled] = useState(
+    state.status === 'loaded' ? state.profile.notificationEnabled : true,
+  );
+
+  useEffect(() => {
+    if (state.status === 'loaded') {
+      setNotificationEnabled(state.profile.notificationEnabled);
+    }
+  }, [state.status]);
 
   const handleNotificationToggle = async (value: boolean) => {
     setNotificationEnabled(value);
+    updateNotificationEnabled(value);
     await updateNotification(value);
   };
-  const { state } = useProfileViewModel();
+
+  const handleLogout = async () => {
+    try {
+      await logoutService();
+    } finally {
+      clearAuth();
+      resetProfile();
+      (navigation as any).reset({ index: 0, routes: [{ name: 'Auth' }] });
+    }
+  };
   const hasAccount = state.status === 'loaded' && state.profile.accounts.length > 0;
 
   const handleAccountSetupPress = () => {
@@ -140,7 +162,7 @@ export function SettingsScreen() {
           <View style={styles.rowWrapper}>
             <Pressable
               style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-              onPress={() => {}}
+              onPress={handleLogout}
             >
               <Text style={styles.logoutLabel}>로그아웃</Text>
             </Pressable>

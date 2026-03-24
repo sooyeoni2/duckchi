@@ -14,6 +14,9 @@ export const ENDPOINTS = {
     logout: '/api/v1/auth/oauth/logout',
     refresh: '/api/v1/auth/token/refresh',
   },
+  profiles: {
+    editImage: '/api/v1/profiles/edit',
+  },
   notifications: {
     token: '/api/v1/notifications/token',
   },
