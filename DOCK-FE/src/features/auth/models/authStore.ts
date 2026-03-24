@@ -8,6 +8,7 @@ interface AuthState {
   user: AuthUser | null;
   isLoggedIn: boolean;
   setAuth: (accessToken: string, refreshToken: string, user: AuthUser) => void;
+  updateAccessToken: (accessToken: string) => void;
   setHasBankAccount: () => void;
   setHasPayPassword: () => void;
   clear: () => void;
@@ -21,6 +22,10 @@ export const useAuthStore = create<AuthState>((set) => ({
   setAuth: (accessToken, refreshToken, user) => {
     setAccessToken(accessToken);
     set({ accessToken, refreshToken, user, isLoggedIn: true });
+  },
+  updateAccessToken: (accessToken) => {
+    setAccessToken(accessToken);
+    set(state => ({ ...state, accessToken }));
   },
   setHasBankAccount: () =>
     set(state => ({

@@ -2,7 +2,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, Dimensions, Keyboard, Pressable, StyleSheet, Text, TextInput, TouchableWithoutFeedback, View } from 'react-native';
+import { Alert, BackHandler, Dimensions, Keyboard, Pressable, StyleSheet, Text, TextInput, TouchableWithoutFeedback, View } from 'react-native';
 
 const { height: H } = Dimensions.get('window');
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -36,6 +36,11 @@ export function BankAccountVerifyScreen() {
   const inputRef = useRef<TextInput>(null);
 
   useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => true);
+    return () => sub.remove();
+  }, []);
+
+  useEffect(() => {
     if (timeLeft <= 0) {
       Alert.alert('시간 초과', '인증 시간이 만료되었습니다.\n계좌 인증을 다시 진행해 주세요.', [
         { text: '확인', onPress: () => navigation.replace('BankAccountSetup', { returnTo }) },
@@ -44,7 +49,7 @@ export function BankAccountVerifyScreen() {
     }
     const timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
     return () => clearInterval(timer);
-  }, [timeLeft]);
+  }, [navigation, returnTo, timeLeft]);
 
   const minutes = String(Math.floor(timeLeft / 60)).padStart(2, '0');
   const seconds = String(timeLeft % 60).padStart(2, '0');
@@ -91,9 +96,8 @@ export function BankAccountVerifyScreen() {
       <View style={{ height: H }}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <CustomAppBar
-          showBackButton
+          showBackButton={false}
           backgroundColor={AppColorStyles.background}
-          onBackPress={() => navigation.replace('BankAccountSetup', { returnTo })}
         />
 
         <View style={styles.content}>
@@ -171,15 +175,17 @@ const styles = StyleSheet.create({
   },
   accountCard: {
     backgroundColor: AppColorStyles.surface,
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 16,
+    borderRadius: 18,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 20,
     marginBottom: 56,
-    shadowColor: AppColorStyles.gray2,
+    borderWidth: 1,
+    borderColor: AppColorStyles.divider,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
     elevation: 2,
     gap: 10,
   },

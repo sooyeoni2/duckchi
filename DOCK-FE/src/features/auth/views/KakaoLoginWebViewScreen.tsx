@@ -19,6 +19,8 @@ const KakaoLoginWebViewScreen: React.FC<Props> = ({ navigation }) => {
         startInLoadingState
         javaScriptEnabled
         domStorageEnabled
+        incognito
+        cacheEnabled={false}
         renderLoading={() => (
           <View style={styles.loading}>
             <ActivityIndicator size="large" />

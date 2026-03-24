@@ -1,14 +1,17 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useFonts } from 'expo-font';
-import React from 'react';
-import { StatusBar } from 'react-native';
+import React, { useEffect } from 'react';
+import { Alert, StatusBar } from 'react-native';
+import messaging from '@react-native-firebase/messaging';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { useAuthStore } from './src/features/auth/models/authStore';
 import { AppNavigator } from './src/core/navigation/AppNavigator';
 import { AuthNavigator } from './src/core/navigation/AuthNavigator';
+import { navigationRef } from './src/core/navigation/navigationRef';
 import { RootStackParamList } from './src/core/navigation/types';
 import { OnboardingScreen } from './src/features/onboarding/OnboardingScreen';
-import { useAuthStore } from './src/features/auth/models/authStore';
+
 import { BankAccountSetupScreen } from './src/features/bank/views/BankAccountSetupScreen';
 import { BankAccountVerifyScreen } from './src/features/bank/views/BankAccountVerifyScreen';
 import { BankAccountCompleteScreen } from './src/features/bank/views/BankAccountCompleteScreen';
@@ -19,7 +22,7 @@ import { PayPasswordInputScreen } from './src/features/bank/views/PayPasswordInp
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 function App() {
-  // const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
+  const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
   const [fontsLoaded, fontError] = useFonts({
     'KBO Dia Gothic Light': require('./src/assets/fonts/KBO Dia Gothic Light.otf'),
     'KBO Dia Gothic Medium': require('./src/assets/fonts/KBO Dia Gothic Medium.otf'),
@@ -35,13 +38,28 @@ function App() {
     'Pretendard-Black': require('./src/assets/fonts/Pretendard-Black.ttf'),
   });
 
+  useEffect(() => {
+    // 앱이 foreground 상태일 때는 시스템 알림 배너 대신 즉시 사용자에게 내용을 보여준다.
+    const unsubscribe = messaging().onMessage(async (remoteMessage) => {
+      const title = remoteMessage.notification?.title ?? '새 알림';
+      const body = remoteMessage.notification?.body ?? '도착한 알림을 확인해 주세요.';
+
+      Alert.alert(title, body);
+    });
+
+    return unsubscribe;
+  }, []);
+
   if (!fontsLoaded && !fontError) return null;
 
   return (
     <SafeAreaProvider>
       <StatusBar barStyle="dark-content" backgroundColor="#F2F3F5" />
-      <NavigationContainer>
-        <Stack.Navigator screenOptions={{ headerShown: false, animation: 'none' }} initialRouteName="App">
+      <NavigationContainer ref={navigationRef}>
+        <Stack.Navigator
+          screenOptions={{ headerShown: false, animation: 'none' }}
+          initialRouteName={isLoggedIn ? 'App' : 'Onboarding'}
+        >
           <Stack.Screen name="Onboarding">
             {({ navigation }) => (
               <OnboardingScreen onStart={() => navigation.replace('Auth')} />

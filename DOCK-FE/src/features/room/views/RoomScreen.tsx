@@ -77,7 +77,7 @@ export function RoomScreen() {
     useState<RoomMainTab>('SETTLEMENT');
   const [paymentLayoutState, setPaymentLayoutState] =
     useState<PaymentContentLayoutState>(defaultPaymentContentLayoutState);
-  const [roomTabHistory, setRoomTabHistory] = useState<RoomMainTab[]>([]);
+  const [_roomTabHistory, setRoomTabHistory] = useState<RoomMainTab[]>([]);
   const [settlementDetailState, setSettlementDetailState] =
     useState<SettlementDetailState>({
       status: 'idle',

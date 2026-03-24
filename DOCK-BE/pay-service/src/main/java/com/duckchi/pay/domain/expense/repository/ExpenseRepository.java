@@ -1,6 +1,7 @@
 package com.duckchi.pay.domain.expense.repository;
 
 import com.duckchi.pay.domain.expense.entity.Expense;
+import com.duckchi.pay.domain.expense.repository.projection.ExpenseTitleProjection;
 import com.duckchi.pay.domain.room.repository.projection.RoomExpenseSummaryProjection;
 import jakarta.persistence.LockModeType;
 import java.util.List;
@@ -53,5 +54,36 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
             """)
     List<RoomExpenseSummaryProjection> findRoomExpenseSummaries(@Param("roomIds") List<Long> roomIds);
 
+    /**
+     * ROOM-12에서 현재 회차 기준 방 전체 결제 합계를 조회한다.
+     */
+    @Query("""
+            select coalesce(sum(e.totalAmount), 0)
+            from Expense e
+            where e.roomId = :roomId
+              and e.roomSessionId = :roomSessionId
+            """)
+    Long sumTotalAmountByRoomIdAndRoomSessionId(
+            @Param("roomId") Long roomId,
+            @Param("roomSessionId") Long roomSessionId
+    );
+
+    /**
+     * ROOM-12에서 settlement와 연결된 결제 제목을 배치 조회한다.
+     */
+    @Query("""
+            select e.id as expenseId, e.title as title
+            from Expense e
+            where e.id in :expenseIds
+            """)
+    List<ExpenseTitleProjection> findExpenseTitlesByIds(@Param("expenseIds") List<Long> expenseIds);
+
+    /**
+     * ROOM-13에서 roomId-결제 연관성을 함께 검증하기 위한 조회 메서드다.
+     */
+    Optional<Expense> findByIdAndRoomId(Long expenseId, Long roomId);
+
     long countByRoomIdAndStatus(Long roomId, String status);
 }
+
+

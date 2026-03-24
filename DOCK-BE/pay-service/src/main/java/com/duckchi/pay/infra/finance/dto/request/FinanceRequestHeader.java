@@ -46,12 +46,22 @@ public class FinanceRequestHeader {
      * @return 전송 일시와 추적용 고유번호가 채워진 헤더 객체임.
      */
     public static FinanceRequestHeader createHeader(String apiName, String apiServiceCode, String apiKey, String userKey) {
+        return createHeader(apiName, apiServiceCode, apiKey, userKey, generateInstitutionTransactionUniqueNo());
+    }
+
+    /**
+     * 멱등성 보강을 위해 사전에 확보한 거래 고유번호를 명시적으로 주입해 헤더를 생성한다.
+     */
+    public static FinanceRequestHeader createHeader(
+            String apiName,
+            String apiServiceCode,
+            String apiKey,
+            String userKey,
+            String institutionTransactionUniqueNo
+    ) {
         LocalDateTime now = LocalDateTime.now();
         String date = now.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         String time = now.format(DateTimeFormatter.ofPattern("HHmmss"));
-        
-        // ThreadLocalRandom 사용: 성능 최적화 및 보안 난수 생성 품질 확보함.
-        String uniqueNo = date + time + String.format("%06d", ThreadLocalRandom.current().nextInt(1000000));
 
         return FinanceRequestHeader.builder()
                 .apiName(apiName)
@@ -60,9 +70,22 @@ public class FinanceRequestHeader {
                 .institutionCode("00100")
                 .fintechAppNo("001")
                 .apiServiceCode(apiServiceCode)
-                .institutionTransactionUniqueNo(uniqueNo)
+                .institutionTransactionUniqueNo(institutionTransactionUniqueNo)
                 .apiKey(apiKey)
                 .userKey(userKey)
                 .build();
     }
+
+    /**
+     * 거래 전문 고유번호(YYYYMMDDHHMMSS + 6자리 난수)를 생성한다.
+     */
+    public static String generateInstitutionTransactionUniqueNo() {
+        LocalDateTime now = LocalDateTime.now();
+        String date = now.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String time = now.format(DateTimeFormatter.ofPattern("HHmmss"));
+
+        // ThreadLocalRandom 사용: 성능 최적화 및 보안 난수 생성 품질 확보함.
+        return date + time + String.format("%06d", ThreadLocalRandom.current().nextInt(1000000));
+    }
 }
+
