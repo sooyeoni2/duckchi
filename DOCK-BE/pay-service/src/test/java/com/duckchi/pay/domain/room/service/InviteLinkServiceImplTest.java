@@ -11,6 +11,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.duckchi.pay.domain.room.dto.response.CreateInviteLinkResponse;
+import com.duckchi.pay.domain.room.dto.response.JoinRoomByInviteResponse;
 import com.duckchi.pay.domain.room.dto.response.ValidateInviteLinkResponse;
 import com.duckchi.pay.domain.room.entity.InviteLink;
 import com.duckchi.pay.domain.room.entity.Room;
@@ -170,6 +171,62 @@ class InviteLinkServiceImplTest {
                 () -> inviteLinkService.validateInviteLink(tooLongToken, null));
 
         assertEquals(ErrorCode.COMMON_INVALID_INPUT, ex.getErrorCode());
+    }
+
+    @Test
+    void joinByInviteToken_success_createsParticipantAndIncreasesUsedCount() {
+        Room room = createRoom(101L);
+        InviteLink inviteLink = InviteLink.create(room, "join-token", LocalDateTime.now().plusDays(1));
+
+        when(inviteLinkRepository.findByTokenForUpdate("join-token")).thenReturn(Optional.of(inviteLink));
+        when(roomParticipantRepository.existsByRoom_IdAndUserId(101L, 8L)).thenReturn(false);
+
+        JoinRoomByInviteResponse result = inviteLinkService.joinByInviteToken("join-token", 8L);
+
+        assertEquals(101L, result.getRoomId());
+        assertEquals(8L, result.getUserId());
+        assertFalse(result.isAdmin());
+        assertFalse(result.isAgreed());
+        assertEquals(1, inviteLink.getUsedCount());
+        verify(roomParticipantRepository).save(any());
+    }
+
+    @Test
+    void joinByInviteToken_alreadyParticipant_throwsConflict() {
+        Room room = createRoom(101L);
+        InviteLink inviteLink = InviteLink.create(room, "join-token", LocalDateTime.now().plusDays(1));
+
+        when(inviteLinkRepository.findByTokenForUpdate("join-token")).thenReturn(Optional.of(inviteLink));
+        when(roomParticipantRepository.existsByRoom_IdAndUserId(101L, 8L)).thenReturn(true);
+
+        CustomException ex = assertThrows(CustomException.class,
+                () -> inviteLinkService.joinByInviteToken("join-token", 8L));
+
+        assertEquals(ErrorCode.ROOM_ALREADY_PARTICIPANT, ex.getErrorCode());
+        verify(roomParticipantRepository, never()).save(any());
+    }
+
+    @Test
+    void joinByInviteToken_withoutUser_throwsUnauthorized() {
+        CustomException ex = assertThrows(CustomException.class,
+                () -> inviteLinkService.joinByInviteToken("join-token", null));
+
+        assertEquals(ErrorCode.COMMON_UNAUTHORIZED, ex.getErrorCode());
+        verify(inviteLinkRepository, never()).findByTokenForUpdate(any());
+    }
+
+    @Test
+    void joinByInviteToken_expired_throwsInvalidInviteLink() {
+        Room room = createRoom(101L);
+        InviteLink inviteLink = InviteLink.create(room, "join-token", LocalDateTime.now().minusSeconds(1));
+
+        when(inviteLinkRepository.findByTokenForUpdate("join-token")).thenReturn(Optional.of(inviteLink));
+
+        CustomException ex = assertThrows(CustomException.class,
+                () -> inviteLinkService.joinByInviteToken("join-token", 8L));
+
+        assertEquals(ErrorCode.ROOM_INVALID_INVITE_LINK, ex.getErrorCode());
+        verify(roomParticipantRepository, never()).save(any());
     }
 
     private Room createRoom(Long roomId) {

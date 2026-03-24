@@ -1,6 +1,7 @@
 package com.duckchi.pay.domain.room.controller;
 
 import com.duckchi.pay.domain.room.dto.response.CreateInviteLinkResponse;
+import com.duckchi.pay.domain.room.dto.response.JoinRoomByInviteResponse;
 import com.duckchi.pay.domain.room.dto.response.ValidateInviteLinkResponse;
 import com.duckchi.pay.domain.room.service.InviteLinkService;
 import com.duckchi.pay.global.error.CustomException;
@@ -49,6 +50,17 @@ public class InviteLinkController {
         Long currentUserId = resolveOptionalUserId(userIdHeader);
         ValidateInviteLinkResponse response = inviteLinkService.validateInviteLink(inviteToken, currentUserId);
         return ResponseEntity.ok(ApiResponseDto.success(response));
+    }
+
+    @PostMapping("/{inviteToken}/join")
+    @Operation(summary = "ROOM-19: 초대 링크 기반 모임 참가 확정 API")
+    public ResponseEntity<ApiResponseDto<JoinRoomByInviteResponse>> joinByInviteToken(
+            @PathVariable String inviteToken,
+            @RequestHeader(value = USER_ID_HEADER, required = false) String userIdHeader
+    ) {
+        Long currentUserId = resolveRequiredUserId(userIdHeader);
+        JoinRoomByInviteResponse response = inviteLinkService.joinByInviteToken(inviteToken, currentUserId);
+        return ResponseEntity.ok(ApiResponseDto.success(response, "모임 참가가 완료되었습니다."));
     }
 
     private Long resolveRequiredUserId(String userIdHeader) {
