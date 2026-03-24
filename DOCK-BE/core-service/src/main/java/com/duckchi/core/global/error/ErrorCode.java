@@ -46,8 +46,13 @@ public enum ErrorCode {
     // NOTIFICATION
     NOTIFICATION_TOKEN_CONFLICT("NOTIFICATION-409-1", HttpStatus.CONFLICT, "FCM 토큰 저장 중 충돌이 발생했습니다."),
     NOTIFICATION_TOKEN_UPSERT_FAILED("NOTIFICATION-500-1", HttpStatus.INTERNAL_SERVER_ERROR, "FCM 토큰 등록에 실패했습니다."),
-
     NOTIFICATION_TEST_SEND_FAILED("NOTIFICATION-500-2", HttpStatus.INTERNAL_SERVER_ERROR, "FCM 테스트 알림 발송에 실패했습니다."),
+    NOTIFICATION_INVALID_INPUT("NOTIFICATION-400-1", HttpStatus.BAD_REQUEST, "알림 설정값이 올바르지 않습니다."),
+    NOTIFICATION_UPDATE_FAILED("NOTIFICATION-500-3", HttpStatus.INTERNAL_SERVER_ERROR, "알림 설정 변경에 실패했습니다. 잠시 후 다시 시도해 주세요."),
+
+    // PROFILE
+    PROFILE_INVALID_INPUT("PROFILE-400-1", HttpStatus.BAD_REQUEST, "수정할 값이 올바르지 않습니다."),
+    PROFILE_UPDATE_FAILED("PROFILE-500-1", HttpStatus.INTERNAL_SERVER_ERROR, "자동이체 한도 변경에 실패했습니다. 잠시 후 다시 시도해 주세요."),
 
     // USER
     USER_NOT_FOUND("USER-404-1", HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다.");
