@@ -97,7 +97,7 @@ public class BadgeTriggerService {
      * Core Service의 BADGE-02 API를 호출한다.
      * 실패해도 본 트랜잭션에 영향을 주지 않도록 예외를 잡아 로그만 남긴다.
      */
-    private void callBadgeCheckSafely(BadgeCheckRequest request, String eventType) {
+    public void callBadgeCheckSafely(BadgeCheckRequest request, String eventType) {
         try {
             coreClient.checkBadge(request);
             log.info("[BadgeTrigger] 뱃지 체크 호출 성공. eventType={}, userId={}",
