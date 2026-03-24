@@ -1,9 +1,11 @@
 package com.duckchi.pay.domain.room.service;
 
 import com.duckchi.pay.domain.room.dto.response.CreateInviteLinkResponse;
+import com.duckchi.pay.domain.room.dto.response.JoinRoomByInviteResponse;
 import com.duckchi.pay.domain.room.dto.response.ValidateInviteLinkResponse;
 import com.duckchi.pay.domain.room.entity.InviteLink;
 import com.duckchi.pay.domain.room.entity.Room;
+import com.duckchi.pay.domain.room.entity.RoomParticipant;
 import com.duckchi.pay.domain.room.repository.InviteLinkRepository;
 import com.duckchi.pay.domain.room.repository.RoomParticipantRepository;
 import com.duckchi.pay.domain.room.repository.RoomRepository;
@@ -95,6 +97,51 @@ public class InviteLinkServiceImpl implements InviteLinkService {
         }
 
         return ValidateInviteLinkResponse.of(true);
+    }
+
+
+    @Override
+    @Transactional
+    public JoinRoomByInviteResponse joinByInviteToken(String inviteToken, Long currentUserId) {
+        if (inviteToken == null || inviteToken.isBlank() || inviteToken.length() > MAX_TOKEN_LENGTH) {
+            throw new CustomException(ErrorCode.COMMON_INVALID_INPUT);
+        }
+        if (currentUserId == null) {
+            throw new CustomException(ErrorCode.COMMON_UNAUTHORIZED);
+        }
+
+        InviteLink inviteLink = inviteLinkRepository.findByTokenForUpdate(inviteToken)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_INVALID_INVITE_LINK));
+
+        LocalDateTime now = LocalDateTime.now();
+        if (!inviteLink.isActive() || inviteLink.isExpired(now)) {
+            throw new CustomException(ErrorCode.ROOM_INVALID_INVITE_LINK);
+        }
+
+        Long roomId = inviteLink.getRoom().getId();
+        if (roomParticipantRepository.existsByRoom_IdAndUserId(roomId, currentUserId)) {
+            throw new CustomException(ErrorCode.ROOM_ALREADY_PARTICIPANT);
+        }
+
+        RoomParticipant participant = RoomParticipant.builder()
+                .room(inviteLink.getRoom())
+                .userId(currentUserId)
+                .isAdmin(false)
+                .isAgreed(false)
+                .build();
+
+        roomParticipantRepository.save(participant);
+
+        // 참가 row 저장 성공과 링크 사용량 증가를 같은 트랜잭션으로 묶어 정합성을 보장한다.
+        inviteLink.increaseUsedCount();
+
+        return JoinRoomByInviteResponse.builder()
+                .roomId(roomId)
+                .userId(currentUserId)
+                .isAdmin(false)
+                .isAgreed(false)
+                .joinedAt(now)
+                .build();
     }
 
     private String generateUniqueToken() {
