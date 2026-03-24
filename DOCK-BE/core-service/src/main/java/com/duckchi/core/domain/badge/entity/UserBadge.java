@@ -49,7 +49,7 @@ public class UserBadge {
     @Column(name = "is_read", nullable = false)
     private Boolean isRead = false;
 
-    /**
+    /*
      * [BADGE-04] 뱃지 획득 알림을 읽음 처리한다.
      * 이미 읽음 상태인 경우 호출해도 상태가 변하지 않는다.
      */
@@ -57,7 +57,7 @@ public class UserBadge {
         this.isRead = true;
     }
 
-    /**
+    /*
      * 읽음 상태인지 확인한다.
      */
     public boolean isAlreadyRead() {

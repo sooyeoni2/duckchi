@@ -12,6 +12,7 @@ import com.duckchi.core.domain.badge.repository.BadgeRepository;
 import com.duckchi.core.domain.badge.repository.UserBadgeRepository;
 import com.duckchi.core.global.error.CustomException;
 import com.duckchi.core.global.error.ErrorCode;
+import com.duckchi.core.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,11 +30,12 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class BadgeServiceImpl implements BadgeService {
 
+    private final UserRepository userRepository;
     private final BadgeRepository badgeRepository;
     private final UserBadgeRepository userBadgeRepository;
     private final BadgeProgressRepository badgeProgressRepository;
 
-    /**
+    /*
      * [BADGE-01] 내 전체 뱃지 목록 조회.
      *
      * 로직 흐름:
@@ -103,7 +105,7 @@ public class BadgeServiceImpl implements BadgeService {
                 .build();
     }
 
-    /**
+    /*
      * [BADGE-03] 특정 미획득 뱃지의 진행도 조회.
      *
      * 로직 흐름:

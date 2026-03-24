@@ -11,6 +11,11 @@ interface AccountCardProps {
   account: Account;
 }
 
+function maskAccountNumber(accountNumber: string): string {
+  if (accountNumber.length <= 4) return accountNumber;
+  return accountNumber.slice(0, 4) + '*'.repeat(accountNumber.length - 4);
+}
+
 export function AccountCard({ account }: AccountCardProps) {
   const bankColor = getBankColor(account.bankCode);
 
@@ -25,7 +30,7 @@ export function AccountCard({ account }: AccountCardProps) {
         </View>
         <View style={styles.info}>
           <Text style={styles.bankName}>{account.bankName}</Text>
-          <Text style={styles.accountNumber}>{account.accountNumber}</Text>
+          <Text style={styles.accountNumber}>{maskAccountNumber(account.accountNumber)}</Text>
         </View>
       </View>
     </View>

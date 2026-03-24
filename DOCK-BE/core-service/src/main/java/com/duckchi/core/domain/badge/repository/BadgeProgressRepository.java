@@ -6,7 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 import java.util.Optional;
 
-/**
+/*
  * 사용자별 뱃지 진행도 리포지토리.
  */
 public interface BadgeProgressRepository extends JpaRepository<BadgeProgress, Long> {

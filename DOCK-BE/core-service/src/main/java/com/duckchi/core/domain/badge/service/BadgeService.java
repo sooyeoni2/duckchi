@@ -4,13 +4,13 @@ package com.duckchi.core.domain.badge.service;
 import com.duckchi.core.domain.badge.dto.response.BadgeListResponse;
 import com.duckchi.core.domain.badge.dto.response.BadgeProgressResponse;
 
-/**
+/*
  * 뱃지 도메인 서비스 인터페이스.
  * BADGE-01 ~ BADGE-04 기능을 정의한다.
  */
 public interface BadgeService {
 
-    /**
+    /*
      * [BADGE-01] 내 전체 뱃지 목록 조회.
      * 획득한 뱃지와 미획득 뱃지를 분리하여 반환한다.
      *
@@ -19,7 +19,7 @@ public interface BadgeService {
      */
     BadgeListResponse getBadgeList(Long userId);
 
-    /**
+    /*
      * [BADGE-03] 특정 미획득 뱃지의 진행도 조회.
      *
      * @param userId    요청 사용자 ID
@@ -28,7 +28,7 @@ public interface BadgeService {
      */
     BadgeProgressResponse getBadgeProgress(Long userId, String badgeCode);
 
-    /**
+    /*
      * [BADGE-04] 뱃지 획득 알림 읽음 처리.
      * 획득한 뱃지의 알림을 사용자가 확인했을 때 호출한다.
      *

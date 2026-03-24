@@ -33,7 +33,7 @@ ocr:
     secret: ${OCR_SECRET_KEY}
 
 swagger:
-  server-url: ${SWAGGER_SERVER_URL:http://j14c102.p.ssafy.io}
+  server-url: ${SWAGGER_SERVER_URL:https://j14c102.p.ssafy.io}
 
 springdoc:
   swagger-ui:

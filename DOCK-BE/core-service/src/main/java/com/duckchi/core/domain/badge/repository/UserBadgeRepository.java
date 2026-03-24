@@ -6,7 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 import java.util.Optional;
 
-/**
+/*
  * 사용자별 뱃지 획득 이력 리포지토리.
  */
 public interface UserBadgeRepository extends JpaRepository<UserBadge, Long> {

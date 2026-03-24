@@ -8,7 +8,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 
-/**
+/*
  * 사용자별 뱃지 진행도 엔티티.
  * badge_progress 테이블에 매핑되며, (user_id, badge_id) 복합 유니크 키로 관리한다.
  * 뱃지 조건 체크(BADGE-02) 시 current_count를 갱신하고,
@@ -48,7 +48,7 @@ public class BadgeProgress {
     @Column(name = "last_updated_at", nullable = false)
     private LocalDateTime lastUpdatedAt;
 
-    /**
+    /*
      * 진행도를 특정 값으로 설정한다.
      * @param count 새로운 달성 횟수
      */
@@ -56,7 +56,7 @@ public class BadgeProgress {
         this.currentCount = count;
     }
 
-    /**
+    /*
      * 진행도를 1 증가시킨다.
      */
     public void incrementProgress() {

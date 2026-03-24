@@ -23,6 +23,7 @@ export interface Profile {
   transferLimit: number;
   createdAt: Date;
   profileImageUrl: string | null;
+  notificationEnabled: boolean;
   accounts: Account[];
   badges: ProfileBadge[];
 }
