@@ -144,7 +144,7 @@ export const PaymentTabContent = React.forwardRef<
     loadHistories,
     refreshHistories,
     openDraft,
-    updateItemName,
+    updateTitle: updateAccountHistoryTitle,
     toggleParticipant,
     prepareSplitStep,
     updateParticipantSplitAmount: updateAccountHistoryParticipantSplitAmount,
@@ -156,7 +156,7 @@ export const PaymentTabContent = React.forwardRef<
     state: manualState,
     loadDraft: loadManualDraft,
     resetDraft: resetManualDraft,
-    updateItemName: updateManualItemName,
+    updateTitle: updateManualTitle,
     updateTotalAmount: updateManualTotalAmount,
     toggleParticipant: toggleManualParticipant,
     prepareSplitStep: prepareManualSplitStep,
@@ -426,7 +426,7 @@ export const PaymentTabContent = React.forwardRef<
       (participant) => participant.isSelected,
     );
 
-    if (draftState.draft.itemName.trim().length === 0) {
+    if (draftState.draft.title.trim().length === 0) {
       showFeedback('정산 제목 확인', '정산 제목을 먼저 입력해 주세요.');
       return;
     }
@@ -464,7 +464,7 @@ export const PaymentTabContent = React.forwardRef<
       return;
     }
 
-    if (accountHistorySplitAmountTotal !== draftState.draft.amount) {
+    if (accountHistorySplitAmountTotal !== draftState.draft.totalAmount) {
       showFeedback(
         '금액 분배 확인',
         '전체 금액과 참여자별 금액 합계가 같아야 합니다.',
@@ -474,7 +474,7 @@ export const PaymentTabContent = React.forwardRef<
 
     showFeedback(
       '장바구니 담기 완료',
-      `${draftState.draft.itemName} 항목을 계좌 내역 기반 정산으로 담았습니다.`,
+      `${draftState.draft.title} 항목을 계좌 내역 기반 정산으로 담았습니다.`,
     );
   }, [accountHistorySplitAmountTotal, draftState, showFeedback]);
 
@@ -483,7 +483,7 @@ export const PaymentTabContent = React.forwardRef<
       return;
     }
 
-    if (manualState.draft.itemName.trim().length === 0) {
+    if (manualState.draft.title.trim().length === 0) {
       showFeedback('정산 제목 확인', '정산 제목을 먼저 입력해 주세요.');
       return;
     }
@@ -535,7 +535,7 @@ export const PaymentTabContent = React.forwardRef<
 
     showFeedback(
       '장바구니 담기 완료',
-      `${manualState.draft.itemName} 항목을 직접 입력 정산으로 담았습니다.`,
+      `${manualState.draft.title} 항목을 직접 입력 정산으로 담았습니다.`,
     );
   }, [
     manualSelectedParticipantCount,
@@ -730,7 +730,7 @@ export const PaymentTabContent = React.forwardRef<
           onRetry={(historyId) => {
             void openDraft(historyId);
           }}
-          onItemNameChange={updateItemName}
+          onItemNameChange={updateAccountHistoryTitle}
           onToggleParticipant={toggleParticipant}
           onNext={handleAccountHistoryNext}
         />
@@ -759,7 +759,7 @@ export const PaymentTabContent = React.forwardRef<
           onRetry={() => {
             void loadManualDraft();
           }}
-          onItemNameChange={updateManualItemName}
+          onItemNameChange={updateManualTitle}
           onTotalAmountChange={updateManualTotalAmount}
           onToggleParticipant={toggleManualParticipant}
           onNext={handleManualNext}
