@@ -7,23 +7,32 @@ import type {
   MyExpenseItem,
 } from '../models/paymentTypes';
 
+/**
+ * payment 목록 화면의 모든 상태.
+ * boolean 여러 개를 두는 것보다 status 한 명으로 관리합니다.
+ */
 export type PaymentListState =
-  | { status: 'idle'; roomId: number; selectedStatus: ExpenseStatusFilter }
-  | { status: 'loading'; roomId: number; selectedStatus: ExpenseStatusFilter }
+  | { status: 'idle'; roomId: number | string; selectedStatus: ExpenseStatusFilter }
+  | { status: 'loading'; roomId: number | string; selectedStatus: ExpenseStatusFilter }
   | {
       status: 'loaded';
-      roomId: number;
+      roomId: number | string;
       selectedStatus: ExpenseStatusFilter;
       expenses: MyExpenseItem[];
     }
-  | { status: 'empty'; roomId: number; selectedStatus: ExpenseStatusFilter }
+  | { status: 'empty'; roomId: number | string; selectedStatus: ExpenseStatusFilter }
   | {
       status: 'error';
-      roomId: number;
+      roomId: number | string;
       selectedStatus: ExpenseStatusFilter;
       message: string;
     };
 
+/**
+ * 화면 상단 요약 카드용 데이터.
+ * 매번 다시 계산하지 않고 summary를 주는 것이
+ * 목록이 길어지면 유리할 수 있음.
+ */
 interface PaymentListSummary {
   totalAmount: number;
   expenseCount: number;
@@ -32,9 +41,13 @@ interface PaymentListSummary {
   settledCount: number;
 }
 
+/**
+ * Zustand store는 "상태 정보 + 상태를 바꾸는 액션"을 가집니다.
+ * UI 관련 로직은 여기에 두지 않고, Screen에서만 씁니다.
+ */
 interface PaymentListStore {
   state: PaymentListState;
-  syncRoom: (roomId: number) => void;
+  syncRoom: (roomId: number | string) => void;
   loadExpenses: () => Promise<void>;
   selectStatus: (status: ExpenseStatusFilter) => void;
   markExpensesRequested: (expenseIds: number[]) => void;
@@ -45,12 +58,19 @@ interface PaymentListStore {
   removeExpense: (expenseId: number) => void;
 }
 
-const createInitialState = (roomId: number): PaymentListState => ({
+/**
+ * room에 진입했을 때의 초기 로드 상태.
+ */
+const createInitialState = (roomId: number | string): PaymentListState => ({
   status: 'idle',
   roomId,
   selectedStatus: 'ALL',
 });
 
+/**
+ * 상태 값 변경을 안전하게 처리합니다.
+ * 에러 시 다시 목록 조회를 해도 loaded 상태가 유지가 됨.
+ */
 const withSelectedStatus = (
   state: PaymentListState,
   selectedStatus: ExpenseStatusFilter,
@@ -73,6 +93,10 @@ const withSelectedStatus = (
 const usePaymentListStore = create<PaymentListStore>((set, get) => ({
   state: createInitialState(1),
 
+  /**
+   * 다른 화면에서 roomId가 들어오면 store에 기록함.
+   * room이 바뀌면 기존 목록은 room 간의 데이터가 섞일 수 있으므로 idle로 초기화함.
+   */
   syncRoom: (roomId) => {
     set(({ state }) => {
       if (state.roomId === roomId) {
@@ -89,6 +113,12 @@ const usePaymentListStore = create<PaymentListStore>((set, get) => ({
     });
   },
 
+  /**
+   * 실제 목록 로드 액션.
+   * 1. loading 상태 진입.
+   * 2. service 호출.
+   * 3. empty / loaded / error 중 하나를 선택.
+   */
   loadExpenses: async () => {
     const roomId = get().state.roomId;
 
@@ -139,6 +169,9 @@ const usePaymentListStore = create<PaymentListStore>((set, get) => ({
     }
   },
 
+  /**
+   * 필터 탭 선택 (전체/정산 대기/요청/완료) 변경.
+   */
   selectStatus: (status) => {
     set(({ state }) => ({
       state: withSelectedStatus(state, status),
@@ -217,6 +250,9 @@ const usePaymentListStore = create<PaymentListStore>((set, get) => ({
   },
 }));
 
+/**
+ * loaded가 아닌 동안의 summary 카드 초기값.
+ */
 const emptySummary: PaymentListSummary = {
   totalAmount: 0,
   expenseCount: 0,
@@ -225,6 +261,9 @@ const emptySummary: PaymentListSummary = {
   settledCount: 0,
 };
 
+/**
+ * 목록에서의 요약 카드 수치를 계산합니다.
+ */
 const buildSummary = (expenses: MyExpenseItem[]): PaymentListSummary => ({
   totalAmount: expenses.reduce((sum, expense) => sum + expense.totalAmount, 0),
   expenseCount: expenses.length,
@@ -233,7 +272,13 @@ const buildSummary = (expenses: MyExpenseItem[]): PaymentListSummary => ({
   settledCount: expenses.filter((expense) => expense.status === 'SETTLED').length,
 });
 
-export function usePaymentListViewModel(roomId: number) {
+/**
+ * Screen에서 사용하는 최종 ViewModel hook.
+ * - store 상태 구독.
+ * - roomId 진입 초기화.
+ * - 유도 상태(filteredExpenses, summary) 계산.
+ */
+export function usePaymentListViewModel(roomId: number | string) {
   const state = usePaymentListStore((store) => store.state);
   const syncRoom = usePaymentListStore((store) => store.syncRoom);
   const loadExpenses = usePaymentListStore((store) => store.loadExpenses);
@@ -251,8 +296,8 @@ export function usePaymentListViewModel(roomId: number) {
   }, [roomId, syncRoom]);
 
   /**
-   * loaded 상태에서만 실제 필터링이 일어난다.
-   * 나머지 상태에서는 빈 배열을 반환해 Screen 조건문을 단순화한다.
+   * loaded 상태일 때만 실제 필터링된 결과물 전달.
+   * 로딩 중이거나 텅 빈 경우라면 빈 배열을 주어 Screen 조건문의 단순화를 도와줍니다.
    */
   const filteredExpenses = React.useMemo(
     () =>
@@ -276,6 +321,7 @@ export function usePaymentListViewModel(roomId: number) {
     filteredExpenses,
     summary,
     loadExpenses,
+    // 목록 화면의 refreshControl과 초기 로드 액션을 공유합니다.
     refresh: loadExpenses,
     selectStatus,
     markExpensesRequested,

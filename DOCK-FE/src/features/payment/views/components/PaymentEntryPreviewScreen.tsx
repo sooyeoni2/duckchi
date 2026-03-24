@@ -43,14 +43,16 @@ export function PaymentEntryPreviewScreen({
         >
           {preview.title}
         </Text>
-        <Text
-          style={KBODiaGothicTextStyle.medium({
-            fontSize: 18,
-            color: AppColorStyles.gray1,
-          })}
-        >
-          {preview.headline}
-        </Text>
+        {preview.headline && (
+          <Text
+            style={KBODiaGothicTextStyle.medium({
+              fontSize: 18,
+              color: AppColorStyles.gray1,
+            })}
+          >
+            {preview.headline}
+          </Text>
+        )}
         <Text
           style={PretendardTextStyle.regular({
             fontSize: 14,
@@ -126,7 +128,7 @@ export function PaymentEntryPreviewScreen({
                   color: AppColorStyles.black,
                 })}
               >
-                {field.value}
+                {field.value || field.description}
               </Text>
             </View>
           ))}
@@ -180,7 +182,7 @@ export function PaymentEntryPreviewScreen({
             color: AppColorStyles.black,
           })}
         >
-          {preview.primaryActionLabel}
+          {preview.primaryActionLabel || '계속하기'}
         </Text>
       </TouchableOpacity>
 
