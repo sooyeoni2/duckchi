@@ -15,6 +15,8 @@ public enum ErrorCode {
     COMMON_MISSING_REQUEST_HEADER("COMMON-400-2",HttpStatus.BAD_REQUEST,"필수 요청 헤더가 누락되었습니다."),
     COMMON_FORBIDDEN("COMMON-403-1", HttpStatus.FORBIDDEN, "해당 요청에 대한 권한이 없습니다."),
 
+    //OUTBOX
+    OUTBOX_PAYLOAD_SERIALIZATION_FAILED("OUTBOX-500-1",HttpStatus.INTERNAL_SERVER_ERROR,"내부 이벤트 처리 중 오류가 발생했습니다."),
     // FINANCE
     FINANCE_API_ERROR("FINANCE-502-1", HttpStatus.BAD_GATEWAY, "외부 금융 시스템과의 통신 중 오류가 발생하였습니다."),
     FINANCE_INVALID_ACCOUNT("FINANCE-400-1", HttpStatus.BAD_REQUEST, "유효하지 않은 계좌 정보입니다."),

@@ -9,6 +9,7 @@ import com.duckchi.pay.domain.expense.entity.ExpenseParticipant;
 import com.duckchi.pay.domain.expense.repository.ExpenseItemParticipantRepository;
 import com.duckchi.pay.domain.expense.repository.ExpenseParticipantRepository;
 import com.duckchi.pay.domain.expense.repository.ExpenseRepository;
+import com.duckchi.pay.domain.room.dto.event.RoomLifecycleNotificationEvent;
 import com.duckchi.pay.domain.expense.repository.projection.ExpenseParticipantCountProjection;
 import com.duckchi.pay.domain.expense.repository.projection.ExpenseTitleProjection;
 import com.duckchi.pay.domain.room.dto.request.CreateRoomRequest;
@@ -42,11 +43,16 @@ import com.duckchi.pay.global.error.ErrorCode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import com.duckchi.pay.infra.kafka.service.OutboxEventCommandService;
+import com.duckchi.pay.infra.kafka.type.KafkaTopicNames;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -73,6 +79,7 @@ public class RoomServiceImpl implements RoomService {
     private final RoomSessionRepository roomSessionRepository;
     private final CoreClient coreClient;
     private final BadgeTriggerService badgeTriggerService;
+    private final OutboxEventCommandService outboxEventCommandService;
 
     @Override
     @Transactional
@@ -662,6 +669,26 @@ public class RoomServiceImpl implements RoomService {
                 .room(room)
                 .build();
         roomSessionRepository.save(session);
+
+        //룸 참여자 목록 구하기
+        List<Long> recipientUserIds = roomParticipantRepository.findUserIdsByRoomId(room.getId());
+        //RoomLifecycleNotificationEvent 만들기
+        RoomLifecycleNotificationEvent event = RoomLifecycleNotificationEvent.builder()
+                .eventType("ROOM_STARTED")
+                .roomId(room.getId())
+                .roomName(room.getName())
+                .triggeredBy(currentUserId)
+                .recipientUserIds(recipientUserIds)
+                .occurredAt(LocalDateTime.now())
+                .build();
+        //outboxEventCommandService 호출
+        outboxEventCommandService.save(
+                "ROOM",
+                room.getId(),
+                "ROOM_STARTED",
+                KafkaTopicNames.ROOM_LIFECYCLE_NOTIFICATION_EVENT,
+                event
+        );
     }
 
     /*
@@ -710,6 +737,26 @@ public class RoomServiceImpl implements RoomService {
 
         // isProgress 플래그를 false로 전환하여 대기 상태로 복귀한다.
         room.markReady();
+
+        //룸 참여자 목록 구하기
+        List<Long> recipientUserIds = roomParticipantRepository.findUserIdsByRoomId(room.getId());
+        //RoomLifecycleNotificationEvent 만들기
+        RoomLifecycleNotificationEvent event = RoomLifecycleNotificationEvent.builder()
+                .eventType("ROOM_ENDED")
+                .roomId(room.getId())
+                .roomName(room.getName())
+                .triggeredBy(currentUserId)
+                .recipientUserIds(recipientUserIds)
+                .occurredAt(LocalDateTime.now())
+                .build();
+        //outboxEventCommandService 호출
+        outboxEventCommandService.save(
+                "ROOM",
+                room.getId(),
+                "ROOM_ENDED",
+                KafkaTopicNames.ROOM_LIFECYCLE_NOTIFICATION_EVENT,
+                event
+        );
     }
 
     /*
