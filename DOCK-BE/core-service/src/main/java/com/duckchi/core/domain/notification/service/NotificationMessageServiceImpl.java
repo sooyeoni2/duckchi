@@ -1,7 +1,10 @@
 package com.duckchi.core.domain.notification.service;
 
+import com.duckchi.core.domain.notification.dto.event.SettlementRequestNotificationEvent;
 import com.duckchi.core.global.error.CustomException;
 import com.duckchi.core.global.error.ErrorCode;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.Message;
@@ -9,6 +12,9 @@ import com.google.firebase.messaging.Notification;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -18,11 +24,16 @@ public class NotificationMessageServiceImpl implements NotificationMessageServic
     private static final String NOTIFICATION_ENABLED_TITLE = "알림 설정 완료";
     private static final String NOTIFICATION_ENABLED_BODY = "알림이 설정되었습니다.";
 
+    private static final String SETTLEMENT_REQUEST_TITLE = "정산 요청";
+
     private static final String ROOM_STARTED_TITLE = "모임 시작";
     private static final String ROOM_ENDED_TITLE = "모임 종료";
     private static final String BADGE_ACQUIRED_TITLE = "뱃지 획득";
 
+    private static final String EXPENSE_SETTLED_TITLE = "정산 완료";
+
     private final FirebaseMessaging firebaseMessaging;
+    private final ObjectMapper objectMapper;
 
     //알림 설정 완료 알림
     @Override
@@ -42,6 +53,86 @@ public class NotificationMessageServiceImpl implements NotificationMessageServic
             log.error("FCM 테스트 알림 발송 실패. token={}", token, ex);
             throw new CustomException(ErrorCode.NOTIFICATION_TEST_SEND_FAILED);
         }
+    }
+
+    //정산 요청 알림 - 자동이체 동의자
+    @Override
+    public void sendSettlementRequestAutoMessage(String token, SettlementRequestNotificationEvent event) {
+
+        String settlementIdsJson;
+        //settlements에서 Id만 추출해서 json 문자열로 추출
+        try {
+            settlementIdsJson = objectMapper.writeValueAsString(event.getSettlements().keySet());
+        } catch (JsonProcessingException e) {
+            throw new IllegalArgumentException("settlements에서 Id를 추출하는데 실패했습니다.", e);
+        }
+        //넣을 데이터 조립
+        Map<String,String> data = new HashMap<>();
+        data.put("isAgreed","true"); //자동이체 동의 여부
+        data.put("settlementIds",settlementIdsJson); //settlementId 목록
+
+        //항목명 꺼내오기
+        String expenseThumbNails = event.getSettlements().values().stream()
+                .findFirst()
+                .map(firstTitle -> {
+                    int remainCount = event.getSettlements().size() - 1;
+                    return remainCount > 0
+                            ? firstTitle + " 외 " + remainCount + "건"
+                            : firstTitle;
+                })
+                .orElse("0건");
+
+        Message message = Message.builder()
+                .setToken(token)
+                .setNotification(Notification.builder()
+                        .setTitle(event.getRoomName()+"에서의 "+SETTLEMENT_REQUEST_TITLE)
+                        .setBody(expenseThumbNails+"에 대한 정산을 완료해주세요."+event.getTotalAmount())
+                        .build())
+                .putAllData(data)
+                .build();
+
+        send(message, token, "정산 요청 알림 - 자동이체 동의자");
+    }
+
+    //정산 요청 알림 - 자동이체 미동의자
+    @Override
+    public void sendSettlementRequestOneclickMessage(String token, SettlementRequestNotificationEvent event) {
+
+        //항목명 꺼내오기
+        String expenseThumbNails = event.getSettlements().values().stream()
+                .findFirst()
+                .map(firstTitle -> {
+                    int remainCount = event.getSettlements().size() - 1;
+                    return remainCount > 0
+                            ? firstTitle + " 외 " + remainCount + "건"
+                            : firstTitle;
+                })
+                .orElse("0건");
+
+        Message message = Message.builder()
+                .setToken(token)
+                .setNotification(Notification.builder()
+                        .setTitle(event.getRoomName()+"에서의 "+SETTLEMENT_REQUEST_TITLE)
+                        .setBody(expenseThumbNails+"에 대한 정산을 완료해주세요."+event.getTotalAmount())
+                        .build())
+                        .putData("isAgreed","false") //자동이체 동의 여부
+                .build();
+
+        send(message, token, "정산 요청 알림 - 자동이체 미동의자");
+    }
+
+    //정산 완료 알림
+    @Override
+    public void sendExpenseSettledMessage(String token, String expenseTitle) {
+        Message message = Message.builder()
+                .setToken(token)
+                .setNotification(Notification.builder()
+                        .setTitle(EXPENSE_SETTLED_TITLE)
+                        .setBody(expenseTitle + " 에 대한 정산이 완료되었어요.")
+                        .build())
+                .build();
+
+        send(message, token, "정산 완료 알림");
     }
 
     //모임방 시작 알림
