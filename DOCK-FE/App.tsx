@@ -14,6 +14,8 @@ import { navigationRef } from './src/core/navigation/navigationRef';
 import { RootStackParamList } from './src/core/navigation/types';
 import { OnboardingScreen } from './src/features/onboarding/OnboardingScreen';
 
+import { resetBadgeStore } from './src/features/profile/viewmodels/useBadgeViewModel';
+import { resetProfileStore } from './src/features/profile/viewmodels/useProfileViewModel';
 import { BankAccountSetupScreen } from './src/features/bank/views/BankAccountSetupScreen';
 import { BankAccountVerifyScreen } from './src/features/bank/views/BankAccountVerifyScreen';
 import { BankAccountCompleteScreen } from './src/features/bank/views/BankAccountCompleteScreen';
@@ -67,6 +69,11 @@ function App() {
     const unsubscribe = messaging().onMessage(async (remoteMessage) => {
       const title = remoteMessage.notification?.title ?? '새 알림';
       const body = remoteMessage.notification?.body ?? '도착한 알림을 확인해 주세요.';
+
+      if (title === '뱃지 획득') {
+        resetBadgeStore();
+        resetProfileStore();
+      }
 
       Alert.alert(title, body);
     });

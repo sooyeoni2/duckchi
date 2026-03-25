@@ -20,6 +20,8 @@ const useBadgeStore = create<BadgeStore>(set => ({
   setState: state => set({ state }),
 }));
 
+export const resetBadgeStore = () => useBadgeStore.getState().setState({ status: 'idle' });
+
 export const useBadgeViewModel = () => {
   const { state, setState } = useBadgeStore();
 
