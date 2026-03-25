@@ -26,6 +26,9 @@ const useAutoTransferAgreeStore = create<AutoTransferAgreeStore>((set) => ({
   updateState: (partial) => set((store) => ({ state: { ...store.state, ...partial } })),
 }));
 
+export const useAutoTransferAgreeState = () =>
+  useAutoTransferAgreeStore((store) => store.state);
+
 export const useAutoTransferAgreeViewModel = () => {
   const { state, updateState } = useAutoTransferAgreeStore();
   const { state: profileState } = useProfileViewModel();
