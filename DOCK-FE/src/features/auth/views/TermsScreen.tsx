@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Pressable } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { KBODiaGothicTextStyle } from '@core/theme/typography';
 import type { AuthStackParamList } from '@core/navigation/types';
@@ -62,7 +62,9 @@ const TermsScreen: React.FC<Props> = ({ navigation }) => {
           <TouchableOpacity style={styles.row} onPress={toggleT1} activeOpacity={0.7}>
             <View style={styles.rowLeft}>
               <Text style={styles.rowText}>[필수] 이용약관 동의</Text>
-              <Text style={styles.viewLink}>보기</Text>
+              <Pressable onPress={() => navigation.navigate('TermsDetail', { type: 'terms', onAgree: () => { setT1(true); setAll(t2); } })} hitSlop={8}>
+                <Text style={styles.viewLink}>보기</Text>
+              </Pressable>
             </View>
             <Checkbox checked={t1} />
           </TouchableOpacity>
@@ -72,7 +74,9 @@ const TermsScreen: React.FC<Props> = ({ navigation }) => {
           <TouchableOpacity style={styles.row} onPress={toggleT2} activeOpacity={0.7}>
             <View style={styles.rowLeft}>
               <Text style={styles.rowText}>[필수] 개인정보 처리방침</Text>
-              <Text style={styles.viewLink}>보기</Text>
+              <Pressable onPress={() => navigation.navigate('PrivacyDetail', { onAgree: () => { setT2(true); setAll(t1); } })} hitSlop={8}>
+                <Text style={styles.viewLink}>보기</Text>
+              </Pressable>
             </View>
             <Checkbox checked={t2} />
           </TouchableOpacity>
