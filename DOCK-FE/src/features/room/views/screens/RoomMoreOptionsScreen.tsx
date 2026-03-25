@@ -21,20 +21,16 @@ const RoomMoreOptionsScreen: React.FC = () => {
   const route = useRoute<Route>();
   const { roomId } = route.params;
   
-  // ViewModel 훅을 통해 상태와 로직(핸들러)을 가져옴
   const { state, openInviteModal, closeInviteModal, openActionModal, closeActionModal } = useRoomMoreOptionsViewModel();
   const { roomInfo, isInviteModalVisible, activeActionType, isActionModalVisible } = state;
 
-  const { state: actionState, startRoom, endRoom, deleteRoom, leaveRoom } = useRoomActionViewModel();
+  const { state: actionState, startRoom, endRoom, deleteRoom, leaveRoom } = useRoomActionViewModel(roomId);
 
   // 팀 공용 MeetingRoomLinkSheet에서 사용할 초대 링크 Mock
   const inviteLink = getMeetingRoomInviteLinkMock(1);
 
-  // 미완료 정산 Mock (실제 연동 시 서버 데이터로 교체)
-  const pendingSettlement: PendingSettlement | undefined =
-    (activeActionType === 'LEAVE' || activeActionType === 'DELETE')
-      ? { count: 1, name: '고기집', amount: 20000, requester: '류병선' }
-      : undefined;
+  // 미완료 정산 Mock 제거 (실제 연동 시 서버 데이터로 교체 예정)
+  const pendingSettlement: PendingSettlement | undefined = undefined;
 
   const handleActionConfirm = async () => {
     if (!activeActionType) return;
@@ -63,7 +59,7 @@ const RoomMoreOptionsScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom'] as const}>
       {/* 공용 AppBar 컴포넌트 사용 */}
       <CustomAppBar
         showDivider

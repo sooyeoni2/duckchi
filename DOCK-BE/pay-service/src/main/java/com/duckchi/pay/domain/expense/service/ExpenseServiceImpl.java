@@ -196,6 +196,7 @@ public class ExpenseServiceImpl implements ExpenseService {
         // [BADGE 트리거] OCR 영수증 스캔 등록 시 뱃지 진행도 갱신 (SCANNER_DUCK +1)
         if ("OCR".equals(request.getInputType())) {
             badgeTriggerService.callBadgeCheckSafely(
+                    expenseId,
                     com.duckchi.pay.domain.badge.dto.BadgeCheckRequest.builder()
                             .userId(userId)
                             .eventType("EXPENSE_OCR_ADDED")
