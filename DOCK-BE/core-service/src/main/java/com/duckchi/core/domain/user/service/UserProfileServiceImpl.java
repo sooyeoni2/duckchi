@@ -3,7 +3,6 @@ package com.duckchi.core.domain.user.service;
 import com.duckchi.core.domain.account.entity.UserAccount;
 import com.duckchi.core.domain.account.repository.UserAccountRepository;
 import com.duckchi.core.domain.account.type.AccountStatus;
-import com.duckchi.core.domain.user.dto.request.NotificationSettingRequest;
 import com.duckchi.core.domain.user.dto.request.UserProfileEditRequest;
 import com.duckchi.core.domain.user.dto.request.UserProfileImageEditRequest;
 import com.duckchi.core.domain.user.dto.response.UserProfileDetailResponse;
@@ -53,7 +52,6 @@ public class UserProfileServiceImpl implements UserProfileService {
                 .tag(user.getTag())
                 .transferLimit(user.getTransferLimit())
                 .profileImageUrl(user.getProfileImageUrl())
-                .notificationEnabled(user.getNotificationEnabled())
                 .createdAt(user.getCreatedAt())
                 .accounts(accountSummaries)
                 .badges(Collections.emptyList())
@@ -92,11 +90,4 @@ public class UserProfileServiceImpl implements UserProfileService {
                 .build();
     }
 
-    @Override
-    @Transactional
-    public void updateNotificationSetting(Long userId, NotificationSettingRequest request) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-        user.updateNotificationEnabled(request.getNotificationEnabled());
-    }
 }
