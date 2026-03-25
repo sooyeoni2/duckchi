@@ -85,9 +85,9 @@ export function PaymentEntryMethodTabs({
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    paddingHorizontal: 20 * s,
-    paddingTop: 12 * s,
-    paddingBottom: 12 * s,
+    paddingHorizontal: 21 * s,
+    paddingTop: 16 * s,
+    paddingBottom: 16 * s,
     backgroundColor: AppColorStyles.background,
   },
   tabButtonWrap: {
@@ -95,11 +95,11 @@ const styles = StyleSheet.create({
   },
   tabButton: {
     width: '100%',
-    height: 58 * s,
-    borderRadius: 12 * s,
+    height: 62 * s,
+    borderRadius: 14 * s,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 8 * s,
+    paddingHorizontal: 4 * s,
   },
   tabButtonActive: {
     backgroundColor: AppColorStyles.gray1,
@@ -111,6 +111,6 @@ const styles = StyleSheet.create({
     backgroundColor: AppColorStyles.white,
   },
   tabSpacing: {
-    marginRight: 12 * s,
+    marginRight: 10 * s,
   },
 });
