@@ -57,6 +57,15 @@ public class User {
     @Builder.Default
     private Integer payPasswordFailCnt = 0;
 
+    @Column(name = "notification_enabled", nullable = false)
+    @Builder.Default
+    private Boolean notificationEnabled = true;
+
+    //자동이체 한도 변경
+    public void updateTransferLimit(Integer transferLimit) {
+        this.transferLimit = transferLimit;
+    }
+
     //결제 비밀번호 설정
     public void updatePayPassword(String payPassword) {
         this.payPassword = payPassword;
@@ -73,6 +82,10 @@ public class User {
     //결제 비밀번호 실패 횟수 초기화
     public void resetPayPasswordFailCnt(){
         this.payPasswordFailCnt = 0;
+    }
+
+    public void updateNotificationEnabled(Boolean notificationEnabled) {
+        this.notificationEnabled = notificationEnabled;
     }
 
     public void updateProfile(String name, String profileImageUrl) {

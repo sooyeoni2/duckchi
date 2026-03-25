@@ -12,6 +12,9 @@ public interface UserAccountRepository extends JpaRepository<UserAccount, Long> 
     //UserId로 찾고, 인자로 들어온 status이고, 삭제되지 않은 계좌가 있는지 조회
     boolean existsByUserIdAndStatusAndDeletedAtIsNull(Long userId, AccountStatus status);
 
+    //UserId로 찾고, 인자로 들어온 status이고, 삭제되지 않은 계좌의 수를 조회
+    long countByUserIdAndStatusAndDeletedAtIsNull(Long userId, AccountStatus status);
+
     //UserId로 찾고, 인자로 들어온 status이고, 삭제되지않은 계좌를 조회
     Optional<UserAccount> findByUserIdAndStatusAndDeletedAtIsNull(Long userId, AccountStatus status);
 
@@ -28,6 +31,9 @@ public interface UserAccountRepository extends JpaRepository<UserAccount, Long> 
             AccountStatus status,
             LocalDateTime authRequestedAt
     );
+
+    //userId로 찾고, 인자로 들어온 status이고, 삭제되지 않은 계좌 목록 조회
+    List<UserAccount> findAllByUserIdAndStatusAndDeletedAtIsNull(Long userId, AccountStatus status);
 
     //userId,banckCode,accountNumber로 이미 Locked된 계좌인지 조회
     Optional<UserAccount> findByUserIdAndBankCodeAndAccountNumberAndStatusAndDeletedAtIsNull(

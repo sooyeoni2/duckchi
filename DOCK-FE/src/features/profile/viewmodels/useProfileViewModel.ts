@@ -1,7 +1,7 @@
 import { useCallback, useEffect } from 'react';
 import { create } from 'zustand';
 
-import { deleteAccount as deleteAccountService, fetchProfile, updateTransferLimit as updateTransferLimitService } from '../models/profileService';
+import { deleteAccount as deleteAccountService, editProfileImage as editProfileImageService, fetchBadges, fetchProfile, updateTransferLimit as updateTransferLimitService } from '../models/profileService';
 import type { Profile } from '../models/profileTypes';
 
 type ProfileState =
@@ -28,8 +28,26 @@ export const useProfileViewModel = () => {
   const loadProfile = useCallback(async () => {
     setState({ status: 'loading' });
     try {
-      const profile = await fetchProfile();
-      setState({ status: 'loaded', profile });
+      const [profile, badgeList] = await Promise.all([fetchProfile(), fetchBadges()]);
+      const badges = [
+        ...badgeList.acquiredBadges.map(b => ({
+          id: b.id,
+          code: b.code,
+          name: b.name,
+          isAcquired: true,
+          acquiredAt: b.acquiredAt,
+          imageUrl: b.imageUrl,
+        })),
+        ...badgeList.lockedBadges.map(b => ({
+          id: b.id,
+          code: b.code,
+          name: b.name,
+          isAcquired: false,
+          acquiredAt: null,
+          imageUrl: b.imageUrl,
+        })),
+      ];
+      setState({ status: 'loaded', profile: { ...profile, badges } });
     } catch (error) {
       setState({
         status: 'error',
@@ -52,6 +70,18 @@ export const useProfileViewModel = () => {
     await loadProfile();
   }, [loadProfile]);
 
+  const updateProfileImage = useCallback(async (profileImageKey: string) => {
+    await editProfileImageService(profileImageKey);
+    await loadProfile();
+  }, [loadProfile]);
+
+  const updateNotificationEnabled = useCallback((value: boolean) => {
+    const current = useProfileStore.getState().state;
+    if (current.status === 'loaded') {
+      setState({ status: 'loaded', profile: { ...current.profile, notificationEnabled: value } });
+    }
+  }, [setState]);
+
   useEffect(() => {
     if (useProfileStore.getState().state.status === 'idle') {
       loadProfile();
@@ -60,5 +90,5 @@ export const useProfileViewModel = () => {
 
   const reset = useProfileStore(s => s.reset);
 
-  return { state, refresh, reset, deleteAccount, updateTransferLimit };
+  return { state, refresh, reset, deleteAccount, updateTransferLimit, updateProfileImage, updateNotificationEnabled };
 };

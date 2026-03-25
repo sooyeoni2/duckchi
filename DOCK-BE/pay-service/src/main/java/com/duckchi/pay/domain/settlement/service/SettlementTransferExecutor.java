@@ -1,5 +1,6 @@
 package com.duckchi.pay.domain.settlement.service;
 
+import com.duckchi.pay.domain.badge.service.BadgeTriggerService;
 import com.duckchi.pay.domain.expense.dto.external.UserFinanceProfileResponse;
 import com.duckchi.pay.domain.expense.entity.Expense;
 import com.duckchi.pay.domain.expense.repository.ExpenseRepository;
@@ -37,6 +38,7 @@ public class SettlementTransferExecutor {
     private final CoreClient coreClient;
     private final FinanceClient financeClient;
     private final SettlementTransferIdempotencyService settlementTransferIdempotencyService;
+    private final BadgeTriggerService badgeTriggerService;
 
     @Value("${finance.api.key:test-key}")
     private String financeApiKey;
@@ -79,6 +81,15 @@ public class SettlementTransferExecutor {
 
         settlement.markCompleted(bankTransactionId, LocalDateTime.now());
         tryMarkExpenseSettled(settlement.getExpenseId());
+
+        // [BADGE 트리거] 정산 송금 완료 시 뱃지 진행도 갱신
+        // NOBLE_DUCK(금액), ASSASSIN_DUCK(1시간 이내), TURTLE_DUCK(48시간 초과), NIGHTOWL_DUCK(새벽 시간대)
+        badgeTriggerService.triggerSettlementCompleted(
+                settlement.getPayerUserId(),
+                settlement.getPayableAmount(),
+                settlement.getCreatedAt(),
+                LocalDateTime.now()
+        );
     }
 
     /**
