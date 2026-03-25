@@ -7,18 +7,16 @@ import com.duckchi.pay.infra.ocr.OcrClient;
 import com.duckchi.pay.infra.ocr.dto.OcrRequest;
 import com.duckchi.pay.infra.ocr.dto.OcrResponse;
 import com.fasterxml.jackson.databind.JsonNode;
-import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.Base64;
 import java.util.List;
-import java.util.Locale;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StopWatch;
 import org.springframework.util.StringUtils;
-import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
 @Service
@@ -31,21 +29,30 @@ public class ExpenseOcrServiceImpl implements ExpenseOcrService {
 
     private final OcrClient ocrClient;
 
+    // 정규식 엔진의 반복 컴파일 오버헤드를 방지하기 위한 캐싱
+    private static final Pattern DIGITS_PATTERN = Pattern.compile("\\D");
+
     @Value("${ocr.naver.secret}")
     private String ocrSecret;
 
     @Override
     /**
-     * 영수증 OCR 초안 생성 로직.
-     * 이미지 검증 후 OCR 응답을 결제 초안 DTO로 변환하는 역할.
+     * 영수증 OCR 초안 생성 로직 (S3 URL 기반).
+     * S3에 업로드된 이미지 URL을 통해 OCR 분석 수행 후 결과를 정규화함.
      */
-    public ExpenseOcrDraftResponse analyzeReceipt(MultipartFile image) {
-        validateImage(image);
+    public ExpenseOcrDraftResponse analyzeReceipt(String imageUrl) {
+        if (!StringUtils.hasText(imageUrl)) {
+            throw new CustomException(ErrorCode.COMMON_INVALID_INPUT);
+        }
 
+        StopWatch stopWatch = new StopWatch("OCR Analysis Pipeline");
         OcrResponse response;
+
         try {
-            response = ocrClient.callReceiptOcr(ocrSecret, buildRequest(image));
-            log.info("OCR Raw Response: {}", response);
+            stopWatch.start("Clova API Call");
+            response = ocrClient.callReceiptOcr(ocrSecret, buildRequestByUrl(imageUrl));
+            stopWatch.stop();
+            log.info("OCR API Call Finished. Latency: {}ms", stopWatch.getLastTaskTimeMillis());
         } catch (CustomException e) {
             throw e;
         } catch (Exception e) {
@@ -53,19 +60,27 @@ public class ExpenseOcrServiceImpl implements ExpenseOcrService {
             throw new CustomException(ErrorCode.OCR_API_ERROR);
         }
 
-        return toDraftResponse(response);
+        stopWatch.start("Data Normalization");
+        ExpenseOcrDraftResponse draft = toDraftResponse(response);
+        stopWatch.stop();
+
+        log.info("OCR Pipeline Completed. Total: {}ms, Normalization: {}ms", 
+                stopWatch.getTotalTimeMillis(), stopWatch.getLastTaskTimeMillis());
+
+        return draft;
     }
 
     @Override
     /**
-     * OCR 원본 응답 조회 로직.
-     * 디버깅 및 응답 구조 확인 목적의 원본 JSON 반환 역할.
+     * OCR 원본 응답 조회 로직 (S3 URL 기반).
      */
-    public JsonNode analyzeReceiptRaw(MultipartFile image) {
-        validateImage(image);
+    public JsonNode analyzeReceiptRaw(String imageUrl) {
+        if (!StringUtils.hasText(imageUrl)) {
+            throw new CustomException(ErrorCode.COMMON_INVALID_INPUT);
+        }
 
         try {
-            return ocrClient.callReceiptOcrRaw(ocrSecret, buildRequest(image));
+            return ocrClient.callReceiptOcrRaw(ocrSecret, buildRequestByUrl(imageUrl));
         } catch (CustomException e) {
             throw e;
         } catch (Exception e) {
@@ -75,47 +90,25 @@ public class ExpenseOcrServiceImpl implements ExpenseOcrService {
     }
 
     /**
-     * 업로드 이미지 기본 검증 로직.
-     * 빈 파일과 지원하지 않는 확장자 차단 역할.
+     * OCR 요청 DTO 생성 로직 (URL 기반).
      */
-    private void validateImage(MultipartFile image) {
-        if (image == null || image.isEmpty()) {
-            throw new CustomException(ErrorCode.COMMON_INVALID_INPUT);
-        }
-
-        String format = resolveImageFormat(image.getOriginalFilename());
-        if (!StringUtils.hasText(format)) {
-            throw new CustomException(ErrorCode.COMMON_INVALID_INPUT);
-        }
-    }
-
-    /**
-     * OCR 요청 DTO 생성 로직.
-     * 파일 내용을 base64 문자열로 변환해 외부 API 요청 형태 구성 역할.
-     */
-    private OcrRequest buildRequest(MultipartFile image) {
-        try {
-            return OcrRequest.builder()
-                    .version("V2")
-                    .requestId(UUID.randomUUID().toString())
-                    .timestamp(System.currentTimeMillis())
-                    .images(List.of(
-                            OcrRequest.ImageRequest.builder()
-                                    .format(resolveImageFormat(image.getOriginalFilename()))
-                                    .name(resolveImageName(image.getOriginalFilename()))
-                                    .data(Base64.getEncoder().encodeToString(image.getBytes()))
-                                    .build()
-                    ))
-                    .build();
-        } catch (IOException e) {
-            log.error("OCR 요청 이미지 변환에 실패했습니다.", e);
-            throw new CustomException(ErrorCode.OCR_ANALYSIS_FAILED);
-        }
+    private OcrRequest buildRequestByUrl(String imageUrl) {
+        return OcrRequest.builder()
+                .version("V2")
+                .requestId(UUID.randomUUID().toString())
+                .timestamp(System.currentTimeMillis())
+                .images(List.of(
+                        OcrRequest.ImageRequest.builder()
+                                .format(resolveImageFormatByUrl(imageUrl))
+                                .name("receipt_" + UUID.randomUUID().toString().substring(0, 8))
+                                .url(imageUrl)
+                                .build()
+                ))
+                .build();
     }
 
     /**
      * OCR 응답 초안 변환 로직.
-     * 제목, 총액, 결제 시각, 품목 목록 조합 역할.
      */
     private ExpenseOcrDraftResponse toDraftResponse(OcrResponse response) {
         OcrResponse.ImageResponse imageResponse = extractImageResponse(response);
@@ -136,10 +129,6 @@ public class ExpenseOcrServiceImpl implements ExpenseOcrService {
                 .build();
     }
 
-    /**
-     * OCR 성공 이미지 응답 추출 로직.
-     * 실패 응답과 빈 응답 차단 역할.
-     */
     private OcrResponse.ImageResponse extractImageResponse(OcrResponse response) {
         if (response == null || response.getImages() == null || response.getImages().isEmpty()) {
             throw new CustomException(ErrorCode.OCR_ANALYSIS_FAILED);
@@ -159,10 +148,6 @@ public class ExpenseOcrServiceImpl implements ExpenseOcrService {
         return imageResponse.getReceipt().getResult();
     }
 
-    /**
-     * OCR 품목 목록 추출 로직.
-     * 빈 품목명과 0원 품목 제거 역할.
-     */
     private List<ExpenseOcrDraftResponse.OcrItemResponse> extractItems(OcrResponse.Result result) {
         if (result.getSubResults() == null) {
             return List.of();
@@ -181,10 +166,6 @@ public class ExpenseOcrServiceImpl implements ExpenseOcrService {
                 .toList();
     }
 
-    /**
-     * OCR 총액 추출 로직.
-     * 영수증 총액 우선 사용 후 품목 합산으로 보정 역할.
-     */
     private Integer extractTotalAmount(
             OcrResponse.Result result,
             List<ExpenseOcrDraftResponse.OcrItemResponse> items
@@ -208,10 +189,6 @@ public class ExpenseOcrServiceImpl implements ExpenseOcrService {
         return sum > 0 ? sum : null;
     }
 
-    /**
-     * 결제 제목 결정 로직.
-     * 상호명이 없으면 기본 제목 사용 역할.
-     */
     private String resolveTitle(OcrResponse.Result result) {
         String storeName = null;
         if (result.getStoreInfo() != null) {
@@ -221,10 +198,6 @@ public class ExpenseOcrServiceImpl implements ExpenseOcrService {
         return StringUtils.hasText(storeName) ? storeName : "영수증 정산";
     }
 
-    /**
-     * 결제 시각 파싱 로직.
-     * 날짜와 시각 텍스트를 LocalDateTime으로 변환하는 역할.
-     */
     private LocalDateTime extractPaidAt(OcrResponse.Result result) {
         if (result.getPaymentInfo() == null) {
             return null;
@@ -255,28 +228,12 @@ public class ExpenseOcrServiceImpl implements ExpenseOcrService {
         }
     }
 
-    private String resolveImageFormat(String originalFilename) {
-        if (!StringUtils.hasText(originalFilename) || !originalFilename.contains(".")) {
-            return null;
-        }
-
-        String extension = originalFilename.substring(originalFilename.lastIndexOf('.') + 1)
-                .toLowerCase(Locale.ROOT);
-
-        return switch (extension) {
-            case "jpg", "jpeg" -> "jpg";
-            case "png" -> "png";
-            case "pdf" -> "pdf";
-            default -> null;
-        };
-    }
-
-    private String resolveImageName(String originalFilename) {
-        if (!StringUtils.hasText(originalFilename) || !originalFilename.contains(".")) {
-            return "receipt";
-        }
-
-        return originalFilename.substring(0, originalFilename.lastIndexOf('.'));
+    private String resolveImageFormatByUrl(String imageUrl) {
+        if (!StringUtils.hasText(imageUrl)) return "jpg";
+        String lowerUrl = imageUrl.toLowerCase();
+        if (lowerUrl.endsWith(".png")) return "png";
+        if (lowerUrl.endsWith(".pdf")) return "pdf";
+        return "jpg";
     }
 
     private String extractText(OcrResponse.TextInfo textInfo) {
@@ -294,7 +251,8 @@ public class ExpenseOcrServiceImpl implements ExpenseOcrService {
         if (!StringUtils.hasText(value)) {
             return "";
         }
-        return value.replaceAll("\\D", "");
+        // 컴파일된 패턴 재사용으로 성능 최적화
+        return DIGITS_PATTERN.matcher(value).replaceAll("");
     }
 
     private Integer parsePositiveInt(String value) {

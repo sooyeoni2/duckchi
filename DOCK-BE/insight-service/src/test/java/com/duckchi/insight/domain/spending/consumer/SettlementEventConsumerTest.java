@@ -25,7 +25,11 @@ import org.springframework.kafka.test.utils.KafkaTestUtils;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
-@SpringBootTest
+@SpringBootTest(properties = {
+    "spring.kafka.consumer.group-id=test-group-${random.uuid}",
+    "spring.kafka.bootstrap-servers=${spring.embedded.kafka.brokers}",
+    "spring.datasource.url=jdbc:h2:mem:kafka_testdb;MODE=MySQL;DB_CLOSE_DELAY=-1"
+})
 @ActiveProfiles("test")
 @DirtiesContext
 @EmbeddedKafka(partitions = 1, topics = {"settlement-finished-event"})
@@ -39,6 +43,12 @@ class SettlementEventConsumerTest {
 
     @Autowired
     private UserMonthlySpendRepository userMonthlySpendRepository;
+
+    @org.junit.jupiter.api.BeforeEach
+    void setUp() {
+        spendingLogRepository.deleteAll();
+        userMonthlySpendRepository.deleteAll();
+    }
 
     @Test
     @DisplayName("EmbeddedKafka로 정산 완료 이벤트를 발행하면 Consumer가 이를 수신하여 DB에 저장해야 한다")
