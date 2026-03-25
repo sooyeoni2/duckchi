@@ -20,7 +20,6 @@ import { CustomAppBar } from '@shared/components/app_bar/CustomAppBar';
 import { FilledButton } from '@shared/components/buttons/FilledButton';
 
 import { usePaymentConfirmStore, type PaymentAction } from '../../models/paymentConfirmStore';
-import { useAutoTransferAgreeState } from '../../viewmodels/useAutoTransferAgreeViewModel';
 import { useSettlementViewModel } from '../../viewmodels/useSettlementViewModel';
 import { SettlementCard } from '../components/SettlementCard';
 import { SettlementTabHeader } from '../components/SettlementTabHeader';
@@ -36,7 +35,6 @@ interface RoomSettlementTransferScreenProps {
 
 export function RoomSettlementTransferScreen({ onBack, roomId }: RoomSettlementTransferScreenProps) {
   const rootNavigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { isAgreed } = useAutoTransferAgreeState();
   const {
     state,
     selectedTab,
@@ -46,11 +44,13 @@ export function RoomSettlementTransferScreen({ onBack, roomId }: RoomSettlementT
     settlementItems,
     transferSingle,
     transferAllPending,
+    checkAutoDebitAgreed,
     reload,
     refresh,
   } = useSettlementViewModel(roomId);
 
   const [refreshing, setRefreshing] = React.useState(false);
+  const [isCheckingConsent, setIsCheckingConsent] = React.useState(false);
 
   const handleRefresh = React.useCallback(async () => {
     setRefreshing(true);
@@ -87,19 +87,35 @@ export function RoomSettlementTransferScreen({ onBack, roomId }: RoomSettlementT
   );
 
   const handleTransferAction = useCallback((action: PaymentAction) => {
-    if (isTransferring) {
+    if (isTransferring || isCheckingConsent) {
       return;
     }
 
-    // 자동이체 동의 사용자는 비밀번호 재입력 없이 즉시 송금 API를 호출한다.
-    if (isAgreed) {
-      void executeTransferAction(action);
-      return;
-    }
+    void (async () => {
+      setIsCheckingConsent(true);
+      try {
+        const isAgreed = await checkAutoDebitAgreed();
 
-    setPending(action);
-    rootNavigation.navigate('PayPasswordInput');
-  }, [executeTransferAction, isAgreed, isTransferring, rootNavigation, setPending]);
+        // 버튼 클릭 시점에 서버 GET으로 동의 여부를 확정하고 분기한다.
+        if (isAgreed) {
+          await executeTransferAction(action);
+          return;
+        }
+
+        setPending(action);
+        rootNavigation.navigate('PayPasswordInput');
+      } finally {
+        setIsCheckingConsent(false);
+      }
+    })();
+  }, [
+    checkAutoDebitAgreed,
+    executeTransferAction,
+    isCheckingConsent,
+    isTransferring,
+    rootNavigation,
+    setPending,
+  ]);
 
   if (state.status === 'idle' || state.status === 'loading') {
     return (
@@ -170,7 +186,8 @@ export function RoomSettlementTransferScreen({ onBack, roomId }: RoomSettlementT
           <View style={styles.footer}>
             <FilledButton
               text="전체 송금하기"
-              onPress={hasPending && !isTransferring ? () => handleTransferAction({ type: 'all' }) : undefined}
+              onPress={hasPending && !isTransferring && !isCheckingConsent ? () => handleTransferAction({ type: 'all' }) : undefined}
+              isLoading={isTransferring || isCheckingConsent}
               height={CTA_HEIGHT}
             />
           </View>

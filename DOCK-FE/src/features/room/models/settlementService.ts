@@ -1,10 +1,21 @@
 import type { SettlementItem } from './settlementTypes';
+import { ENDPOINTS } from '../../../core/constants/apiConstants';
 import { axiosClient } from '../../../core/network/axiosClient';
 
-const USE_MOCK = false;
 const DEADLINE_HOURS = 48;
 
-const wait = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms));
+interface ApiEnvelope<T> {
+  success: boolean;
+  data: T;
+  msg?: string;
+}
+
+interface AutoDebitConsentResponseDto {
+  roomId: number;
+  userId: number;
+  role: 'ADMIN' | 'MEMBER';
+  isAgreed: boolean;
+}
 
 interface RoomMySetItemDto {
   settlementId: number;
@@ -23,54 +34,6 @@ interface RoomMySetResponseDto {
   roomTotalAmount: number;
 }
 
-const buildMockSettlements = (): SettlementItem[] => {
-  const now = Date.now();
-
-  return [
-    {
-      id: 1,
-      storeName: '고기집',
-      requesterName: '류병선',
-      amount: 20000,
-      status: 'IN_PROGRESS',
-      dueAt: new Date(now + 14 * 60 * 60 * 1000 + 32 * 60 * 1000 + 9 * 1000).toISOString(),
-      paidCount: 5,
-      totalCount: 6,
-    },
-    {
-      id: 2,
-      storeName: '엔젤리너스',
-      requesterName: '류병선',
-      amount: 10000,
-      status: 'IN_PROGRESS',
-      dueAt: new Date(now + 8 * 60 * 60 * 1000 + 14 * 60 * 1000 + 22 * 1000).toISOString(),
-      paidCount: 3,
-      totalCount: 6,
-    },
-    {
-      id: 3,
-      storeName: '엔젤리너스',
-      requesterName: '류병선',
-      amount: 10000,
-      status: 'IN_PROGRESS',
-      dueAt: new Date(now - (6 * 60 * 60 * 1000 + 22 * 60 * 1000 + 41 * 1000)).toISOString(),
-      paidCount: 1,
-      totalCount: 6,
-    },
-    {
-      id: 4,
-      storeName: '제주항공',
-      requesterName: '김싸피',
-      amount: 56000,
-      status: 'COMPLETED',
-      dueAt: new Date(now - 3 * 24 * 60 * 60 * 1000).toISOString(),
-      paidAt: new Date(now - 2 * 24 * 60 * 60 * 1000).toISOString(),
-      paidCount: 6,
-      totalCount: 6,
-    },
-  ];
-};
-
 // 요청 시각 기준 48시간 정책을 UI 카운트다운 만료 시각으로 변환한다.
 const toDeadlineIso = (requestedAt: string): string =>
   new Date(new Date(requestedAt).getTime() + DEADLINE_HOURS * 60 * 60 * 1000).toISOString();
@@ -88,23 +51,35 @@ const toSettlementItem = (dto: RoomMySetItemDto): SettlementItem => ({
 });
 
 export const fetchSettlementItems = async (roomId: number): Promise<SettlementItem[]> => {
-  if (USE_MOCK) {
-    await wait(250);
-    return buildMockSettlements();
+  const response = await axiosClient.get<ApiEnvelope<RoomMySetResponseDto>>(
+    ENDPOINTS.room.mySet(roomId),
+  );
+
+  if (response.data?.success !== true) {
+    throw new Error(response.data?.msg ?? '정산 목록을 불러오지 못했습니다.');
   }
 
-  const response = await axiosClient.get(`/api/v1/rooms/${roomId}/my-set`);
-  const payload = response.data?.data as RoomMySetResponseDto | undefined;
-  return (payload?.mySet ?? []).map(toSettlementItem);
+  const payload = response.data.data;
+  return (payload?.mySet ?? [])
+    .map(toSettlementItem)
+    .sort((a, b) => new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime());
+};
+
+export const fetchAutoDebitConsent = async (roomId: number): Promise<boolean> => {
+  // 송금 직전에는 로컬 캐시 대신 서버 상태를 기준으로 분기해야 동의 상태 불일치를 줄일 수 있다.
+  const response = await axiosClient.get<ApiEnvelope<AutoDebitConsentResponseDto>>(
+    ENDPOINTS.room.autoDebitConsents(roomId),
+  );
+
+  if (response.data?.success !== true) {
+    throw new Error(response.data?.msg ?? '자동이체 동의 상태를 불러오지 못했습니다.');
+  }
+
+  return response.data.data.isAgreed === true;
 };
 
 export const transferSettlements = async (settlementIds: number[]): Promise<void> => {
   if (settlementIds.length === 0) {
-    return;
-  }
-
-  if (USE_MOCK) {
-    await wait(250);
     return;
   }
 
