@@ -193,7 +193,12 @@ export function RoomScreen() {
   }, [isSettlementDetailOpen, navigation, selectedRoomTab]);
 
   if (viewMode === 'TRANSFER') {
-    return <RoomSettlementTransferScreen onBack={() => setViewMode('SUMMARY')} />;
+    return (
+      <RoomSettlementTransferScreen
+        roomId={room.roomId}
+        onBack={() => setViewMode('SUMMARY')}
+      />
+    );
   }
 
   const shouldUsePaymentAppBar =

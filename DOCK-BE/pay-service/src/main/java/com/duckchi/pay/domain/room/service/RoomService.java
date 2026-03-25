@@ -4,6 +4,7 @@ import com.duckchi.pay.domain.room.dto.request.CreateRoomRequest;
 import com.duckchi.pay.domain.room.dto.request.DelegateAdminRequest;
 import com.duckchi.pay.domain.room.dto.request.UpdateRoomRequest;
 import com.duckchi.pay.domain.room.dto.response.CreateRoomResponse;
+import com.duckchi.pay.domain.room.dto.response.GetAutoDebitConsentResponse;
 import com.duckchi.pay.domain.room.dto.response.RoomListResponse;
 import com.duckchi.pay.domain.room.dto.response.RoomMySetResponse;
 import com.duckchi.pay.domain.room.dto.response.RoomParticipantListResponse;
@@ -26,6 +27,8 @@ public interface RoomService {
             Long roomId,
             Long currentUserId
     );
+
+    GetAutoDebitConsentResponse getAutoDebitConsent(Long roomId, Long currentUserId);
 
     List<RoomListResponse> getRoomLists(Long currentUserId, Boolean isProgress);
 
