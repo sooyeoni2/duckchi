@@ -46,6 +46,7 @@ const RoomEditScreen: React.FC = () => {
         submitLabel="수정하기"
         onSubmit={handleSave}
         showInviteGuide={false}
+        roomNameEnabled={false}
       />
     </SafeAreaView>
   );

@@ -22,6 +22,7 @@ export const updateRoomInfo = async (roomId: number, data: { roomName: string; c
   const payload = {
     name: data.roomName,
     category: data.category,
+    description: data.description,
   };
   await axiosInstance.patch(`/api/v1/rooms/${roomId}`, payload);
 };
@@ -46,8 +47,8 @@ export const updateAutoDebitConsent = async (roomId: number, status: 'AGREED' | 
  * 모임 시작 (ROOM-17)
  * POST /api/v1/rooms/{roomId}/start
  */
-export const startMeetingRoom = async (roomId: number): Promise<void> => {
-  await axiosInstance.post(`/api/v1/rooms/${roomId}/start`);
+export const startMeetingRoom = async (roomId: number, data?: { category: string; description?: string }): Promise<void> => {
+  await axiosInstance.post(`/api/v1/rooms/${roomId}/start`, data);
 };
 
 /**
@@ -91,7 +92,27 @@ export interface RoomListResponse {
  * GET /api/v1/rooms/room-lists
  */
 export const getRoomLists = async (isProgress?: boolean): Promise<RoomListResponse[]> => {
-  const params = isProgress !== undefined ? { isProgress } : {};
-  const response = await axiosInstance.get('/api/v1/rooms/room-lists', { params });
+  const response = await axiosInstance.get('/api/v1/rooms/room-lists', {
+    params: isProgress !== undefined ? { isProgress } : {}
+  });
   return (response.data?.data || []) as RoomListResponse[];
+};
+
+export interface GetAutoDebitConsentResponse {
+  roomId: number;
+  userId: number;
+  role: string;
+  isAgreed: boolean;
+  agreedCount: number;
+  participantCount: number;
+  consentRate: number;
+}
+
+/**
+ * 자동이체 동의 상태 조회 (ROOM-20)
+ * GET /api/v1/rooms/{roomId}/auto-debit/consents
+ */
+export const getAutoDebitConsent = async (roomId: number): Promise<GetAutoDebitConsentResponse> => {
+  const response = await axiosInstance.get(`/api/v1/rooms/${roomId}/auto-debit/consents`);
+  return response.data?.data as GetAutoDebitConsentResponse;
 };
