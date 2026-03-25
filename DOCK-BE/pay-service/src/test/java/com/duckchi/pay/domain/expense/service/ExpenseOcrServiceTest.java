@@ -22,7 +22,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
@@ -42,7 +41,7 @@ class ExpenseOcrServiceTest {
     }
 
     @Test
-    @DisplayName("OCR 성공 응답을 결제 초안으로 변환함")
+    @DisplayName("OCR 성공 응답을 결제 초안으로 변환함 (Formatted 데이터 활용)")
     void analyzeReceiptSuccess() {
         String imageUrl = "https://s3.amazonaws.com/receipt.jpg";
 
@@ -52,8 +51,33 @@ class ExpenseOcrServiceTest {
 
         assertThat(result.getTitle()).isEqualTo("덕치정육식당");
         assertThat(result.getTotalAmount()).isEqualTo(150000);
+        // Formatted 데이터 (2026, 3, 18, 14, 15, 0) 기반 파싱 확인
         assertThat(result.getPaidAt()).isEqualTo(LocalDateTime.of(2026, 3, 18, 14, 15, 0));
         assertThat(result.getItems()).hasSize(2);
+    }
+
+    @Test
+    @DisplayName("날짜/시간 정보가 부족하면 paidAt은 null을 반환함")
+    void analyzeReceiptWithMissingDateTime() {
+        String imageUrl = "https://s3.amazonaws.com/receipt.jpg";
+        OcrResponse response = OcrResponse.builder()
+                .images(List.of(new OcrResponse.ImageResponse(
+                        "uid", "receipt", "SUCCESS", "ok",
+                        new OcrResponse.Receipt(new OcrResponse.Result(
+                                new OcrResponse.StoreInfo(new OcrResponse.TextInfo("식당")),
+                                new OcrResponse.PaymentInfo(null, null, null), // 날짜/시간 없음
+                                List.of(),
+                                new OcrResponse.PriceInfo(new OcrResponse.PriceDetails("10000", null))
+                        ))
+                )))
+                .build();
+
+        when(ocrClient.callReceiptOcr(eq("test-secret"), any())).thenReturn(response);
+
+        ExpenseOcrDraftResponse result = expenseOcrService.analyzeReceipt(imageUrl);
+
+        assertThat(result.getPaidAt()).isNull();
+        assertThat(result.getTotalAmount()).isEqualTo(10000);
     }
 
     @Test
@@ -111,23 +135,23 @@ class ExpenseOcrServiceTest {
                                 new OcrResponse.Result(
                                         new OcrResponse.StoreInfo(new OcrResponse.TextInfo("덕치정육식당")),
                                         new OcrResponse.PaymentInfo(
-                                                new OcrResponse.TextInfo("2026-03-18"),
-                                                new OcrResponse.TextInfo("14:15"),
+                                                new OcrResponse.DateInfo("2026-03-18", new OcrResponse.FormattedDate("2026", "03", "18")),
+                                                new OcrResponse.TimeInfo("14:15", new OcrResponse.FormattedTime("14", "15", "00")),
                                                 null
                                         ),
                                         List.of(new OcrResponse.SubResult(List.of(
                                                 new OcrResponse.Item(
                                                         new OcrResponse.TextInfo("삼겹살"),
                                                         new OcrResponse.TextInfo("2"),
-                                                        new OcrResponse.PriceInfo(new OcrResponse.PriceDetails("60000"))
+                                                        new OcrResponse.PriceInfo(new OcrResponse.PriceDetails("60000", new OcrResponse.FormattedValue("60000")))
                                                 ),
                                                 new OcrResponse.Item(
                                                         new OcrResponse.TextInfo("음료"),
                                                         new OcrResponse.TextInfo("5"),
-                                                        new OcrResponse.PriceInfo(new OcrResponse.PriceDetails("15000"))
+                                                        new OcrResponse.PriceInfo(new OcrResponse.PriceDetails("15000", new OcrResponse.FormattedValue("15000")))
                                                 )
                                         ))),
-                                        new OcrResponse.PriceInfo(new OcrResponse.PriceDetails("150000"))
+                                        new OcrResponse.PriceInfo(new OcrResponse.PriceDetails("150000", new OcrResponse.FormattedValue("150000")))
                                 )
                         )
                 )))
