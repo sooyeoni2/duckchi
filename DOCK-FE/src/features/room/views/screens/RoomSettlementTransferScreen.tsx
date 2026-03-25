@@ -20,18 +20,18 @@ import { FilledButton } from '@shared/components/buttons/FilledButton';
 
 import { usePaymentConfirmStore, type PaymentAction } from '../../models/paymentConfirmStore';
 import { useSettlementViewModel } from '../../viewmodels/useSettlementViewModel';
-import { SettlementCard } from './SettlementCard';
-import { SettlementTabHeader } from './SettlementTabHeader';
+import { SettlementCard } from '../components/SettlementCard';
+import { SettlementTabHeader } from '../components/SettlementTabHeader';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const s = SCREEN_WIDTH / 412;
 const CTA_HEIGHT = 60 * s;
 
-interface RoomSettlementTransferViewProps {
+interface RoomSettlementTransferScreenProps {
   onBack: () => void;
 }
 
-export function RoomSettlementTransferView({ onBack }: RoomSettlementTransferViewProps) {
+export function RoomSettlementTransferScreen({ onBack }: RoomSettlementTransferScreenProps) {
   const rootNavigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const {
     state,
