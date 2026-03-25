@@ -24,8 +24,10 @@ export function MeetingRoomRestartScreen() {
   const draft = getMeetingRoomRestartDraft(roomId);
 
   const [roomName, setRoomName] = useState(currentRoom?.roomName || draft.roomName);
-  const [detail, setDetail] = useState(draft.description);
-  const [selectedTag, setSelectedTag] = useState<MeetingRoomTag>(draft.category);
+  const [detail, setDetail] = useState(currentRoom?.description || draft.description);
+  const [selectedTag, setSelectedTag] = useState<MeetingRoomTag>(
+    (currentRoom?.category as MeetingRoomTag) || draft.category
+  );
 
   const { startRoom } = useRoomActionViewModel(roomId);
 

@@ -1,7 +1,8 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { create } from 'zustand';
 import type { MeetingRoomTag } from '../models/roomMockData';
 import { updateRoomInfo } from '../models/roomService';
+import { useRoomStore } from '../models/roomStore';
 import { Alert } from 'react-native';
 
 interface RoomEditState {
@@ -17,9 +18,9 @@ interface RoomEditStore {
 }
 
 const initialState: RoomEditState = {
-  name: 'C102 회식',
-  category: '회식',
-  detail: 'C102 뒷풀이',
+  name: '',
+  category: '기타' as MeetingRoomTag,
+  detail: '',
   isSaving: false,
 };
 
@@ -30,6 +31,18 @@ const useRoomEditStore = create<RoomEditStore>((set) => ({
 
 export const useRoomEditViewModel = (roomId: number) => {
   const { state, updateState } = useRoomEditStore();
+
+  useEffect(() => {
+    const rooms = useRoomStore.getState().rooms;
+    const room = rooms.find((r) => r.roomId === roomId);
+    if (room) {
+      updateState({
+        name: room.roomName,
+        category: room.category as MeetingRoomTag,
+        detail: room.description || '',
+      });
+    }
+  }, [roomId, updateState]);
 
   const setName = useCallback((name: string) => {
     updateState({ name });
@@ -57,6 +70,7 @@ export const useRoomEditViewModel = (roomId: number) => {
         category: state.category,
         description: state.detail 
       });
+      await useRoomStore.getState().fetchRooms();
       updateState({ isSaving: false });
       return true;
     } catch (error: any) {
