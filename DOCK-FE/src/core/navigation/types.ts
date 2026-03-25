@@ -1,3 +1,5 @@
+import type { NavigatorScreenParams } from '@react-navigation/native';
+
 export type RootStackParamList = {
   Onboarding: undefined;
   Auth: undefined;
@@ -37,6 +39,7 @@ export type RoomStackParamList = {
   RoomRestart: { roomId: number };
   RoomMoreOptions: { roomId: number };
   AutoTransferAgree: { roomId: number };
+  AutoTransferJoin: { roomId: number; roomName?: string };
   AdminDelegation: { roomId: number };
   RoomEdit: { roomId: number };
   SettlementRequestList: { roomId: number };
@@ -54,7 +57,7 @@ export type AuthStackParamList = {
 
 export type AppTabParamList = {
   Home: undefined;
-  Room: { screen: keyof RoomStackParamList } | undefined;
+  Room: NavigatorScreenParams<RoomStackParamList> | undefined;
   Report: undefined;
-  Profile: { screen: keyof ProfileStackParamList } | undefined;
+  Profile: NavigatorScreenParams<ProfileStackParamList> | undefined;
 };

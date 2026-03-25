@@ -1,5 +1,7 @@
 import { useCallback } from 'react';
 import { create } from 'zustand';
+import { Alert } from 'react-native';
+import { startMeetingRoom, endMeetingRoom, leaveMeetingRoom, deleteMeetingRoom } from '../models/roomService';
 
 interface RoomActionState {
   status: 'READY' | 'START' | 'END';
@@ -21,40 +23,64 @@ const useRoomActionStore = create<RoomActionStore>((set) => ({
   updateState: (partial) => set((store) => ({ state: { ...store.state, ...partial } })),
 }));
 
-export const useRoomActionViewModel = () => {
+export const useRoomActionViewModel = (roomId: number) => {
   const { state, updateState } = useRoomActionStore();
 
   const startRoom = useCallback(async () => {
-    updateState({ isProcessing: true });
-    // TODO: ROOM-17 API 연동 (POST /api/v1/rooms/{roomId}/start)
-    await new Promise<void>((resolve) => setTimeout(() => resolve(), 1000));
-    updateState({ status: 'START', isProcessing: false });
-    return true;
-  }, [updateState]);
+    try {
+      updateState({ isProcessing: true });
+      await startMeetingRoom(roomId);
+      updateState({ status: 'START', isProcessing: false });
+      return true;
+    } catch (e: any) {
+      updateState({ isProcessing: false });
+      Alert.alert('모임 시작 실패', e?.response?.data?.message || '알 수 없는 오류가 발생했습니다.');
+      console.error('Failed to start room:', e);
+      return false;
+    }
+  }, [roomId, updateState]);
 
   const endRoom = useCallback(async () => {
-    updateState({ isProcessing: true });
-    // TODO: ROOM-18 API 연동 (POST /api/v1/rooms/{roomId}/end)
-    await new Promise<void>((resolve) => setTimeout(() => resolve(), 1000));
-    updateState({ status: 'END', isProcessing: false });
-    return true;
-  }, [updateState]);
-
-  const deleteRoom = useCallback(async () => {
-    updateState({ isProcessing: true });
-    // TODO: ROOM-07 API 연동 (DELETE /api/v1/rooms/{roomId}/delete)
-    await new Promise<void>((resolve) => setTimeout(() => resolve(), 1000));
-    updateState({ isProcessing: false });
-    return true;
-  }, [updateState]);
+    try {
+      updateState({ isProcessing: true });
+      await endMeetingRoom(roomId);
+      updateState({ status: 'END', isProcessing: false });
+      return true;
+    } catch (e: any) {
+      updateState({ isProcessing: false });
+      Alert.alert('모임 종료 실패', e?.response?.data?.message || '알 수 없는 오류가 발생했습니다.');
+      console.error('Failed to end room:', e);
+      return false;
+    }
+  }, [roomId, updateState]);
 
   const leaveRoom = useCallback(async () => {
-    updateState({ isProcessing: true });
-    // TODO: ROOM-06 API 연동 (DELETE /api/v1/rooms/{roomId}/members/left)
-    await new Promise<void>((resolve) => setTimeout(() => resolve(), 1000));
-    updateState({ isProcessing: false });
-    return true;
-  }, [updateState]);
+    try {
+      updateState({ isProcessing: true });
+      await leaveMeetingRoom(roomId);
+      updateState({ isProcessing: false });
+      return true;
+    } catch (e: any) {
+      updateState({ isProcessing: false });
+      Alert.alert('방 나가기 실패', e?.response?.data?.message || '알 수 없는 오류가 발생했습니다.');
+      console.error('Failed to leave room:', e);
+      return false;
+    }
+  }, [roomId, updateState]);
+
+  const deleteRoom = useCallback(async () => {
+    try {
+      updateState({ isProcessing: true });
+      await deleteMeetingRoom(roomId);
+      updateState({ isProcessing: false });
+      return true;
+    } catch (e: any) {
+      updateState({ isProcessing: false });
+      Alert.alert('방 삭제 실패', e?.response?.data?.message || '알 수 없는 오류가 발생했습니다.');
+      console.error('Failed to delete room:', e);
+      return false;
+    }
+  }, [roomId, updateState]);
 
   return {
     state,

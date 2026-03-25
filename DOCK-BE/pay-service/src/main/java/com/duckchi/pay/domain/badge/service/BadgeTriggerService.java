@@ -44,16 +44,17 @@ public class BadgeTriggerService {
      * [ROOM_CREATED] 모임방 생성 시 트리거.
      * 관련 뱃지: ALLEY_BOSS (+1), INSSA_DUCK (+1)
      *
+     * @param roomId 생성된 방 ID (Outbox 중복 방지용 aggregateId)
      * @param userId 방을 생성한 유저 ID (방장)
      */
-    public void triggerRoomCreated(Long userId) {
+    public void triggerRoomCreated(Long roomId, Long userId) {
         BadgeCheckNotificationEvent event = BadgeCheckNotificationEvent.builder()
                 .userId(userId)
                 .eventType("ROOM_CREATED")
                 .occurredAt(LocalDateTime.now())
                 .build();
 
-        saveToOutboxSafely(event, "ROOM_CREATED", userId);
+        saveToOutboxSafely(event, "ROOM_CREATED", roomId);
     }
 
     /*
@@ -63,7 +64,7 @@ public class BadgeTriggerService {
      * 정산 생성 시각(createdAt)과 완료 시각(completedAt)의 차이를 계산하여
      * 각 뱃지 조건(1시간 이내, 48시간 초과, 새벽 시간대)을 자동 판별한다.
      */
-    public void triggerSettlementCompleted(Long payerUserId, int amount,
+    public void triggerSettlementCompleted(Long settlementId, Long payerUserId, int amount,
             LocalDateTime createdAt, LocalDateTime completedAt) {
         // 정산 생성~완료 사이의 시간차(초)를 계산
         long elapsedSeconds = Duration.between(createdAt, completedAt).getSeconds();
@@ -88,14 +89,14 @@ public class BadgeTriggerService {
                 .occurredAt(completedAt)
                 .build();
 
-        saveToOutboxSafely(event, "SETTLEMENT_COMPLETED", payerUserId);
+        saveToOutboxSafely(event, "SETTLEMENT_COMPLETED", settlementId);
     }
 
     /*
      * Kafka Outbox에 직접 호출할 수 있는 범용 메서드.
      * ExpenseServiceImpl의 EXPENSE_OCR_ADDED 등 외부에서도 사용한다.
      */
-    public void callBadgeCheckSafely(BadgeCheckRequest request, String eventType) {
+    public void callBadgeCheckSafely(Long domainId, BadgeCheckRequest request, String eventType) {
         BadgeCheckNotificationEvent event = BadgeCheckNotificationEvent.builder()
                 .userId(request.getUserId())
                 .eventType(eventType)
@@ -110,7 +111,7 @@ public class BadgeTriggerService {
                 .occurredAt(LocalDateTime.now())
                 .build();
 
-        saveToOutboxSafely(event, eventType, request.getUserId());
+        saveToOutboxSafely(event, eventType, domainId);
     }
 
     /*

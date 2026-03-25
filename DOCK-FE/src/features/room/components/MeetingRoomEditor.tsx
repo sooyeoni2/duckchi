@@ -60,7 +60,8 @@ export function MeetingRoomEditor({
             <CustomTextField
               value={roomName}
               hint="모임 이름"
-              onChangeText={(text) => onRoomNameChange(text.slice(0, 20))}
+              onChangeText={onRoomNameChange}
+              maxLength={20}
               borderRadius={12}
               style={styles.input}
             />
