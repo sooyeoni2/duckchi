@@ -1,20 +1,20 @@
 import { useCallback } from 'react';
 import { create } from 'zustand';
-
 import { RoomActionType } from '../views/components/RoomActionConfirmBottomSheet';
+import { getAutoDebitConsent } from '../models/roomService';
+import { useRoomStore } from '../models/roomStore';
 
-// TODO: 나중에 모델과 API 연결 시 models/roomTypes.ts 로 분리할 타입입니다.
-export interface RoomDetailMock {
+export interface RoomDetailState {
   title: string;
   category: string;
   memberCount: number;
   status: 'READY' | 'START' | 'END';
-  inviteLink: string;
   isAdmin: boolean;
+  isLoading: boolean;
 }
 
 interface RoomMoreOptionsState {
-  roomInfo: RoomDetailMock;
+  roomInfo: RoomDetailState;
   isInviteModalVisible: boolean;
   activeActionType: RoomActionType | null;
   isActionModalVisible: boolean;
@@ -25,15 +25,14 @@ interface RoomMoreOptionsStore {
   updateState: (partial: Partial<RoomMoreOptionsState>) => void;
 }
 
-// 목업 데이터 초기화
 const initialState: RoomMoreOptionsState = {
   roomInfo: {
-    title: 'C102 회식',
-    category: '회식',
-    memberCount: 6,
+    title: '모임방',
+    category: '기타',
+    memberCount: 0,
     status: 'READY',
-    inviteLink: 'https://duckchi.com/invite/c102',
-    isAdmin: true, // 목업 사용자 방장 설정
+    isAdmin: false,
+    isLoading: false,
   },
   isInviteModalVisible: false,
   activeActionType: null,
@@ -45,8 +44,33 @@ const useRoomMoreOptionsStore = create<RoomMoreOptionsStore>((set) => ({
   updateState: (partial) => set((store) => ({ state: { ...store.state, ...partial } })),
 }));
 
-export const useRoomMoreOptionsViewModel = () => {
+export const useRoomMoreOptionsViewModel = (roomId: number) => {
   const { state, updateState } = useRoomMoreOptionsStore();
+
+  const fetchRoomInfo = useCallback(async () => {
+    if (!roomId) return;
+    try {
+      updateState({ roomInfo: { ...state.roomInfo, isLoading: true } });
+      const consentRes = await getAutoDebitConsent(roomId);
+      
+      const currentRooms = (useRoomStore as any).getState().rooms;
+      const currentRoomFromStore = (currentRooms as any[]).find((r: any) => r.roomId === roomId);
+
+      updateState({
+        roomInfo: {
+          title: currentRoomFromStore?.roomName || '모임방',
+          category: currentRoomFromStore?.category || '기타',
+          memberCount: consentRes.participantCount,
+          status: currentRoomFromStore?.status === 'STARTED' ? 'START' : 'READY',
+          isAdmin: consentRes.role === 'ADMIN',
+          isLoading: false,
+        }
+      });
+    } catch (e) {
+      console.error('Failed to fetch room info in more options', e);
+      updateState({ roomInfo: { ...state.roomInfo, isLoading: false } });
+    }
+  }, [roomId, state.roomInfo, updateState]);
 
   const openInviteModal = useCallback(() => {
     updateState({ isInviteModalVisible: true });
@@ -66,6 +90,7 @@ export const useRoomMoreOptionsViewModel = () => {
 
   return { 
     state, 
+    fetchRoomInfo,
     openInviteModal, 
     closeInviteModal,
     openActionModal,

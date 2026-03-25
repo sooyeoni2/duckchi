@@ -623,7 +623,13 @@ public class RoomServiceImpl implements RoomService {
         RoomParticipant participant = roomParticipantRepository.findByRoom_IdAndUserId(roomId, currentUserId)
                 .orElseThrow(() -> new CustomException(ErrorCode.ROOM_MEMBER_ONLY));
 
-        if (participant.isAdmin()) {
+        long participantCount = roomParticipantRepository.countByRoom_Id(roomId);
+
+        // 마지막 인원이면 방을 삭제한다.
+        if (participantCount <= 1) {
+            room.deleteRoom();
+        } else if (participant.isAdmin()) {
+            // 다른 사람이 남아있는데 방장이 나가려면 위임이 필요하다.
             throw new CustomException(ErrorCode.ROOM_ADMIN_DELEGATION_REQUIRED);
         }
 

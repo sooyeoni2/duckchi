@@ -1,8 +1,8 @@
 import React from 'react';
-import { View, StyleSheet, ScrollView, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, StyleSheet, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { SafeAreaView, Edges } from 'react-native-safe-area-context';
 import { AppColorStyles } from '@core/theme/colors';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 import type { RoomStackParamList } from '@core/navigation/types';
 import { CustomAppBar } from '@shared/components/app_bar/CustomAppBar';
@@ -21,13 +21,19 @@ const RoomMoreOptionsScreen: React.FC = () => {
   const route = useRoute<Route>();
   const { roomId } = route.params;
   
-  const { state, openInviteModal, closeInviteModal, openActionModal, closeActionModal } = useRoomMoreOptionsViewModel();
+  const { state, fetchRoomInfo, openInviteModal, closeInviteModal, openActionModal, closeActionModal } = useRoomMoreOptionsViewModel(roomId);
   const { roomInfo, isInviteModalVisible, activeActionType, isActionModalVisible } = state;
+
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchRoomInfo();
+    }, [fetchRoomInfo])
+  );
 
   const { state: actionState, startRoom, endRoom, deleteRoom, leaveRoom } = useRoomActionViewModel(roomId);
 
   // 팀 공용 MeetingRoomLinkSheet에서 사용할 초대 링크 Mock
-  const inviteLink = getMeetingRoomInviteLinkMock(1);
+  const inviteLink = getMeetingRoomInviteLinkMock(roomId);
 
   // 미완료 정산 Mock 제거 (실제 연동 시 서버 데이터로 교체 예정)
   const pendingSettlement: PendingSettlement | undefined = undefined;
@@ -53,13 +59,21 @@ const RoomMoreOptionsScreen: React.FC = () => {
     if (success) {
       closeActionModal();
       if (activeActionType === 'DELETE' || activeActionType === 'LEAVE') {
-        navigation.navigate('Home');
+        navigation.navigate('Room', { screen: 'RoomList' });
       }
     }
   };
 
+  if (roomInfo.isLoading) {
+    return (
+      <SafeAreaView style={styles.centered} edges={['top', 'bottom'] as Edges}>
+        <ActivityIndicator size="large" color={AppColorStyles.yellow} />
+      </SafeAreaView>
+    );
+  }
+
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom'] as const}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom'] as Edges}>
       {/* 공용 AppBar 컴포넌트 사용 */}
       <CustomAppBar
         showDivider
@@ -77,7 +91,7 @@ const RoomMoreOptionsScreen: React.FC = () => {
           <RoomMenuItem title="N빵 룰렛" />
           <RoomMenuItem 
             title="자동이체 동의" 
-            onPress={() => navigation.navigate('AutoTransferAgree')}
+            onPress={() => navigation.navigate('AutoTransferAgree', { roomId, roomName: roomInfo.title })}
           />
           
           {roomInfo.isAdmin && (
@@ -157,6 +171,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: AppColorStyles.divider,
     overflow: 'hidden',
+  },
+  centered: {
+    flex: 1,
+    backgroundColor: AppColorStyles.background,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 

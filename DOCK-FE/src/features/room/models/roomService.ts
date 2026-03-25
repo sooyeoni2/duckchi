@@ -91,7 +91,27 @@ export interface RoomListResponse {
  * GET /api/v1/rooms/room-lists
  */
 export const getRoomLists = async (isProgress?: boolean): Promise<RoomListResponse[]> => {
-  const params = isProgress !== undefined ? { isProgress } : {};
-  const response = await axiosInstance.get('/api/v1/rooms/room-lists', { params });
+  const response = await axiosInstance.get('/api/v1/rooms/room-lists', {
+    params: isProgress !== undefined ? { isProgress } : {}
+  });
   return (response.data?.data || []) as RoomListResponse[];
+};
+
+export interface GetAutoDebitConsentResponse {
+  roomId: number;
+  userId: number;
+  role: string;
+  isAgreed: boolean;
+  agreedCount: number;
+  participantCount: number;
+  consentRate: number;
+}
+
+/**
+ * 자동이체 동의 상태 조회 (ROOM-20)
+ * GET /api/v1/rooms/{roomId}/auto-debit/consents
+ */
+export const getAutoDebitConsent = async (roomId: number): Promise<GetAutoDebitConsentResponse> => {
+  const response = await axiosInstance.get(`/api/v1/rooms/${roomId}/auto-debit/consents`);
+  return response.data?.data as GetAutoDebitConsentResponse;
 };
