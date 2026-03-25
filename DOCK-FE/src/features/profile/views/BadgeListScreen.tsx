@@ -75,7 +75,9 @@ export function BadgeListScreen() {
     );
   }
 
-  const { acquiredBadges, lockedBadges } = state.data;
+  const { acquiredBadges } = state.data;
+  const acquiredIds = new Set(acquiredBadges.map(b => b.id));
+  const lockedBadges = state.data.lockedBadges.filter(b => !acquiredIds.has(b.id));
   const acquiredCount = acquiredBadges.length;
   const totalCount = acquiredCount + lockedBadges.length;
   const progress = totalCount > 0 ? acquiredCount / totalCount : 0;
