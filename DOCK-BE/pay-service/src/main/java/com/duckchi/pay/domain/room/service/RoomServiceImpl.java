@@ -17,6 +17,7 @@ import com.duckchi.pay.domain.room.dto.request.DelegateAdminRequest;
 import com.duckchi.pay.domain.room.dto.request.StartRoomRequest;
 import com.duckchi.pay.domain.room.dto.request.UpdateRoomRequest;
 import com.duckchi.pay.domain.room.dto.response.CreateRoomResponse;
+import com.duckchi.pay.domain.room.dto.response.GetAutoDebitConsentResponse;
 import com.duckchi.pay.domain.room.dto.response.RoomListResponse;
 import com.duckchi.pay.domain.room.dto.response.RoomMySetItemResponse;
 import com.duckchi.pay.domain.room.dto.response.RoomMySetResponse;
@@ -169,6 +170,42 @@ public class RoomServiceImpl implements RoomService {
                 .userId(currentUserId)
                 .role(participant.isAdmin() ? "ADMIN" : "MEMBER")
                 .isAgreed(participant.isAgreed())
+                .build();
+    }
+
+    @Override
+    public GetAutoDebitConsentResponse getAutoDebitConsent(Long roomId, Long currentUserId) {
+        if (currentUserId == null) {
+            throw new CustomException(ErrorCode.COMMON_UNAUTHORIZED);
+        }
+
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
+
+        if (room.getDeletedAt() != null) {
+            throw new CustomException(ErrorCode.ROOM_NOT_FOUND);
+        }
+
+        // ROOM-20은 "본인이 속한 방의 본인 상태"만 조회하도록 고정해 홈 진입 시 상태 복원 기준을 일관되게 유지한다.
+        RoomParticipant participant = roomParticipantRepository.findByRoom_IdAndUserId(roomId, currentUserId)
+                .orElseThrow(() -> new CustomException(
+                        "해당 모임의 멤버만 자동이체 동의 상태를 조회할 수 있습니다.",
+                        ErrorCode.ROOM_MEMBER_ONLY));
+
+        long participantCount = roomParticipantRepository.countByRoom_Id(roomId);
+        long agreedCount = roomParticipantRepository.countByRoom_IdAndIsAgreedTrue(roomId);
+
+        // 동의율은 FE에서 즉시 배지/문구에 사용하므로 별도 후처리 없이 정수 퍼센트 값으로 바로 내려준다.
+        int consentRate = participantCount == 0 ? 0 : safeLongToInt((agreedCount * 100) / participantCount);
+
+        return GetAutoDebitConsentResponse.builder()
+                .roomId(roomId)
+                .userId(currentUserId)
+                .role(participant.isAdmin() ? "ADMIN" : "MEMBER")
+                .isAgreed(participant.isAgreed())
+                .agreedCount(safeLongToInt(agreedCount))
+                .participantCount(safeLongToInt(participantCount))
+                .consentRate(consentRate)
                 .build();
     }
 
