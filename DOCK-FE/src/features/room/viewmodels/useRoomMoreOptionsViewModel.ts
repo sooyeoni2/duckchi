@@ -11,6 +11,7 @@ export interface RoomDetailState {
   status: 'READY' | 'START' | 'END';
   isAdmin: boolean;
   isLoading: boolean;
+  totalPay: number;
 }
 
 interface RoomMoreOptionsState {
@@ -33,6 +34,7 @@ const initialState: RoomMoreOptionsState = {
     status: 'READY',
     isAdmin: false,
     isLoading: false,
+    totalPay: 0,
   },
   isInviteModalVisible: false,
   activeActionType: null,
@@ -50,7 +52,8 @@ export const useRoomMoreOptionsViewModel = (roomId: number) => {
   const fetchRoomInfo = useCallback(async () => {
     if (!roomId) return;
     try {
-      updateState({ roomInfo: { ...state.roomInfo, isLoading: true } });
+      const currentRoomInfo = useRoomMoreOptionsStore.getState().state.roomInfo;
+      updateState({ roomInfo: { ...currentRoomInfo, isLoading: true } });
       const consentRes = await getAutoDebitConsent(roomId);
       
       const currentRooms = (useRoomStore as any).getState().rooms;
@@ -64,13 +67,15 @@ export const useRoomMoreOptionsViewModel = (roomId: number) => {
           status: currentRoomFromStore?.status === 'STARTED' ? 'START' : 'READY',
           isAdmin: consentRes.role === 'ADMIN',
           isLoading: false,
+          totalPay: currentRoomFromStore?.totalPay || 0,
         }
       });
     } catch (e) {
       console.error('Failed to fetch room info in more options', e);
-      updateState({ roomInfo: { ...state.roomInfo, isLoading: false } });
+      const currentRoomInfo = useRoomMoreOptionsStore.getState().state.roomInfo;
+      updateState({ roomInfo: { ...currentRoomInfo, isLoading: false } });
     }
-  }, [roomId, state.roomInfo, updateState]);
+  }, [roomId, updateState]);
 
   const openInviteModal = useCallback(() => {
     updateState({ isInviteModalVisible: true });

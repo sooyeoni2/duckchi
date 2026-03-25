@@ -32,6 +32,7 @@ interface MeetingRoomEditorProps {
   submitLabel: string;
   onSubmit: () => void;
   showInviteGuide?: boolean;
+  roomNameEnabled?: boolean;
 }
 
 export function MeetingRoomEditor({
@@ -44,6 +45,7 @@ export function MeetingRoomEditor({
   submitLabel,
   onSubmit,
   showInviteGuide = false,
+  roomNameEnabled = true,
 }: MeetingRoomEditorProps) {
   const canSubmit = roomName.trim().length > 0;
 
@@ -64,6 +66,7 @@ export function MeetingRoomEditor({
               maxLength={20}
               borderRadius={12}
               style={styles.input}
+              enabled={roomNameEnabled}
             />
             <Text style={styles.counterText}>{roomName.length}/20</Text>
           </View>

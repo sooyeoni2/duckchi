@@ -51,7 +51,24 @@ const RoomMoreOptionsScreen: React.FC = () => {
     let success = false;
     switch (activeActionType) {
       case 'START': success = await startRoom(); break;
-      case 'END': success = await endRoom(); break;
+      case 'END': 
+        if (roomInfo.totalPay > 0) {
+          closeActionModal();
+          Alert.alert(
+            '정산 필요',
+            '미완료된 정산 내역이 있습니다. 정산하기 화면으로 이동하시겠습니까?',
+            [
+              { text: '취소', style: 'cancel' },
+              { 
+                text: '정산하기', 
+                onPress: () => navigation.navigate('RoomDetail', { roomId, showTransfer: true }) 
+              },
+            ]
+          );
+          return;
+        }
+        success = await endRoom(); 
+        break;
       case 'DELETE': success = await deleteRoom(); break;
       case 'LEAVE': success = await leaveRoom(); break;
     }
@@ -103,8 +120,22 @@ const RoomMoreOptionsScreen: React.FC = () => {
           
           <RoomMenuItem 
             title="모임방 수정" 
-            onPress={() => navigation.navigate('RoomEdit')}
+            onPress={() => navigation.navigate('RoomEdit', { roomId })}
           />
+
+          {roomInfo.status === 'START' ? (
+            <RoomMenuItem 
+              title="종료하기" 
+              textColor={AppColorStyles.warning}
+              onPress={() => openActionModal('END')}
+            />
+          ) : (
+            <RoomMenuItem 
+              title="시작하기" 
+              textColor="#0055FF"
+              onPress={() => navigation.navigate('RoomRestart', { roomId })}
+            />
+          )}
           
           {/* 삭제: danger 색상으로 메뉴 텍스트만 시각 구분 */}
           {roomInfo.isAdmin && (

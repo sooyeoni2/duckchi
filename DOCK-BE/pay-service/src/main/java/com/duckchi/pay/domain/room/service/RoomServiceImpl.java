@@ -600,6 +600,7 @@ public class RoomServiceImpl implements RoomService {
         }
 
         room.updateRoomInfo(request.getName(), request.getCategory());
+        room.updateRoomDetails(request.getCategory(), request.getDescription());
     }
 
     @Override
@@ -726,10 +727,12 @@ public class RoomServiceImpl implements RoomService {
                 .occurredAt(LocalDateTime.now())
                 .build();
         //outboxEventCommandService 호출
+        // aggregate_id는 Kafka 파티셔닝을 위해 roomId를 유지하되, 
+        // DB 유니크 제약 조건을 피하기 위해 event_type 컬럼에 sessionId를 포함시킨다.
         outboxEventCommandService.save(
                 "ROOM",
                 room.getId(),
-                "ROOM_STARTED",
+                "ROOM_STARTED_" + session.getId(),
                 KafkaTopicNames.ROOM_LIFECYCLE_NOTIFICATION_EVENT,
                 event
         );
@@ -794,10 +797,12 @@ public class RoomServiceImpl implements RoomService {
                 .occurredAt(LocalDateTime.now())
                 .build();
         //outboxEventCommandService 호출
+        // aggregate_id는 Kafka 파티셔닝을 위해 roomId를 유지하되, 
+        // DB 유니크 제약 조건을 피하기 위해 event_type 컬럼에 sessionId를 포함시킨다.
         outboxEventCommandService.save(
                 "ROOM",
                 room.getId(),
-                "ROOM_ENDED",
+                "ROOM_ENDED_" + (activeSession != null ? activeSession.getId() : System.currentTimeMillis()),
                 KafkaTopicNames.ROOM_LIFECYCLE_NOTIFICATION_EVENT,
                 event
         );

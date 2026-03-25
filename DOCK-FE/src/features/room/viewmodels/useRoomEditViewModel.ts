@@ -52,7 +52,11 @@ export const useRoomEditViewModel = (roomId: number) => {
     try {
       updateState({ isSaving: true });
       // TODO: 실제로 백엔드로 detail, category 등도 보내야할 수 있지만 현재 백엔드(ROOM-05) 스펙 확인 필요
-      await updateRoomInfo(roomId, { roomName: state.name });
+      await updateRoomInfo(roomId, { 
+        roomName: state.name,
+        category: state.category,
+        description: state.detail 
+      });
       updateState({ isSaving: false });
       return true;
     } catch (error: any) {
@@ -61,7 +65,7 @@ export const useRoomEditViewModel = (roomId: number) => {
       console.error('Failed to update room:', error);
       return false;
     }
-  }, [roomId, state.name, updateState]);
+  }, [roomId, state.name, state.category, state.detail, updateState]);
 
   return {
     state,

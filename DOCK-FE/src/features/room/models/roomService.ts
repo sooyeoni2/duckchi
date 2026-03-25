@@ -22,6 +22,7 @@ export const updateRoomInfo = async (roomId: number, data: { roomName: string; c
   const payload = {
     name: data.roomName,
     category: data.category,
+    description: data.description,
   };
   await axiosInstance.patch(`/api/v1/rooms/${roomId}`, payload);
 };
@@ -46,8 +47,8 @@ export const updateAutoDebitConsent = async (roomId: number, status: 'AGREED' | 
  * 모임 시작 (ROOM-17)
  * POST /api/v1/rooms/{roomId}/start
  */
-export const startMeetingRoom = async (roomId: number): Promise<void> => {
-  await axiosInstance.post(`/api/v1/rooms/${roomId}/start`);
+export const startMeetingRoom = async (roomId: number, data?: { category: string; description?: string }): Promise<void> => {
+  await axiosInstance.post(`/api/v1/rooms/${roomId}/start`, data);
 };
 
 /**
