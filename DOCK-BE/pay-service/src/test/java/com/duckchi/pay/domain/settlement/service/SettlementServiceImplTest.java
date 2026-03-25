@@ -26,6 +26,7 @@ import com.duckchi.pay.domain.settlement.entity.Settlement;
 import com.duckchi.pay.domain.settlement.repository.SettlementRepository;
 import com.duckchi.pay.global.error.CustomException;
 import com.duckchi.pay.global.error.ErrorCode;
+import com.duckchi.pay.infra.kafka.service.OutboxEventCommandService;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -57,6 +58,9 @@ class SettlementServiceImplTest {
 
     @Mock
     private SettlementTransferExecutor settlementTransferExecutor;
+
+    @Mock
+    private OutboxEventCommandService outboxEventCommandService;
 
     @InjectMocks
     private SettlementServiceImpl settlementService;

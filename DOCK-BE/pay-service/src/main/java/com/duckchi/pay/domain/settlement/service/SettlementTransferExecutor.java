@@ -3,6 +3,7 @@ package com.duckchi.pay.domain.settlement.service;
 import com.duckchi.pay.domain.expense.dto.external.UserFinanceProfileResponse;
 import com.duckchi.pay.domain.expense.entity.Expense;
 import com.duckchi.pay.domain.expense.repository.ExpenseRepository;
+import com.duckchi.pay.domain.settlement.dto.event.ExpenseSettledNotificationEvent;
 import com.duckchi.pay.domain.settlement.entity.Settlement;
 import com.duckchi.pay.domain.settlement.repository.SettlementRepository;
 import com.duckchi.pay.global.error.CustomException;
@@ -15,6 +16,9 @@ import com.duckchi.pay.infra.finance.dto.request.TransferRequest;
 import com.duckchi.pay.infra.finance.dto.response.FinanceResponseHeader;
 import com.duckchi.pay.infra.finance.dto.response.TransferResponse;
 import java.time.LocalDateTime;
+
+import com.duckchi.pay.infra.kafka.service.OutboxEventCommandService;
+import com.duckchi.pay.infra.kafka.type.KafkaTopicNames;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,6 +41,7 @@ public class SettlementTransferExecutor {
     private final CoreClient coreClient;
     private final FinanceClient financeClient;
     private final SettlementTransferIdempotencyService settlementTransferIdempotencyService;
+    private final OutboxEventCommandService outboxEventCommandService;
 
     @Value("${finance.api.key:test-key}")
     private String financeApiKey;
@@ -167,5 +172,21 @@ public class SettlementTransferExecutor {
         Expense expense = expenseRepository.findByIdForUpdate(expenseId)
                 .orElseThrow(() -> new CustomException(ErrorCode.SETTLEMENT_EXPENSE_NOT_FOUND));
         expense.markSettled();
+
+        //Event 만들기
+        ExpenseSettledNotificationEvent event = ExpenseSettledNotificationEvent.builder()
+                .expenseId(expense.getId())
+                .expenseTitle(expense.getTitle())
+                .payerUserId(expense.getPayerUserId())
+                .occurredAt(LocalDateTime.now())
+                .build();
+        //outboxEventCommandService 호출
+        outboxEventCommandService.save(
+          "EXPENSE",
+                expense.getId(),
+                "EXPENSE_SETTLED",
+                KafkaTopicNames.EXPENSE_SETTLED_NOTIFICATION_EVENT,
+                event
+        );
     }
 }
