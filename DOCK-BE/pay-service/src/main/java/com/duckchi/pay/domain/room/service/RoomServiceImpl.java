@@ -533,6 +533,7 @@ public class RoomServiceImpl implements RoomService {
                 .roomId(room.getId())
                 .roomName(room.getName())
                 .category(room.getCategory())
+                .description(room.getDescription())
                 .isProgress(room.isProgress())
                 .participants(participants)
                 .participantCount(participants.size())

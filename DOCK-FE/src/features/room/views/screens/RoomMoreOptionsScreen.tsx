@@ -118,24 +118,15 @@ const RoomMoreOptionsScreen: React.FC = () => {
             />
           )}
           
-          <RoomMenuItem 
-            title="모임방 수정" 
-            onPress={() => navigation.navigate('RoomEdit', { roomId })}
-          />
-
-          {roomInfo.status === 'START' ? (
+          {roomInfo.isAdmin && (
             <RoomMenuItem 
-              title="종료하기" 
-              textColor={AppColorStyles.warning}
-              onPress={() => openActionModal('END')}
-            />
-          ) : (
-            <RoomMenuItem 
-              title="시작하기" 
-              textColor="#0055FF"
-              onPress={() => navigation.navigate('RoomRestart', { roomId })}
+              title="모임방 수정" 
+              onPress={() => navigation.navigate('RoomEdit', { roomId })}
             />
           )}
+
+          
+          {/* 시작하기/종료하기 버튼은 사용자의 요청에 따라 더보기 메뉴에서 제거됨 */}
           
           {/* 삭제: danger 색상으로 메뉴 텍스트만 시각 구분 */}
           {roomInfo.isAdmin && (
