@@ -59,10 +59,14 @@ export async function fetchOcrAnalysisApi(imageUrl: string) {
 }
 
 /**
- * 🛠 [임시 테스트용] 실제 방 연결 전까지 roomId를 1로 고정
+ * roomId가 문자열로 넘어오는 케이스를 숫자로 정규화해 API 경로를 안정적으로 맞춘다.
  */
 function getEffectiveRoomId(roomId: number | string): number {
-  return 1; // 어떤 방을 누르든 1번 방으로 고정
+  const parsed = typeof roomId === 'string' ? Number(roomId) : roomId;
+  if (Number.isNaN(parsed) || parsed <= 0) {
+    throw new Error('유효하지 않은 모임방 ID입니다.');
+  }
+  return parsed;
 }
 
 /**

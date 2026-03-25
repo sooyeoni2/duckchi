@@ -26,12 +26,9 @@ import {
 import { getExpenseDetail } from '../../payment/models/paymentService';
 import { PaymentEntryMethodTabs } from '../../payment/views/components/PaymentEntryMethodTabs';
 import type { PaymentTabContentHandle } from '../../payment/views/components/PaymentTabContent';
-import {
-  roomParticipatedPaymentsMock,
-  roomSettlementRequestsMock,
-} from '../models/roomDetailMockData';
 import { meetingRoomMockData } from '../models/roomMockData';
 import { useRoomStore } from '../models/roomStore';
+import { useRoomSettlementOverviewViewModel } from '../viewmodels/useRoomSettlementOverviewViewModel';
 import { RoomPaymentTabScreen } from './screens/RoomPaymentTabScreen';
 import { RoomRankingTabScreen } from './screens/RoomRankingTabScreen';
 import type { SettlementDetailState } from './screens/RoomSettlementDetailScreen';
@@ -69,23 +66,20 @@ export function RoomScreen() {
     useState<SettlementDetailState>({
       status: 'idle',
     });
-  const [settlementRefreshing, setSettlementRefreshing] = useState(false);
-
-  const handleSettlementRefresh = React.useCallback(async () => {
-    setSettlementRefreshing(true);
-    // TODO: 실제 API 연동 시 여기서 데이터 재요청
-    await new Promise<void>((resolve) => setTimeout(resolve, 500));
-    setSettlementRefreshing(false);
-  }, []);
+  const {
+    state: settlementOverviewState,
+    overviewData: settlementOverviewData,
+    isRefreshing: settlementRefreshing,
+    refresh: handleSettlementRefresh,
+  } = useRoomSettlementOverviewViewModel(route.params.roomId);
   const rooms = useRoomStore((state) => state.rooms);
   const room =
     rooms.find((item) => item.roomId === route.params.roomId) ??
     meetingRoomMockData[0];
 
-  const expectedAmount =
-    room != null ? Math.round(room.totalPay / Math.max(room.memberCount, 1)) : 0;
-  const participatedPayments = roomParticipatedPaymentsMock[room.roomId] ?? [];
-  const settlementRequests = roomSettlementRequestsMock[room.roomId] ?? [];
+  const expectedAmount = settlementOverviewData.expectedAmount;
+  const participatedPayments = settlementOverviewData.participatedPayments;
+  const settlementRequests = settlementOverviewData.settlementRequests;
   const selectedRoomTabIndex = ROOM_TABS.findIndex(
     (tab) => tab.key === selectedRoomTab,
   );
@@ -98,7 +92,8 @@ export function RoomScreen() {
 
     let cancelled = false;
 
-    void getExpenseDetail(settlementDetailState.expenseId)
+    // 상세 조회는 선택한 모임의 expense로 고정해 잘못된 방 상세가 열리지 않게 한다.
+    void getExpenseDetail(settlementDetailState.expenseId, route.params.roomId)
       .then((detail) => {
         if (cancelled) {
           return;
@@ -128,7 +123,7 @@ export function RoomScreen() {
     return () => {
       cancelled = true;
     };
-  }, [settlementDetailState]);
+  }, [route.params.roomId, settlementDetailState]);
 
   const handleSelectRoomTab = React.useCallback(
     (nextTab: RoomMainTab) => {
@@ -192,10 +187,17 @@ export function RoomScreen() {
     }
   }, [isSettlementDetailOpen, navigation, selectedRoomTab]);
 
+  const handleRetrySettlementDetail = React.useCallback((expenseId: number) => {
+    setSettlementDetailState({
+      status: 'loading',
+      expenseId,
+    });
+  }, []);
+
   if (viewMode === 'TRANSFER') {
     return (
       <RoomSettlementTransferScreen
-        roomId={room.roomId}
+        roomId={route.params.roomId}
         onBack={() => setViewMode('SUMMARY')}
       />
     );
@@ -213,12 +215,6 @@ export function RoomScreen() {
   const showRoomActions =
     !shouldUseSettlementDetailAppBar &&
     (selectedRoomTab !== 'PAYMENT' || paymentLayoutState.showRoomActions);
-  const handleRetrySettlementDetail = React.useCallback((expenseId: number) => {
-    setSettlementDetailState({
-      status: 'loading',
-      expenseId,
-    });
-  }, []);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -237,7 +233,7 @@ export function RoomScreen() {
                   style={styles.moreButton}
                   activeOpacity={0.8}
                   onPress={() =>
-                    navigation.navigate('RoomMoreOptions', { roomId: room.roomId })
+                    navigation.navigate('RoomMoreOptions', { roomId: route.params.roomId })
                   }
                 >
                   <MaterialDesignIcons
@@ -295,7 +291,7 @@ export function RoomScreen() {
 
       {selectedRoomTab === 'PAYMENT' ? (
         <RoomPaymentTabScreen
-          roomId={room.roomId}
+          roomId={route.params.roomId}
           paymentTabRef={paymentTabRef}
           onLayoutChange={setPaymentLayoutState}
         />
@@ -304,8 +300,13 @@ export function RoomScreen() {
           isSettlementDetailOpen={isSettlementDetailOpen}
           settlementDetailState={settlementDetailState}
           settlementRefreshing={settlementRefreshing}
+          settlementOverviewErrorMessage={
+            settlementOverviewState.status === 'error'
+              ? settlementOverviewState.message
+              : undefined
+          }
           expectedAmount={expectedAmount}
-          totalAmount={room?.totalPay ?? 0}
+          totalAmount={settlementOverviewData.totalAmount}
           participatedPayments={participatedPayments}
           settlementRequests={settlementRequests}
           onRefresh={handleSettlementRefresh}
