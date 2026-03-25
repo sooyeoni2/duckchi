@@ -2,12 +2,11 @@ import { MaterialCommunityIcons as MaterialDesignIcons } from '@expo/vector-icon
 import { useNavigation } from '@react-navigation/native';
 import type { CompositeNavigationProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   View,
 } from 'react-native';
@@ -21,7 +20,6 @@ import { usePopOnTabBlur } from '../../../shared/hooks/usePopOnTabBlur';
 import { logout as logoutService } from '../../auth/models/authService';
 import { useAuthStore } from '../../auth/models/authStore';
 import { useProfileViewModel } from '../viewmodels/useProfileViewModel';
-import { updateNotification } from '../models/notificationService';
 
 type Nav = CompositeNavigationProp<
   NativeStackNavigationProp<ProfileStackParamList>,
@@ -64,22 +62,7 @@ function RowDivider() {
 export function SettingsScreen() {
   const navigation = useNavigation<Nav>();
   const clearAuth = useAuthStore(s => s.clear);
-  const { state, reset: resetProfile, updateNotificationEnabled } = useProfileViewModel();
-  const [notificationEnabled, setNotificationEnabled] = useState(
-    state.status === 'loaded' ? state.profile.notificationEnabled : true,
-  );
-
-  useEffect(() => {
-    if (state.status === 'loaded') {
-      setNotificationEnabled(state.profile.notificationEnabled);
-    }
-  }, [state.status]);
-
-  const handleNotificationToggle = async (value: boolean) => {
-    setNotificationEnabled(value);
-    updateNotificationEnabled(value);
-    await updateNotification(value);
-  };
+  const { state, reset: resetProfile } = useProfileViewModel();
 
   const handleLogout = async () => {
     try {
@@ -123,23 +106,6 @@ export function SettingsScreen() {
           <SettingsRow label="대표 계좌 설정" onPress={handleAccountSetupPress} />
           <RowDivider />
           <SettingsRow label="자동이체 한도 변경" onPress={() => navigation.navigate('TransferLimit')} />
-        </View>
-
-        {/* 알림 */}
-        <SectionLabel title="알림" />
-        <View style={styles.card}>
-          <SettingsRow
-            label="알림 설정"
-            right={
-              <Switch
-                value={notificationEnabled}
-                onValueChange={handleNotificationToggle}
-                trackColor={{ false: AppColorStyles.gray3, true: AppColorStyles.gray1 }}
-                thumbColor={AppColorStyles.white}
-                style={{ alignSelf: 'center' }}
-              />
-            }
-          />
         </View>
 
         {/* 앱 정보 */}
