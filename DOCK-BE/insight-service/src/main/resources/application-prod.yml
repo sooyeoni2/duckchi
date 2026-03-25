@@ -28,3 +28,23 @@ springdoc:
   swagger-ui:
     config-url: /api/analytics/v3/api-docs/swagger-config
     url: /api/analytics/v3/api-docs
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        "[http.server.requests]": true
