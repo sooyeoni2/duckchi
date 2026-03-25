@@ -3,6 +3,7 @@ import React from 'react';
 import LoginScreen from '@features/auth/views/LoginScreen';
 import KakaoLoginWebViewScreen from '@features/auth/views/KakaoLoginWebViewScreen';
 import TermsScreen from '@features/auth/views/TermsScreen';
+import { TermsDetailScreen } from '@features/auth/views/terms/TermsDetailScreen';
 import ProfileSetupScreen from '@features/auth/views/ProfileSetupScreen';
 import type { AuthStackParamList } from './types';
 
@@ -14,6 +15,7 @@ export function AuthNavigator() {
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="KakaoLogin" component={KakaoLoginWebViewScreen} />
       <Stack.Screen name="Terms" component={TermsScreen} />
+      <Stack.Screen name="TermsDetail" component={TermsDetailScreen} />
       <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
     </Stack.Navigator>
   );
