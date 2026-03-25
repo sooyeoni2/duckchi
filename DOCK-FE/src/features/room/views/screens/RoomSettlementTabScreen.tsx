@@ -1,6 +1,6 @@
 import React from 'react';
 
-import type { RoomSettlementRow } from '../../models/roomDetailMockData';
+import type { RoomSettlementRow } from '../../models/roomSettlementOverviewTypes';
 import {
   RoomSettlementDetailScreen,
   type SettlementDetailState,
@@ -11,6 +11,7 @@ interface RoomSettlementTabScreenProps {
   isSettlementDetailOpen: boolean;
   settlementDetailState: SettlementDetailState;
   settlementRefreshing: boolean;
+  settlementOverviewErrorMessage?: string;
   expectedAmount: number;
   totalAmount: number;
   participatedPayments: RoomSettlementRow[];
@@ -25,6 +26,7 @@ export function RoomSettlementTabScreen({
   isSettlementDetailOpen,
   settlementDetailState,
   settlementRefreshing,
+  settlementOverviewErrorMessage,
   expectedAmount,
   totalAmount,
   participatedPayments,
@@ -49,6 +51,7 @@ export function RoomSettlementTabScreen({
       totalAmount={totalAmount}
       participatedPayments={participatedPayments}
       settlementRequests={settlementRequests}
+      errorMessage={settlementOverviewErrorMessage}
       refreshing={settlementRefreshing}
       onRefresh={onRefresh}
       onOpenTransfer={onOpenTransfer}
