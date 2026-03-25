@@ -45,6 +45,7 @@ export type AuthStackParamList = {
   KakaoLogin: undefined;
   Terms: undefined;
   TermsDetail: { type: 'terms' | 'privacy'; onAgree?: () => void };
+  PrivacyDetail: { onAgree?: () => void };
   ProfileSetup: undefined;
   Registration: undefined;
 };

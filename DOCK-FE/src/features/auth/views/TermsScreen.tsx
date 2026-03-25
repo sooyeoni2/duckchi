@@ -74,7 +74,7 @@ const TermsScreen: React.FC<Props> = ({ navigation }) => {
           <TouchableOpacity style={styles.row} onPress={toggleT2} activeOpacity={0.7}>
             <View style={styles.rowLeft}>
               <Text style={styles.rowText}>[필수] 개인정보 처리방침</Text>
-              <Pressable onPress={() => navigation.navigate('TermsDetail', { type: 'privacy', onAgree: () => { setT2(true); setAll(t1); } })} hitSlop={8}>
+              <Pressable onPress={() => navigation.navigate('PrivacyDetail', { onAgree: () => { setT2(true); setAll(t1); } })} hitSlop={8}>
                 <Text style={styles.viewLink}>보기</Text>
               </Pressable>
             </View>
