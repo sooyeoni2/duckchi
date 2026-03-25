@@ -1,7 +1,7 @@
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React from 'react';
-import { Animated, Pressable, ScrollView, StyleSheet, Text } from 'react-native';
+import { Alert, Animated, Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { RoomStackParamList } from '@core/navigation/types';
@@ -12,6 +12,7 @@ import { CustomAppBar } from '@shared/components/app_bar/CustomAppBar';
 import { MeetingCard } from '../components/MeetingCard';
 import type { MeetingRoom } from '../models/roomMockData';
 import { useRoomStore } from '../models/roomStore';
+import { endMeetingRoom } from '../models/roomService';
 
 type Nav = NativeStackNavigationProp<RoomStackParamList, 'RoomList'>;
 
@@ -39,12 +40,48 @@ export function RoomListScreen() {
     navigation.navigate('RoomDetail', { roomId: meeting.roomId });
   };
 
-  const handleActionPress = (meeting: MeetingRoom) => {
+  const handleActionPress = async (meeting: MeetingRoom) => {
     if (meeting.status === 'ENDED') {
       navigation.navigate('RoomRestart', { roomId: meeting.roomId });
       return;
     }
-    navigation.navigate('RoomDetail', { roomId: meeting.roomId });
+
+    // STARTED 상태일 때 종료 시도
+    if (meeting.totalPay > 0) {
+      // 정산할 금액이 있으면 상세 화면의 정산 탭으로 이동
+      Alert.alert(
+        '정산 필요',
+        '미완료된 정산 내역이 있습니다. 정산하기 화면으로 이동하시겠습니까?',
+        [
+          { text: '취소', style: 'cancel' },
+          { 
+            text: '정산하기', 
+            onPress: () => navigation.navigate('RoomDetail', { roomId: meeting.roomId, showTransfer: true }) 
+          },
+        ]
+      );
+    } else {
+      // 정산할 금액이 없으면 즉시 종료 시도
+      Alert.alert(
+        '모임 종료',
+        '모임을 종료하시겠습니까? 종료 후에는 더 이상 결제 내역을 추가할 수 없습니다.',
+        [
+          { text: '취소', style: 'cancel' },
+          { 
+            text: '종료', 
+            onPress: async () => {
+              try {
+                await endMeetingRoom(meeting.roomId);
+                await fetchRooms();
+                Alert.alert('모임 종료', '모임이 종료되었습니다.');
+              } catch (e: any) {
+                Alert.alert('오류', e?.response?.data?.message || '모임 종료에 실패했습니다.');
+              }
+            } 
+          },
+        ]
+      );
+    }
   };
 
   // 카테고리별 그룹핑 (순서 유지)

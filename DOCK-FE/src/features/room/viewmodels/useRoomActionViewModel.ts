@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { create } from 'zustand';
 import { Alert } from 'react-native';
 import { startMeetingRoom, endMeetingRoom, leaveMeetingRoom, deleteMeetingRoom } from '../models/roomService';
+import { useRoomStore } from '../models/roomStore';
 
 interface RoomActionState {
   status: 'READY' | 'START' | 'END';
@@ -26,10 +27,11 @@ const useRoomActionStore = create<RoomActionStore>((set) => ({
 export const useRoomActionViewModel = (roomId: number) => {
   const { state, updateState } = useRoomActionStore();
 
-  const startRoom = useCallback(async () => {
+  const startRoom = useCallback(async (data?: { category: string; description?: string }) => {
     try {
       updateState({ isProcessing: true });
-      await startMeetingRoom(roomId);
+      await startMeetingRoom(roomId, data);
+      await useRoomStore.getState().fetchRooms();
       updateState({ status: 'START', isProcessing: false });
       return true;
     } catch (e: any) {
@@ -44,6 +46,7 @@ export const useRoomActionViewModel = (roomId: number) => {
     try {
       updateState({ isProcessing: true });
       await endMeetingRoom(roomId);
+      await useRoomStore.getState().fetchRooms();
       updateState({ status: 'END', isProcessing: false });
       return true;
     } catch (e: any) {
@@ -58,6 +61,7 @@ export const useRoomActionViewModel = (roomId: number) => {
     try {
       updateState({ isProcessing: true });
       await leaveMeetingRoom(roomId);
+      await useRoomStore.getState().fetchRooms();
       updateState({ isProcessing: false });
       return true;
     } catch (e: any) {
@@ -72,6 +76,7 @@ export const useRoomActionViewModel = (roomId: number) => {
     try {
       updateState({ isProcessing: true });
       await deleteMeetingRoom(roomId);
+      await useRoomStore.getState().fetchRooms();
       updateState({ isProcessing: false });
       return true;
     } catch (e: any) {
