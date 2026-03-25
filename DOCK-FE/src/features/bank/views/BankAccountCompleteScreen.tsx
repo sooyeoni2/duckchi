@@ -21,6 +21,7 @@ import { AppColorStyles } from '../../../core/theme/colors';
 import { KBODiaGothicTextStyle } from '../../../core/theme/typography';
 import { FilledButton } from '../../../shared/components/buttons/FilledButton';
 import { useAuthStore } from '../../auth/models/authStore';
+import { updateTransferLimit } from '../../profile/models/profileService';
 
 const { height: H } = Dimensions.get('window');
 
@@ -47,8 +48,13 @@ export function BankAccountCompleteScreen() {
 
   const isNewUserFlow = returnTo === 'NewUser';
 
-  const handleNext = () => {
-    // TODO: 한도 저장 API 연동
+  const handleNext = async () => {
+    if (isNewUserFlow && transferLimit) {
+      const amount = Number(transferLimit.replace(/,/g, ''));
+      try {
+        await updateTransferLimit(amount);
+      } catch {}
+    }
     setHasBankAccount();
     navigation.replace('PayPasswordSetup', { bankName, maskedAccountNo, returnTo });
   };
@@ -141,14 +147,16 @@ const styles = StyleSheet.create({
   },
   accountCard: {
     backgroundColor: AppColorStyles.surface,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 16,
+    borderRadius: 18,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
     marginBottom: 28,
-    shadowColor: AppColorStyles.gray2,
+    borderWidth: 1,
+    borderColor: AppColorStyles.divider,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
     elevation: 2,
     gap: 10,
   },

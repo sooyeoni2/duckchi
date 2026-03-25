@@ -22,4 +22,14 @@ public class AccountHistoryRequest {
             example = "1234567890123456"
     )
     private String accountNo;
+
+    @Schema(
+            description = "캐시 무시 및 최신 내역 강제 조회 여부. true일 경우 외부 금융망 API를 직접 호출함",
+            example = "false"
+    )
+    private Boolean refresh;
+
+    public boolean isRefresh() {
+        return refresh != null && refresh;
+    }
 }

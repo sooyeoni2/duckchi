@@ -23,3 +23,22 @@ spring:
     properties:
       hibernate:
         format_sql: true
+
+
+  kafka:
+    # 1. Kafka 브로커 주소 (Docker Compose로 띄운 주소)
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      # 2. 컨슈머 그룹 ID (같은 그룹 내에서는 메시지를 나눠서 처리함)
+      group-id: insight-service-group
+      # 3. 새로운 컨슈머가 들어왔을 때 어디서부터 읽을지 (earliest: 처음부터 / latest: 최근부터)
+      auto-offset-reset: earliest
+      # 4. 키와 값의 직렬화/역직렬화 설정 (JSON 데이터를 객체로 변환하기 위해 설정)
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "com.duckchi.insight.*"
+    listener:
+      # 5. 수동 커밋 모드 활성화 (비즈니스 로직 성공 후 명시적으로 완료 보고함)
+      ack-mode: manual_immediate
+

@@ -1,15 +1,14 @@
 import { useNavigation } from '@react-navigation/native';
 import type { CompositeNavigationProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React from 'react';
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getBankColor } from '../../../core/constants/bankColors';
 import type { ProfileStackParamList, RootStackParamList } from '../../../core/navigation/types';
 import { AppColorStyles } from '../../../core/theme/colors';
 import { KBODiaGothicTextStyle } from '../../../core/theme/typography';
-import { ConfirmDialog } from '../../../shared/components/dialog/ConfirmDialog';
 import { CustomAppBar } from '../../../shared/components/app_bar/CustomAppBar';
 import { FilledButton } from '../../../shared/components/buttons/FilledButton';
 import { useProfileViewModel } from '../../profile/viewmodels/useProfileViewModel';
@@ -22,7 +21,12 @@ type Nav = CompositeNavigationProp<
 export function BankAccountRegisterScreen() {
   const navigation = useNavigation<Nav>();
   const { state, deleteAccount } = useProfileViewModel();
-  const [confirmVisible, setConfirmVisible] = useState(false);
+  const handleDeletePress = () => {
+    Alert.alert('계좌 삭제', '대표 계좌를 삭제하시겠습니까?', [
+      { text: '취소', style: 'cancel' },
+      { text: '삭제', style: 'destructive', onPress: () => deleteAccount(currentAccount!.accountId) },
+    ]);
+  };
 
   const accounts = state.status === 'loaded' ? state.profile.accounts : [];
   const currentAccount = accounts[0] ?? null;
@@ -49,22 +53,9 @@ export function BankAccountRegisterScreen() {
         {/* 현재 계좌 카드 */}
         {currentAccount !== null && bankColor !== null && (
           <View style={styles.accountCard}>
-            <ConfirmDialog
-              visible={confirmVisible}
-              title="계좌 삭제"
-              message="대표 계좌를 삭제하시겠습니까?"
-              cancelText="취소"
-              confirmText="삭제"
-              confirmColor={AppColorStyles.danger}
-              onCancel={() => setConfirmVisible(false)}
-              onConfirm={() => {
-                setConfirmVisible(false);
-                deleteAccount(currentAccount.accountId);
-              }}
-            />
             <View style={styles.labelRow}>
               <Text style={styles.accountLabel}>대표 계좌</Text>
-              <TouchableOpacity style={styles.deleteButton} onPress={() => setConfirmVisible(true)}>
+              <TouchableOpacity style={styles.deleteButton} onPress={handleDeletePress}>
                 <Text style={styles.deleteButtonText}>삭제</Text>
               </TouchableOpacity>
             </View>
@@ -118,14 +109,14 @@ const styles = StyleSheet.create({
   },
   accountCard: {
     backgroundColor: AppColorStyles.surface,
-    borderRadius: 10,
-    paddingTop: 14,
+    borderRadius: 18,
+    paddingTop: 16,
     paddingBottom: 28,
-    paddingHorizontal: 16,
-    shadowColor: AppColorStyles.gray2,
+    paddingHorizontal: 20,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
     elevation: 2,
   },
   labelRow: {
@@ -176,13 +167,15 @@ const styles = StyleSheet.create({
   },
   noticeCard: {
     backgroundColor: AppColorStyles.yellowLight,
-    borderRadius: 10,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-    shadowColor: AppColorStyles.gray2,
+    borderRadius: 18,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderWidth: 1,
+    borderColor: AppColorStyles.yellow,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
     elevation: 2,
   },
   noticeText: {

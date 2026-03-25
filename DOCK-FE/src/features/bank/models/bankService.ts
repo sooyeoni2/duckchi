@@ -23,7 +23,7 @@ const MOCK_BANK_NAMES: Record<string, string> = {
   '999': '싸피은행',
 };
 
-const USE_MOCK = true;
+const USE_MOCK = false;
 
 let mockPendingAccount: RegisterBankAccountResult | null = null;
 let mockVerifyAttempts = 0;
@@ -39,7 +39,7 @@ export const registerBankAccount = async (
     mockPendingAccount = { accountId: Date.now(), bankCode, bankName, maskedAccountNo };
     return mockPendingAccount;
   }
-  const response = await axiosClient.post('/api/v1/auth/bank-accounts', { bankCode, accountNo });
+  const response = await axiosClient.post('/api/v1/bank-accounts', { bankCode, accountNo });
   return response.data.data as RegisterBankAccountResult;
 };
 
@@ -65,7 +65,7 @@ export const verify1Won = async (accountId: number, verificationCode: string): P
     }
     return;
   }
-  await axiosClient.post(`/api/v1/auth/bank-accounts/${accountId}/verify-1won`, {
+  await axiosClient.post(`/api/v1/bank-accounts/${accountId}/verify-1won`, {
     verificationCode,
   });
 };

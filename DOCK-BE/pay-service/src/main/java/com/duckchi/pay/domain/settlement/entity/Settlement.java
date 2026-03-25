@@ -20,7 +20,8 @@ import lombok.NoArgsConstructor;
         name = "settlements",
         uniqueConstraints = {
                 @UniqueConstraint(name = "UK_SETTLEMENTS_EXPENSE_PAYER", columnNames = {"expense_id", "payer_user_id"}),
-                @UniqueConstraint(name = "UK_SETTLEMENTS_BANK_TRANSACTION_ID", columnNames = {"bank_transaction_id"})
+                @UniqueConstraint(name = "UK_SETTLEMENTS_BANK_TRANSACTION_ID", columnNames = {"bank_transaction_id"}),
+                @UniqueConstraint(name = "UK_SETTLEMENTS_FIN_REQ_UNIQUE", columnNames = {"finance_request_unique_no"})
         }
 )
 @Getter
@@ -69,6 +70,9 @@ public class Settlement {
     @Column(length = 100)
     private String bankTransactionId;
 
+    @Column(length = 50)
+    private String financeRequestUniqueNo;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -105,6 +109,18 @@ public class Settlement {
                 .payableAmount(payableAmount)
                 .status(STATUS_PENDING)
                 .build();
+    }
+    /**
+     * SET-02 재시도 시 동일 거래 요청으로 추적할 수 있도록 송금 요청 고유키를 선반영한다.
+     */
+    public void assignFinanceRequestUniqueNo(String financeRequestUniqueNo) {
+        if (financeRequestUniqueNo == null || financeRequestUniqueNo.isBlank()) {
+            return;
+        }
+
+        if (this.financeRequestUniqueNo == null || this.financeRequestUniqueNo.isBlank()) {
+            this.financeRequestUniqueNo = financeRequestUniqueNo;
+        }
     }
 
     /**

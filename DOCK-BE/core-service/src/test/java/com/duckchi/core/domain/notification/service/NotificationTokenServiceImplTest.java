@@ -33,6 +33,9 @@ class NotificationTokenServiceImplTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private NotificationMessageService notificationMessageService;
+
     @InjectMocks
     private NotificationTokenServiceImpl notificationTokenService;
 

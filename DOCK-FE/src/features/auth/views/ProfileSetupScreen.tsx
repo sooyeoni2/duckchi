@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+  Image,
   View,
   Text,
   TextInput,
@@ -22,35 +23,43 @@ const { width: W, height: H } = Dimensions.get('window');
 const s = W / 412;
 
 const ProfileSetupScreen: React.FC<Props> = ({ navigation }) => {
-  const user = useAuthStore((s) => s.user);
-  const { submitting, submit } = useProfileSetupViewModel(navigation);
-  const name = user?.name ?? '';
-  const canConfirm = !!name && !submitting;
+  const user = useAuthStore(state => state.user);
+  const { previewImageUri, pickingImage, submitting, pickProfileImage, submit } =
+    useProfileSetupViewModel(navigation);
 
-  const handleConfirm = () => {
+  const name = user?.name ?? '';
+  const canConfirm = !!name && !submitting && !pickingImage;
+
+  const handleConfirm = async () => {
     if (!canConfirm) return;
-    submit('profiles/default/default-profile.jpg');
+    await submit();
+  };
+
+  const handlePickProfileImage = async () => {
+    await pickProfileImage();
   };
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={styles.container}>
-        {/* 제목 */}
         <View style={styles.topSection}>
           <Text style={styles.title}>프로필 설정</Text>
         </View>
 
-        {/* 프로필 이미지 */}
         <View style={styles.profileSection}>
           <View style={styles.profileCircle}>
-            <Ionicons name="person" size={60 * s} color="#CCCCCC" />
+            {previewImageUri ? (
+              <Image source={{ uri: previewImageUri }} style={styles.profileImage} />
+            ) : (
+              <Ionicons name="person" size={60 * s} color="#CCCCCC" />
+            )}
           </View>
-          <TouchableOpacity style={styles.cameraBtn} activeOpacity={0.8}>
-            <Ionicons name="camera" size={16 * s} color="#727272" />
+
+          <TouchableOpacity style={styles.cameraBtn} onPress={handlePickProfileImage}>
+            <Ionicons name="camera" size={18 * s} color="#222222" />
           </TouchableOpacity>
         </View>
 
-        {/* 입력 영역 */}
         <View style={styles.inputSection}>
           <View style={styles.inputField}>
             <Text style={styles.label}>이름</Text>
@@ -62,11 +71,13 @@ const ProfileSetupScreen: React.FC<Props> = ({ navigation }) => {
           </View>
 
           <TouchableOpacity
-            style={[styles.confirmBtn, !canConfirm && { opacity: 0.4 }]}
+            style={[styles.confirmBtn, !canConfirm && styles.confirmBtnDisabled]}
             onPress={handleConfirm}
             activeOpacity={0.85}
           >
-            <Text style={styles.confirmText}>확인</Text>
+            <Text style={styles.confirmText}>
+              {submitting ? '업로드 중...' : pickingImage ? '이미지 선택 중...' : '확인'}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -94,9 +105,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: H * 0.06,
   },
+  profileImage: {
+    width: 126 * s,
+    height: 126 * s,
+    borderRadius: 63 * s,
+  },
   profileCircle: {
     width: 126 * s,
-    height: 121 * s,
+    height: 126 * s,
     borderRadius: 63 * s,
     backgroundColor: '#F9F9F9',
     shadowColor: '#000000',
@@ -155,6 +171,9 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  confirmBtnDisabled: {
+    opacity: 0.4,
   },
   confirmText: {
     ...KBODiaGothicTextStyle.bold({ fontSize: 20 * s, color: '#000000' }),

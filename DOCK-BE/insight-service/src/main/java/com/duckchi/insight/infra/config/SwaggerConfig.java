@@ -33,7 +33,7 @@ public class SwaggerConfig {
                 .components(new Components())
                 .info(new Info()
                         .title("Duckchi swagger : " + serviceName)
-                        .description("Duckchi REST API")
+                        .description("사용자의 지출 내역을 분석하여 월별/카테고리별/방별 통계 및 트렌드를 제공하는 API입니다.")
                         .version("1.0.0"))
                 .addServersItem(new Server().url(serverUrl).description("Duckchi Server"));
     }

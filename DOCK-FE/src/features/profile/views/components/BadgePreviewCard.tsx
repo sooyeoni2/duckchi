@@ -1,7 +1,7 @@
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import type { ProfileStackParamList } from '../../../../core/navigation/types';
 import { AppColorStyles } from '../../../../core/theme/colors';
@@ -18,9 +18,22 @@ interface BadgePreviewCardProps {
 
 export function BadgePreviewCard({ badges }: BadgePreviewCardProps) {
   const navigation = useNavigation<Nav>();
+  const viewAllScale = React.useRef(new Animated.Value(1)).current;
+
+  const handleViewAllPressIn = () => {
+    Animated.spring(viewAllScale, { toValue: 0.93, useNativeDriver: true, speed: 50, bounciness: 0 }).start();
+  };
+  const handleViewAllPressOut = () => {
+    Animated.spring(viewAllScale, { toValue: 1, useNativeDriver: true, speed: 30, bounciness: 4 }).start();
+  };
+
   const acquiredBadges = badges
-    .filter(b => b.isAcquired && b.acquiredAt)
-    .sort((a, b) => b.acquiredAt!.getTime() - a.acquiredAt!.getTime());
+    .filter(b => b.isAcquired)
+    .sort((a, b) => {
+      if (!b.acquiredAt) return -1;
+      if (!a.acquiredAt) return 1;
+      return b.acquiredAt.getTime() - a.acquiredAt.getTime();
+    });
   const lockedBadges = badges.filter(b => !b.isAcquired);
   const displayBadges = [...acquiredBadges, ...lockedBadges].slice(0, 6);
 
@@ -28,12 +41,16 @@ export function BadgePreviewCard({ badges }: BadgePreviewCardProps) {
     <View style={[profileCardStyle.card, styles.card]}>
       <View style={styles.header}>
         <Text style={profileCardStyle.cardLabel}>내 뱃지</Text>
-        <TouchableOpacity
-          onPress={() => navigation.navigate('BadgeList')}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <Text style={styles.viewAllText}>전체보기 &gt;</Text>
-        </TouchableOpacity>
+        <Animated.View style={{ transform: [{ scale: viewAllScale }] }}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('BadgeList')}
+            onPressIn={handleViewAllPressIn}
+            onPressOut={handleViewAllPressOut}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Text style={styles.viewAllText}>전체보기 &gt;</Text>
+          </TouchableOpacity>
+        </Animated.View>
       </View>
       <View style={styles.grid}>
         {[0, 1].map(row => (

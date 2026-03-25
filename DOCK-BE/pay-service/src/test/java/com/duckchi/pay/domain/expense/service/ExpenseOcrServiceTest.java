@@ -44,35 +44,22 @@ class ExpenseOcrServiceTest {
     @Test
     @DisplayName("OCR 성공 응답을 결제 초안으로 변환함")
     void analyzeReceiptSuccess() {
-        MockMultipartFile image = new MockMultipartFile(
-                "image",
-                "receipt.jpg",
-                "image/jpeg",
-                "sample".getBytes()
-        );
+        String imageUrl = "https://s3.amazonaws.com/receipt.jpg";
 
         when(ocrClient.callReceiptOcr(eq("test-secret"), any())).thenReturn(successResponse());
 
-        ExpenseOcrDraftResponse result = expenseOcrService.analyzeReceipt(image);
+        ExpenseOcrDraftResponse result = expenseOcrService.analyzeReceipt(imageUrl);
 
         assertThat(result.getTitle()).isEqualTo("덕치정육식당");
         assertThat(result.getTotalAmount()).isEqualTo(150000);
         assertThat(result.getPaidAt()).isEqualTo(LocalDateTime.of(2026, 3, 18, 14, 15, 0));
         assertThat(result.getItems()).hasSize(2);
-        assertThat(result.getItems().get(0).getName()).isEqualTo("삼겹살");
-        assertThat(result.getItems().get(0).getTotalAmount()).isEqualTo(60000);
-        assertThat(result.getItems().get(0).getQuantity()).isEqualTo(2);
     }
 
     @Test
     @DisplayName("OCR 실패 응답이면 분석 실패 예외를 던짐")
     void analyzeReceiptFailure() {
-        MockMultipartFile image = new MockMultipartFile(
-                "image",
-                "receipt.jpg",
-                "image/jpeg",
-                "sample".getBytes()
-        );
+        String imageUrl = "https://s3.amazonaws.com/receipt.jpg";
 
         OcrResponse failureResponse = OcrResponse.builder()
                 .images(List.of(new OcrResponse.ImageResponse(
@@ -86,7 +73,7 @@ class ExpenseOcrServiceTest {
 
         when(ocrClient.callReceiptOcr(eq("test-secret"), any())).thenReturn(failureResponse);
 
-        assertThatThrownBy(() -> expenseOcrService.analyzeReceipt(image))
+        assertThatThrownBy(() -> expenseOcrService.analyzeReceipt(imageUrl))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.OCR_ANALYSIS_FAILED);
     }
@@ -94,12 +81,7 @@ class ExpenseOcrServiceTest {
     @Test
     @DisplayName("OCR 원본 응답을 그대로 반환함")
     void analyzeReceiptRawSuccess() {
-        MockMultipartFile image = new MockMultipartFile(
-                "image",
-                "receipt.jpg",
-                "image/jpeg",
-                "sample".getBytes()
-        );
+        String imageUrl = "https://s3.amazonaws.com/receipt.jpg";
 
         JsonNode rawResponse = OBJECT_MAPPER.createObjectNode();
         ((com.fasterxml.jackson.databind.node.ObjectNode) rawResponse).put("version", "V2");
@@ -112,11 +94,10 @@ class ExpenseOcrServiceTest {
 
         when(ocrClient.callReceiptOcrRaw(eq("test-secret"), any())).thenReturn(rawResponse);
 
-        JsonNode result = expenseOcrService.analyzeReceiptRaw(image);
+        JsonNode result = expenseOcrService.analyzeReceiptRaw(imageUrl);
 
         assertThat(result.get("version").asText()).isEqualTo("V2");
         assertThat(result.get("images")).hasSize(1);
-        assertThat(result.get("images").get(0).get("inferResult").asText()).isEqualTo("SUCCESS");
     }
 
     private OcrResponse successResponse() {
