@@ -109,7 +109,7 @@ public class RoomServiceImpl implements RoomService {
         roomParticipantRepository.save(owner);
 
         // [BADGE 트리거] 방 생성 시 뱃지 진행도 갱신 (ALLEY_BOSS +1, INSSA_DUCK +1)
-        badgeTriggerService.triggerRoomCreated(currentUserId);
+        badgeTriggerService.triggerRoomCreated(savedRoom.getId(), currentUserId);
 
         return CreateRoomResponse.from(savedRoom);
     }

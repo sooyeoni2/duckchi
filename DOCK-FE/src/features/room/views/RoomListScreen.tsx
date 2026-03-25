@@ -1,4 +1,4 @@
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React from 'react';
 import { Animated, Pressable, ScrollView, StyleSheet, Text } from 'react-native';
@@ -18,6 +18,13 @@ type Nav = NativeStackNavigationProp<RoomStackParamList, 'RoomList'>;
 export function RoomListScreen() {
   const navigation = useNavigation<Nav>();
   const rooms = useRoomStore((s) => s.rooms);
+  const fetchRooms = useRoomStore((s) => s.fetchRooms);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchRooms();
+    }, [fetchRooms])
+  );
   const createScale = React.useRef(new Animated.Value(1)).current;
 
   const handleCreatePressIn = () => {

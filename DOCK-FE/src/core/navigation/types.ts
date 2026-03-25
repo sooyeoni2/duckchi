@@ -37,6 +37,7 @@ export type RoomStackParamList = {
   RoomRestart: { roomId: number };
   RoomMoreOptions: { roomId: number };
   AutoTransferAgree: { roomId: number };
+  AutoTransferJoin: { roomId: number; roomName?: string };
   AdminDelegation: { roomId: number };
   RoomEdit: { roomId: number };
   SettlementRequestList: { roomId: number };
