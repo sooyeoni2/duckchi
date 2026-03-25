@@ -20,6 +20,9 @@ public interface NotificationMessageService {
     void sendRoomStartedMessage(String token, String roomName);
     void sendRoomEndedMessage(String token, String roomName);
 
+    //뱃지 획득 알림
+    void sendBadgeAcquiredMessage(String token, String badgeName);
+
     //N빵 뽑기 알림
 
 }

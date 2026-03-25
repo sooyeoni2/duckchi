@@ -1,7 +1,4 @@
 import { MaterialCommunityIcons as MaterialDesignIcons } from '@expo/vector-icons';
-import { useNavigation, useRoute } from '@react-navigation/native';
-import type { RouteProp } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React from 'react';
 import {
   Pressable,
@@ -13,37 +10,43 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import type { RoomStackParamList } from '@core/navigation/types';
 import { AppColorStyles } from '@core/theme/colors';
 import { KBODiaGothicTextStyle, PretendardTextStyle } from '@core/theme/typography';
 import { CustomAppBar } from '@shared/components/app_bar/CustomAppBar';
 import { FilledButton } from '@shared/components/buttons/FilledButton';
 import { OutlineButton } from '@shared/components/buttons/OutlineButton';
 
-import { useSettlementRequestListViewModel } from '../viewmodels/useSettlementRequestListViewModel';
+import type {
+  SettlementParticipantItem,
+  SettlementRequestListMock,
+} from '../../models/settlementRequestListMockData';
 
 const BASE_WIDTH = 412;
 
-type Nav = NativeStackNavigationProp<RoomStackParamList, 'SettlementRequestList'>;
-type ScreenRoute = RouteProp<RoomStackParamList, 'SettlementRequestList'>;
-
 const toWon = (value: number) => `${value.toLocaleString('ko-KR')}원`;
 
-export function SettlementRequestListScreen() {
-  const navigation = useNavigation<Nav>();
-  const route = useRoute<ScreenRoute>();
+interface SettlementRequestListViewProps {
+  data: SettlementRequestListMock;
+  participants: SettlementParticipantItem[];
+  isTreasurer: boolean;
+  selectedPendingId: number | null;
+  canDirectComplete: boolean;
+  onBackPress: () => void;
+  onTogglePendingParticipant: (participantId: number) => void;
+}
+
+export function SettlementRequestListView({
+  data,
+  participants,
+  isTreasurer,
+  selectedPendingId,
+  canDirectComplete,
+  onBackPress,
+  onTogglePendingParticipant,
+}: SettlementRequestListViewProps) {
   const { width } = useWindowDimensions();
   const contentWidth = Math.min(width, 430);
   const s = contentWidth / BASE_WIDTH;
-
-  const {
-    data,
-    participants,
-    isTreasurer,
-    selectedPendingId,
-    canDirectComplete,
-    togglePendingParticipant,
-  } = useSettlementRequestListViewModel(route.params.roomId);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -53,7 +56,7 @@ export function SettlementRequestListScreen() {
           centerTitle={false}
           showDivider
           backgroundColor={AppColorStyles.background}
-          onBackPress={() => navigation.goBack()}
+          onBackPress={onBackPress}
         />
 
         <ScrollView
@@ -199,7 +202,7 @@ export function SettlementRequestListScreen() {
                     {isPending ? (
                       isTreasurer ? (
                         <Pressable
-                          onPress={() => togglePendingParticipant(participant.id)}
+                          onPress={() => onTogglePendingParticipant(participant.id)}
                           style={[
                             styles.checkBox,
                             {
@@ -279,7 +282,7 @@ export function SettlementRequestListScreen() {
             <View style={[styles.ctaRow, { marginTop: 46 * s, gap: 20 * s }]}> 
               <FilledButton
                 text="취소하기"
-                onPress={() => navigation.goBack()}
+                onPress={onBackPress}
                 isFullWidth={false}
                 width={175 * s}
                 height={60 * s}

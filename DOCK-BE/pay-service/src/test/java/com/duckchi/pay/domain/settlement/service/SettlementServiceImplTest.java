@@ -9,6 +9,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.duckchi.pay.domain.badge.service.BadgeTriggerService;
 import com.duckchi.pay.domain.expense.entity.Expense;
 import com.duckchi.pay.domain.expense.entity.ExpenseParticipant;
 import com.duckchi.pay.domain.expense.repository.ExpenseParticipantRepository;
@@ -61,6 +62,9 @@ class SettlementServiceImplTest {
 
     @Mock
     private OutboxEventCommandService outboxEventCommandService;
+
+    @Mock
+    private BadgeTriggerService badgeTriggerService;
 
     @InjectMocks
     private SettlementServiceImpl settlementService;

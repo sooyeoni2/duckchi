@@ -4,11 +4,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.duckchi.pay.domain.badge.service.BadgeTriggerService;
+import com.duckchi.pay.domain.expense.repository.ExpenseParticipantRepository;
 import com.duckchi.pay.domain.expense.repository.ExpenseRepository;
 import com.duckchi.pay.domain.room.dto.event.RoomLifecycleNotificationEvent;
 import com.duckchi.pay.domain.room.dto.request.CreateRoomRequest;
@@ -25,6 +29,7 @@ import com.duckchi.pay.domain.room.repository.RoomSessionRepository;
 import com.duckchi.pay.domain.room.repository.projection.RoomExpenseSummaryProjection;
 import com.duckchi.pay.domain.room.repository.projection.RoomParticipantUserProjection;
 import com.duckchi.pay.domain.room.repository.projection.RoomSettlementSummaryProjection;
+import com.duckchi.pay.domain.settlement.dto.event.SettlementFinishedEvent;
 import com.duckchi.pay.global.error.CustomException;
 import com.duckchi.pay.global.error.ErrorCode;
 import com.duckchi.pay.infra.client.CoreClient;
@@ -50,6 +55,12 @@ class RoomServiceImplTest {
 
     @Mock
     private ExpenseRepository expenseRepository;
+
+    @Mock
+    private ExpenseParticipantRepository expenseParticipantRepository;
+
+    @Mock
+    private BadgeTriggerService badgeTriggerService;
 
     @Mock
     private RoomSessionRepository roomSessionRepository;
@@ -357,6 +368,7 @@ class RoomServiceImplTest {
         RoomSession activeSession = RoomSession.builder()
                 .room(room)
                 .build();
+        ReflectionTestUtils.setField(activeSession, "id", 201L);
 
         when(roomRepository.findById(101L)).thenReturn(java.util.Optional.of(room));
         when(roomParticipantRepository.findByRoom_IdAndUserId(101L, 7L))
@@ -366,6 +378,10 @@ class RoomServiceImplTest {
                 .thenReturn(java.util.Optional.of(activeSession));
         when(roomParticipantRepository.findUserIdsByRoomId(101L)).thenReturn(List.of(7L, 8L));
 
+        // [INSIGHT] 가짜 집계 데이터 설정: 7번 사용자 15,000원, 8번 사용자 25,000원
+        List<Object[]> aggregatedSpends = List.of(new Object[]{7L, 15000}, new Object[]{8L, 25000});
+        when(expenseParticipantRepository.findTotalSpendPerUserBySessionId(201L)).thenReturn(aggregatedSpends);
+
         // when: 모임 종료를 수행한다.
         roomService.endRoom(101L, 7L);
 
@@ -374,6 +390,8 @@ class RoomServiceImplTest {
         assertTrue(activeSession.getEndedAt() != null);
 
         ArgumentCaptor<Object> payloadCaptor = ArgumentCaptor.forClass(Object.class);
+        
+        // 1. 기존 알림 이벤트 상세 검증 (복구)
         verify(outboxEventCommandService).save(
                 eq("ROOM"),
                 eq(101L),
@@ -388,6 +406,27 @@ class RoomServiceImplTest {
         assertEquals("테스트 모임", event.getRoomName());
         assertEquals(7L, event.getTriggeredBy());
         assertEquals(List.of(7L, 8L), event.getRecipientUserIds());
+
+        // 2. 신규 인사이트 이벤트 검증 (추가)
+        ArgumentCaptor<Object> insightPayloadCaptor = ArgumentCaptor.forClass(Object.class);
+        verify(outboxEventCommandService, times(2)).save(
+                eq("INSIGHT"),
+                anyLong(),
+                eq("SETTLEMENT_FINISHED"),
+                eq(KafkaTopicNames.SETTLEMENT_FINISHED_EVENT),
+                insightPayloadCaptor.capture()
+        );
+
+        List<Object> allInsightEvents = insightPayloadCaptor.getAllValues();
+        assertEquals(2, allInsightEvents.size());
+
+        SettlementFinishedEvent event1 = (SettlementFinishedEvent) allInsightEvents.get(0);
+        assertEquals(7L, event1.getUserId());
+        assertEquals(15000, event1.getAmount());
+
+        SettlementFinishedEvent event2 = (SettlementFinishedEvent) allInsightEvents.get(1);
+        assertEquals(8L, event2.getUserId());
+        assertEquals(25000, event2.getAmount());
     }
 
     private RoomParticipantUserProjection participantProjection(Long roomId, Long userId) {

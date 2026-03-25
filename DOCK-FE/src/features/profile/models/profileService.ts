@@ -42,7 +42,6 @@ const profileDetailSchema = z.object({
   transferLimit: z.number(),
   createdAt: z.string(),
   profileImageUrl: z.string().nullable().optional(),
-  notificationEnabled: z.boolean().optional().default(true),
   accounts: z.array(accountSchema),
   badges: z.array(profileBadgeSchema),
 });
@@ -181,11 +180,9 @@ export const fetchProfile = async (): Promise<Profile> => {
   }
   const response = await axiosClient.get('/api/v1/profiles/detail');
   const raw = profileDetailSchema.parse(response.data.data);
-  console.log('[fetchProfile] notificationEnabled:', raw.notificationEnabled);
   return {
     ...raw,
     profileImageUrl: raw.profileImageUrl ?? null,
-    notificationEnabled: raw.notificationEnabled ?? true,
     createdAt: toDate(raw.createdAt),
     accounts: raw.accounts.map(toAccount),
     badges: raw.badges.map(toProfileBadge),

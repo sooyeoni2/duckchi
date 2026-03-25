@@ -20,6 +20,22 @@ export const ENDPOINTS = {
   notifications: {
     token: '/api/v1/notifications/token',
   },
+  payment: {
+    // 결제안 목록 및 등록
+    expenses: (roomId: number | string) => `/api/v1/rooms/${roomId}/expenses`,
+    // 내 결제안 목록 조회
+    myExpenses: (roomId: number | string) => `/api/v1/rooms/${roomId}/expenses/me`,
+    // 결제안 상세 조회, 수정, 삭제
+    expenseDetail: (roomId: number | string, expenseId: number | string) =>
+      `/api/v1/rooms/${roomId}/expenses/${expenseId}`,
+    // 정산 참여 가능 멤버 조회
+    participants: (roomId: number | string) =>
+      `/api/v1/rooms/${roomId}/expenses/participants`,
+    // 계좌 거래 내역 조회 (PAY-01)
+    accountHistory: '/api/v1/expenses/account-history',
+    // OCR 영수증 분석 (PAY-03)
+    ocr: '/api/v1/expenses/ocr',
+  },
 };
 
 export const KAKAO_CLIENT_ID: string = extra.kakaoClientId ?? '';

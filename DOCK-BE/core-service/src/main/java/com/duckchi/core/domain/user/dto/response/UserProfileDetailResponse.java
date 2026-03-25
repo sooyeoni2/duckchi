@@ -21,7 +21,6 @@ public class UserProfileDetailResponse {
     private Integer transferLimit;
     private String profileImageUrl;
     private LocalDateTime createdAt;
-    private Boolean notificationEnabled;
     private List<AccountSummary> accounts;
     private List<Object> badges;
 

@@ -48,15 +48,23 @@ public enum ErrorCode {
     NOTIFICATION_TOKEN_UPSERT_FAILED("NOTIFICATION-500-1", HttpStatus.INTERNAL_SERVER_ERROR, "FCM 토큰 등록에 실패했습니다."),
     NOTIFICATION_TOKEN_INVALID("NOTIFICATION-400-1",HttpStatus.BAD_REQUEST,"FCM 토큰이 유효하지 않습니다."),
     NOTIFICATION_TEST_SEND_FAILED("NOTIFICATION-500-2", HttpStatus.INTERNAL_SERVER_ERROR, "FCM 테스트 알림 발송에 실패했습니다."),
-    NOTIFICATION_INVALID_INPUT("NOTIFICATION-400-1", HttpStatus.BAD_REQUEST, "알림 설정값이 올바르지 않습니다."),
-    NOTIFICATION_UPDATE_FAILED("NOTIFICATION-500-3", HttpStatus.INTERNAL_SERVER_ERROR, "알림 설정 변경에 실패했습니다. 잠시 후 다시 시도해 주세요."),
 
     // PROFILE
     PROFILE_INVALID_INPUT("PROFILE-400-1", HttpStatus.BAD_REQUEST, "수정할 값이 올바르지 않습니다."),
     PROFILE_UPDATE_FAILED("PROFILE-500-1", HttpStatus.INTERNAL_SERVER_ERROR, "자동이체 한도 변경에 실패했습니다. 잠시 후 다시 시도해 주세요."),
 
     // USER
-    USER_NOT_FOUND("USER-404-1", HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다.");
+    USER_NOT_FOUND("USER-404-1", HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."),
+
+    // BADGE
+    // [BADGE-04] 뱃지 획득 이력을 찾을 수 없는 경우 (user_badges 조회 실패)
+    BADGE_USER_NOT_FOUND("BADGE-404-1", HttpStatus.NOT_FOUND, "뱃지를 찾을 수 없습니다."),
+    // [BADGE-03] 뱃지 마스터 정의를 찾을 수 없는 경우 (badges 코드 조회 실패)
+    BADGE_NOT_FOUND("BADGE-404-2", HttpStatus.NOT_FOUND, "뱃지를 찾을 수 없습니다."),
+    // [BADGE-04] 이미 읽음 처리된 뱃지를 다시 읽음 처리하려는 경우
+    BADGE_ALREADY_READ("BADGE-409-1", HttpStatus.CONFLICT, "이미 확인된 뱃지입니다."),
+    // [BADGE-02] 올바르지 않은 이벤트 타입이 전달된 경우
+    BADGE_INVALID_EVENT_TYPE("BADGE-400-1", HttpStatus.BAD_REQUEST, "올바르지 않은 이벤트 타입입니다.");
     private final String code; //에러코드
     private final HttpStatus httpStatus; //http상태코드
     private final String msg; //에러메세지

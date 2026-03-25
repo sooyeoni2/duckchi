@@ -63,7 +63,7 @@ export function PaymentAccountHistoryCard({
             color: AppColorStyles.textHint,
           })}
         >
-          {formatDateTime(history.transactionAt)}
+          {history.transactionAt ? formatDateTime(new Date(history.transactionAt)) : ''}
         </Text>
 
         <PaymentAnimatedTouchable
