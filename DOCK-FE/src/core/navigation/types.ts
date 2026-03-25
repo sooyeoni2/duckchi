@@ -1,3 +1,5 @@
+import type { NavigatorScreenParams } from '@react-navigation/native';
+
 export type RootStackParamList = {
   Onboarding: undefined;
   Auth: undefined;
@@ -53,7 +55,7 @@ export type AuthStackParamList = {
 
 export type AppTabParamList = {
   Home: undefined;
-  Room: { screen: keyof RoomStackParamList } | undefined;
+  Room: NavigatorScreenParams<RoomStackParamList> | undefined;
   Report: undefined;
-  Profile: { screen: keyof ProfileStackParamList } | undefined;
+  Profile: NavigatorScreenParams<ProfileStackParamList> | undefined;
 };

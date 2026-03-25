@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { fetchSettlementItems } from '../models/settlementService';
+import { fetchSettlementItems, transferSettlements } from '../models/settlementService';
 import type {
   DeadlineTone,
   SettlementItem,
@@ -70,15 +70,16 @@ const toViewItem = (item: SettlementItem, nowMs: number): SettlementViewItem => 
   };
 };
 
-export const useSettlementViewModel = () => {
+export const useSettlementViewModel = (roomId: number) => {
   const [state, setState] = useState<SettlementScreenState>({ status: 'idle' });
   const [selectedTab, setSelectedTab] = useState<SettlementTab>('IN_PROGRESS');
   const [nowMs, setNowMs] = useState<number>(Date.now());
+  const [isTransferring, setIsTransferring] = useState(false);
 
   const loadSettlements = useCallback(async () => {
     setState({ status: 'loading' });
     try {
-      const items = await fetchSettlementItems();
+      const items = await fetchSettlementItems(roomId);
       setState({ status: 'loaded', items });
     } catch (error) {
       setState({
@@ -86,23 +87,29 @@ export const useSettlementViewModel = () => {
         message: error instanceof Error ? error.message : '정산 목록을 불러오지 못했습니다.',
       });
     }
-  }, []);
+  }, [roomId]);
 
-  const markAsPaid = useCallback((targetId: number) => {
+  const markAsCompleted = useCallback((targetIds: number[]) => {
+    if (targetIds.length === 0) {
+      return;
+    }
+
     setState(prevState => {
       if (prevState.status !== 'loaded') {
         return prevState;
       }
 
+      const targetIdSet = new Set(targetIds);
+      const paidAt = new Date().toISOString();
       const updated = prevState.items.map(item => {
-        if (item.id !== targetId || item.status !== 'IN_PROGRESS') {
+        if (!targetIdSet.has(item.id) || item.status !== 'IN_PROGRESS') {
           return item;
         }
 
         return {
           ...item,
           status: 'COMPLETED' as const,
-          paidAt: new Date().toISOString(),
+          paidAt,
           paidCount: item.totalCount,
         };
       });
@@ -111,35 +118,40 @@ export const useSettlementViewModel = () => {
     });
   }, []);
 
-  const markAllAsPaid = useCallback(() => {
-    setState(prevState => {
-      if (prevState.status !== 'loaded') {
-        return prevState;
-      }
+  const transferSingle = useCallback(async (settlementId: number) => {
+    setIsTransferring(true);
+    try {
+      await transferSettlements([settlementId]);
+      markAsCompleted([settlementId]);
+    } finally {
+      setIsTransferring(false);
+    }
+  }, [markAsCompleted]);
 
-      const nowIso = new Date().toISOString();
-      const updated = prevState.items.map(item => {
-        if (item.status === 'COMPLETED') {
-          return item;
-        }
+  const transferAllPending = useCallback(async () => {
+    const pendingIds =
+      state.status === 'loaded'
+        ? state.items
+            .filter(item => item.status === 'IN_PROGRESS')
+            .map(item => item.id)
+        : [];
 
-        return {
-          ...item,
-          status: 'COMPLETED' as const,
-          paidAt: nowIso,
-          paidCount: item.totalCount,
-        };
-      });
+    if (pendingIds.length === 0) {
+      return;
+    }
 
-      return { status: 'loaded', items: updated };
-    });
-  }, []);
+    setIsTransferring(true);
+    try {
+      await transferSettlements(pendingIds);
+      markAsCompleted(pendingIds);
+    } finally {
+      setIsTransferring(false);
+    }
+  }, [markAsCompleted, state]);
 
   useEffect(() => {
-    if (state.status === 'idle') {
-      loadSettlements();
-    }
-  }, [loadSettlements, state.status]);
+    loadSettlements();
+  }, [loadSettlements]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -171,7 +183,7 @@ export const useSettlementViewModel = () => {
 
   const refresh = useCallback(async () => {
     try {
-      const items = await fetchSettlementItems();
+      const items = await fetchSettlementItems(roomId);
       setState({ status: 'loaded', items });
     } catch (error) {
       setState({
@@ -179,16 +191,17 @@ export const useSettlementViewModel = () => {
         message: error instanceof Error ? error.message : '정산 목록을 불러오지 못했습니다.',
       });
     }
-  }, []);
+  }, [roomId]);
 
   return {
     state,
     selectedTab,
     setSelectedTab,
+    isTransferring,
     inProgressCount,
     settlementItems: filteredItems,
-    markAsPaid,
-    markAllAsPaid,
+    transferSingle,
+    transferAllPending,
     reload: loadSettlements,
     refresh,
   };

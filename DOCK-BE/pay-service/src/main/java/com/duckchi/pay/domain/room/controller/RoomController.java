@@ -5,6 +5,7 @@ import com.duckchi.pay.domain.room.dto.request.DelegateAdminRequest;
 import com.duckchi.pay.domain.room.dto.request.StartRoomRequest;
 import com.duckchi.pay.domain.room.dto.request.UpdateRoomRequest;
 import com.duckchi.pay.domain.room.dto.response.CreateRoomResponse;
+import com.duckchi.pay.domain.room.dto.response.GetAutoDebitConsentResponse;
 import com.duckchi.pay.domain.room.dto.response.RoomListResponse;
 import com.duckchi.pay.domain.room.dto.response.RoomMySetResponse;
 import com.duckchi.pay.domain.room.dto.response.RoomParticipantListResponse;
@@ -64,6 +65,17 @@ public class RoomController {
     ) {
         Long currentUserId = resolveRequiredUserId(userIdHeader);
         UpdateAutoDebitConsentResponse response = roomService.updateAutoDebitConsent(roomId, currentUserId, status);
+        return ResponseEntity.ok(ApiResponseDto.success(response));
+    }
+
+    @GetMapping("/{roomId}/auto-debit/consents")
+    @Operation(summary = "ROOM-20: 자동이체 동의 상태 조회 API")
+    public ResponseEntity<ApiResponseDto<GetAutoDebitConsentResponse>> getAutoDebitConsent(
+            @PathVariable Long roomId,
+            @RequestHeader(value = USER_ID_HEADER, required = false) String userIdHeader
+    ) {
+        Long currentUserId = resolveRequiredUserId(userIdHeader);
+        GetAutoDebitConsentResponse response = roomService.getAutoDebitConsent(roomId, currentUserId);
         return ResponseEntity.ok(ApiResponseDto.success(response));
     }
 
