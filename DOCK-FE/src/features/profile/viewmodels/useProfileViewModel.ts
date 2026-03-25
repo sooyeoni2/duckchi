@@ -22,6 +22,8 @@ const useProfileStore = create<ProfileStore>(set => ({
   reset: () => set({ state: { status: 'idle' } }),
 }));
 
+export const resetProfileStore = () => useProfileStore.getState().reset();
+
 export const useProfileViewModel = () => {
   const { state, setState } = useProfileStore();
 
