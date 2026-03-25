@@ -192,6 +192,13 @@ export function RoomScreen() {
     }
   }, [isSettlementDetailOpen, navigation, selectedRoomTab]);
 
+  const handleRetrySettlementDetail = React.useCallback((expenseId: number) => {
+    setSettlementDetailState({
+      status: 'loading',
+      expenseId,
+    });
+  }, []);
+
   if (viewMode === 'TRANSFER') {
     return <RoomSettlementTransferScreen onBack={() => setViewMode('SUMMARY')} />;
   }
@@ -208,12 +215,6 @@ export function RoomScreen() {
   const showRoomActions =
     !shouldUseSettlementDetailAppBar &&
     (selectedRoomTab !== 'PAYMENT' || paymentLayoutState.showRoomActions);
-  const handleRetrySettlementDetail = React.useCallback((expenseId: number) => {
-    setSettlementDetailState({
-      status: 'loading',
-      expenseId,
-    });
-  }, []);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
