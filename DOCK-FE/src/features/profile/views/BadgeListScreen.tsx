@@ -121,8 +121,8 @@ export function BadgeListScreen() {
             <View key={rowIndex} style={styles.row}>
               {row.map(item =>
                 item.type === 'acquired'
-                  ? <AcquiredBadgeItem key={item.badge.id} badge={item.badge} />
-                  : <LockedBadgeItem key={item.badge.id} badge={item.badge} onPress={() => setSelectedBadge(item.badge)} />,
+                  ? <AcquiredBadgeItem key={`acquired-${item.badge.id}`} badge={item.badge} />
+                  : <LockedBadgeItem key={`locked-${item.badge.id}`} badge={item.badge} onPress={() => setSelectedBadge(item.badge)} />,
               )}
               {/* 마지막 행이 3개 미만이면 빈 칸 채우기 */}
               {row.length < COLUMNS &&
