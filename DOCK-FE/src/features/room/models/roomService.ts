@@ -79,6 +79,7 @@ export interface RoomListResponse {
   roomId: number;
   roomName: string;
   category: string;
+  description?: string;
   isProgress: boolean;
   participants: number[];
   participantCount: number;
