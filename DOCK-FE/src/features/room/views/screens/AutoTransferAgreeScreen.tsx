@@ -53,8 +53,8 @@ const AutoTransferAgreeScreen: React.FC = () => {
           <Text style={styles.infoTitle}>자동이체 동의란?</Text>
           <View style={styles.infoBulletBox}>
             <Text style={styles.infoBullet}>• 정산 금액이 자동 출금돼요</Text>
-            <Text style={styles.infoBullet}>• 클릭 없이 정산이 끝나요</Text>
-            <Text style={styles.infoBullet}>• 정산전까지 동의 취소 가능해요</Text>
+            <Text style={styles.infoBullet}>• 비밀번호 없이 원클릭으로 정산돼요</Text>
+            <Text style={styles.infoBullet}>• 정산전까지 언제든 취소 가능해요</Text>
           </View>
         </View>
 
@@ -196,4 +196,3 @@ const styles = StyleSheet.create({
 });
 
 export default AutoTransferAgreeScreen;
-
