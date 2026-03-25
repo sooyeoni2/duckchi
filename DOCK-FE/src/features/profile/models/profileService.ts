@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { axiosClient } from '../../../core/network/axiosClient';
+import { ENDPOINTS } from '../../../core/constants/apiConstants';
 import { useAuthStore } from '../../auth/models/authStore';
 import type {
   Account,
@@ -40,7 +41,7 @@ const profileDetailSchema = z.object({
   tag: z.string(),
   transferLimit: z.number(),
   createdAt: z.string(),
-  profileImageUrl: z.string().nullable(),
+  profileImageUrl: z.string().nullable().optional(),
   accounts: z.array(accountSchema),
   badges: z.array(profileBadgeSchema),
 });
@@ -115,7 +116,8 @@ const toLockedBadge = (raw: z.infer<typeof lockedBadgeSchema>): LockedBadge => (
 // Mock 데이터
 // ─────────────────────────────────────────
 
-const USE_MOCK = true;
+const USE_MOCK = false;
+const USE_MOCK_BADGE = false;
 
 let mockProfile = profileDetailSchema.parse({
   userId: 1,
@@ -180,6 +182,7 @@ export const fetchProfile = async (): Promise<Profile> => {
   const raw = profileDetailSchema.parse(response.data.data);
   return {
     ...raw,
+    profileImageUrl: raw.profileImageUrl ?? null,
     createdAt: toDate(raw.createdAt),
     accounts: raw.accounts.map(toAccount),
     badges: raw.badges.map(toProfileBadge),
@@ -229,8 +232,12 @@ export const mockAddAccount = (account: {
 };
 
 
+export const editProfileImage = async (profileImageKey: string): Promise<void> => {
+  await axiosClient.post(ENDPOINTS.profiles.editImage, { profileImageKey });
+};
+
 export const fetchBadges = async (): Promise<BadgeList> => {
-  if (USE_MOCK) {
+  if (USE_MOCK_BADGE) {
     await new Promise<void>(resolve => setTimeout(resolve, 500));
     return {
       acquiredBadges: mockBadgeList.acquiredBadges.map(toAcquiredBadge),

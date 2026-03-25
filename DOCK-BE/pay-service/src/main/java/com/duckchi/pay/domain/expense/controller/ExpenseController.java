@@ -45,22 +45,22 @@ public class ExpenseController {
     private final ExpenseService expenseService;
     private final ExpenseOcrService expenseOcrService;
 
-    @Operation(summary = "OCR 실행", description = "영수증 이미지를 분석해 결제 등록용 초안 정보를 반환함")
-    @PostMapping(value = "/expenses/ocr", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "OCR 실행", description = "S3에 업로드된 영수증 이미지 URL을 분석해 결제 등록용 초안 정보를 반환함")
+    @PostMapping(value = "/expenses/ocr")
     public ApiResponseDto<ExpenseOcrDraftResponse> analyzeReceipt(
-            @Parameter(description = "OCR 분석 대상 영수증 이미지 파일", required = true)
-            @RequestPart("image") MultipartFile image
+            @Parameter(description = "S3에 업로드된 영수증 이미지 URL", required = true)
+            String imageUrl
     ) {
-        return ApiResponseDto.success(expenseOcrService.analyzeReceipt(image));
+        return ApiResponseDto.success(expenseOcrService.analyzeReceipt(imageUrl));
     }
 
-    @Operation(summary = "개발용 OCR 원본 응답 조회", description = "영수증 이미지를 OCR에 전달한 뒤 네이버 OCR 원본 JSON 응답을 그대로 반환함")
-    @PostMapping(value = "/expenses/ocr/raw", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "개발용 OCR 원본 응답 조회", description = "S3에 업로드된 영수증 이미지 URL을 OCR에 전달한 뒤 네이버 OCR 원본 JSON 응답을 그대로 반환함")
+    @PostMapping(value = "/expenses/ocr/raw")
     public ApiResponseDto<JsonNode> analyzeReceiptRaw(
-            @Parameter(description = "OCR 원본 응답 조회 대상 영수증 이미지 파일", required = true)
-            @RequestPart("image") MultipartFile image
+            @Parameter(description = "S3에 업로드된 영수증 이미지 URL", required = true)
+            String imageUrl
     ) {
-        return ApiResponseDto.success(expenseOcrService.analyzeReceiptRaw(image));
+        return ApiResponseDto.success(expenseOcrService.analyzeReceiptRaw(imageUrl));
     }
 
     @Operation(summary = "계좌 거래 내역 조회", description = "로그인 사용자의 대표 계좌 기준으로 최근 거래 내역을 조회함")

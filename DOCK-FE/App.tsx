@@ -17,6 +17,9 @@ import {
   handleDisplayedNotificationEvent,
   openNotificationEvent,
 } from '@features/notification';
+import { loadTokenFromStorage, useAuthStore } from './src/features/auth/models/authStore';
+import { axiosClient } from './src/core/network/axiosClient';
+import { ENDPOINTS } from './src/core/constants/apiConstants';
 import { AppNavigator } from './src/core/navigation/AppNavigator';
 import { AuthNavigator } from './src/core/navigation/AuthNavigator';
 import { navigationRef } from './src/core/navigation/navigationRef';
@@ -27,13 +30,15 @@ import { BankAccountVerifyScreen } from './src/features/bank/views/BankAccountVe
 import { PayPasswordConfirmScreen } from './src/features/bank/views/PayPasswordConfirmScreen';
 import { PayPasswordInputScreen } from './src/features/bank/views/PayPasswordInputScreen';
 import { PayPasswordSetupScreen } from './src/features/bank/views/PayPasswordSetupScreen';
-import { useAuthStore } from './src/features/auth/models/authStore';
 import { OnboardingScreen } from './src/features/onboarding/OnboardingScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 function App() {
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
+  const setAuth = useAuthStore((s) => s.setAuth);
+  const updateAccessToken = useAuthStore((s) => s.updateAccessToken);
+  const [authReady, setAuthReady] = React.useState(false);
   const [fontsLoaded, fontError] = useFonts({
     'KBO Dia Gothic Light': require('./src/assets/fonts/KBO Dia Gothic Light.otf'),
     'KBO Dia Gothic Medium': require('./src/assets/fonts/KBO Dia Gothic Medium.otf'),
@@ -49,9 +54,32 @@ function App() {
     'Pretendard-Black': require('./src/assets/fonts/Pretendard-Black.ttf'),
   });
 
+  useEffect(() => {
+    const restoreAuth = async () => {
+      try {
+        const stored = await loadTokenFromStorage();
+        if (stored) {
+          const res = await axiosClient.post(ENDPOINTS.auth.refresh, { refreshToken: stored.refreshToken });
+          const newAccessToken: string = res.data.data.accessToken;
+          updateAccessToken(newAccessToken);
+          setAuth(newAccessToken, stored.refreshToken, stored.user);
+        }
+      } catch {
+        // 토큰 만료 등 복원 실패 시 로그인 화면으로
+      } finally {
+        setAuthReady(true);
+      }
+    };
+    restoreAuth().catch(() => {
+      setAuthReady(true);
+    });
+  }, [setAuth, updateAccessToken]);
+
   // foreground 수신 시에는 Notifee 로컬 알림을 띄워 액션 버튼까지 같은 UX로 맞춘다.
   const handleForegroundMessage = React.useCallback((message: NotificationMessage) => {
-    void displayNotificationMessage(message);
+    displayNotificationMessage(message).catch(() => {
+      // 알림 표시 실패는 앱 흐름을 막지 않는다.
+    });
   }, []);
 
   useEffect(() => {
@@ -59,24 +87,29 @@ function App() {
     let isUnmounted = false;
 
     // Notifee 표시를 쓰려면 권한과 기본 채널을 먼저 준비해둔다.
-    void requestNotificationDisplayPermission()
-      .then(() => ensureDefaultNotificationChannel())
-      .then(() =>
-        bootstrapNotifications({
-          onForegroundMessage: handleForegroundMessage,
-          onNotificationOpen: async (event) => {
-            openNotificationEvent(event);
-          },
-        }),
-      )
-      .then((cleanup) => {
-        if (isUnmounted) {
-          cleanup();
-          return;
-        }
+    const initializeNotifications = async () => {
+      const cleanup = await requestNotificationDisplayPermission()
+        .then(() => ensureDefaultNotificationChannel())
+        .then(() =>
+          bootstrapNotifications({
+            onForegroundMessage: handleForegroundMessage,
+            onNotificationOpen: async (event) => {
+              openNotificationEvent(event);
+            },
+          }),
+        );
 
-        cleanupNotifications = cleanup;
-      });
+      if (isUnmounted) {
+        cleanup();
+        return;
+      }
+
+      cleanupNotifications = cleanup;
+    };
+
+    initializeNotifications().catch(() => {
+      // 알림 초기화 실패는 앱 진입을 막지 않는다.
+    });
 
     // foreground에서 로컬 알림 본문이나 액션 버튼을 누른 경우도 같은 라우팅 로직에 연결한다.
     const unsubscribeForegroundEvent = notifee.onForegroundEvent(({ type, detail }) => {
@@ -100,6 +133,7 @@ function App() {
   }, []);
 
   if (!fontsLoaded && !fontError) return null;
+  if (!authReady) return null;
 
   return (
     <SafeAreaProvider>
@@ -107,11 +141,11 @@ function App() {
       <NavigationContainer ref={navigationRef} onReady={handleNavigationReady}>
         <Stack.Navigator
           screenOptions={{ headerShown: false, animation: 'none' }}
-          initialRouteName={isLoggedIn ? 'App' : 'Onboarding'}
+          initialRouteName="Onboarding"
         >
           <Stack.Screen name="Onboarding">
             {({ navigation }) => (
-              <OnboardingScreen onStart={() => navigation.replace('Auth')} />
+              <OnboardingScreen onStart={() => navigation.replace(isLoggedIn ? 'App' : 'Auth')} />
             )}
           </Stack.Screen>
           <Stack.Screen name="Auth" component={AuthNavigator} />

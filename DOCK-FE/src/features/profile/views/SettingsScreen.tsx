@@ -2,12 +2,11 @@ import { MaterialCommunityIcons as MaterialDesignIcons } from '@expo/vector-icon
 import { useNavigation } from '@react-navigation/native';
 import type { CompositeNavigationProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   View,
 } from 'react-native';
@@ -18,8 +17,9 @@ import { AppColorStyles } from '../../../core/theme/colors';
 import { KBODiaGothicTextStyle } from '../../../core/theme/typography';
 import { CustomAppBar } from '../../../shared/components/app_bar/CustomAppBar';
 import { usePopOnTabBlur } from '../../../shared/hooks/usePopOnTabBlur';
+import { logout as logoutService } from '../../auth/models/authService';
+import { useAuthStore } from '../../auth/models/authStore';
 import { useProfileViewModel } from '../viewmodels/useProfileViewModel';
-import { updateNotification } from '../models/notificationService';
 
 type Nav = CompositeNavigationProp<
   NativeStackNavigationProp<ProfileStackParamList>,
@@ -61,13 +61,18 @@ function RowDivider() {
 
 export function SettingsScreen() {
   const navigation = useNavigation<Nav>();
-  const [notificationEnabled, setNotificationEnabled] = useState(true);
+  const clearAuth = useAuthStore(s => s.clear);
+  const { state, reset: resetProfile } = useProfileViewModel();
 
-  const handleNotificationToggle = async (value: boolean) => {
-    setNotificationEnabled(value);
-    await updateNotification(value);
+  const handleLogout = async () => {
+    try {
+      await logoutService();
+    } finally {
+      clearAuth();
+      resetProfile();
+      (navigation as any).reset({ index: 0, routes: [{ name: 'Auth' }] });
+    }
   };
-  const { state } = useProfileViewModel();
   const hasAccount = state.status === 'loaded' && state.profile.accounts.length > 0;
 
   const handleAccountSetupPress = () => {
@@ -103,23 +108,6 @@ export function SettingsScreen() {
           <SettingsRow label="자동이체 한도 변경" onPress={() => navigation.navigate('TransferLimit')} />
         </View>
 
-        {/* 알림 */}
-        <SectionLabel title="알림" />
-        <View style={styles.card}>
-          <SettingsRow
-            label="알림 설정"
-            right={
-              <Switch
-                value={notificationEnabled}
-                onValueChange={handleNotificationToggle}
-                trackColor={{ false: AppColorStyles.gray3, true: AppColorStyles.gray1 }}
-                thumbColor={AppColorStyles.white}
-                style={{ alignSelf: 'center' }}
-              />
-            }
-          />
-        </View>
-
         {/* 앱 정보 */}
         <SectionLabel title="앱 정보" />
         <View style={styles.card}>
@@ -140,7 +128,7 @@ export function SettingsScreen() {
           <View style={styles.rowWrapper}>
             <Pressable
               style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-              onPress={() => {}}
+              onPress={handleLogout}
             >
               <Text style={styles.logoutLabel}>로그아웃</Text>
             </Pressable>

@@ -9,6 +9,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.duckchi.pay.domain.badge.service.BadgeTriggerService;
 import com.duckchi.pay.domain.expense.entity.Expense;
 import com.duckchi.pay.domain.expense.entity.ExpenseParticipant;
 import com.duckchi.pay.domain.expense.repository.ExpenseParticipantRepository;
@@ -26,6 +27,7 @@ import com.duckchi.pay.domain.settlement.entity.Settlement;
 import com.duckchi.pay.domain.settlement.repository.SettlementRepository;
 import com.duckchi.pay.global.error.CustomException;
 import com.duckchi.pay.global.error.ErrorCode;
+import com.duckchi.pay.infra.kafka.service.OutboxEventCommandService;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -57,6 +59,12 @@ class SettlementServiceImplTest {
 
     @Mock
     private SettlementTransferExecutor settlementTransferExecutor;
+
+    @Mock
+    private OutboxEventCommandService outboxEventCommandService;
+
+    @Mock
+    private BadgeTriggerService badgeTriggerService;
 
     @InjectMocks
     private SettlementServiceImpl settlementService;

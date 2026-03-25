@@ -1,12 +1,16 @@
 package com.duckchi.pay.domain.settlement.service;
 
+import com.duckchi.pay.domain.badge.service.BadgeTriggerService;
 import com.duckchi.pay.domain.expense.entity.Expense;
 import com.duckchi.pay.domain.expense.entity.ExpenseParticipant;
 import com.duckchi.pay.domain.expense.repository.ExpenseParticipantRepository;
 import com.duckchi.pay.domain.expense.repository.ExpenseRepository;
+import com.duckchi.pay.domain.room.entity.RoomParticipant;
 import com.duckchi.pay.domain.room.entity.Room;
 import com.duckchi.pay.domain.room.repository.RoomParticipantRepository;
 import com.duckchi.pay.domain.room.repository.RoomRepository;
+import com.duckchi.pay.domain.settlement.dto.event.ExpenseSettledNotificationEvent;
+import com.duckchi.pay.domain.settlement.dto.event.SettlementRequestNotificationEvent;
 import com.duckchi.pay.domain.settlement.dto.request.SettlementManualTransferRequest;
 import com.duckchi.pay.domain.settlement.dto.request.SettlementRequestCreateRequest;
 import com.duckchi.pay.domain.settlement.dto.request.SettlementTransferRequest;
@@ -19,12 +23,16 @@ import com.duckchi.pay.global.error.CustomException;
 import com.duckchi.pay.global.error.ErrorCode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import com.duckchi.pay.infra.kafka.service.OutboxEventCommandService;
+import com.duckchi.pay.infra.kafka.type.KafkaTopicNames;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -51,7 +59,13 @@ public class SettlementServiceImpl implements SettlementService {
     private final RoomRepository roomRepository;
     private final RoomParticipantRepository roomParticipantRepository;
     private final SettlementTransferExecutor settlementTransferExecutor;
+    private final OutboxEventCommandService outboxEventCommandService;
+    private final BadgeTriggerService badgeTriggerService;
 
+    /**
+     * SET-01: 결제안 목록 기준으로 정산 요청 레코드를 생성한다.
+     * 생성이 확정된 뒤에만 해당 결제안 상태를 REQUESTED로 전이한다.
+     */
     @Override
     @Transactional
     public void requestSettlements(Long currentUserId, SettlementRequestCreateRequest request) {
@@ -101,8 +115,16 @@ public class SettlementServiceImpl implements SettlementService {
 
         // settlement 생성이 확정된 뒤에만 expense 상태를 REQUESTED로 전이한다.
         expenses.forEach(Expense::markRequested);
+
+        publishSettlementRequestNotificationEvents(settlements, expenses);
+
+
     }
 
+    /**
+     * SET-02: 납부자 기준 정산 송금을 일괄 실행한다.
+     * 부분 성공을 허용하며, 실패한 settlementId 목록은 예외 payload로 반환한다.
+     */
     @Override
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void transferSettlements(Long currentUserId, SettlementTransferRequest request) {
@@ -136,6 +158,10 @@ public class SettlementServiceImpl implements SettlementService {
             throw new CustomException(ErrorCode.SETTLEMENT_TRANSFER_PARTIAL, failedSettlementIds);
         }
     }
+    /**
+     * SET-03: 총무가 외부 이체 완료를 확인하고 단건 정산을 수기 완료 처리한다.
+     * 동일 expense의 미완료 정산이 0건이면 expense 상태를 SETTLED로 전이한다.
+     */
     @Override
     @Transactional
     public SettlementManualTransferResponse manualTransferSettlement(
@@ -172,7 +198,31 @@ public class SettlementServiceImpl implements SettlementService {
         // 동일 결제의 미완료 정산이 0건이 되는 시점에만 결제 상태를 SETTLED로 전이한다.
         if (!settlementRepository.existsByExpenseIdAndStatus(expense.getId(), SETTLEMENT_PENDING_STATUS)) {
             expense.markSettled();
+
+            //Event 만들기
+            ExpenseSettledNotificationEvent event = ExpenseSettledNotificationEvent.builder()
+                    .expenseId(expense.getId())
+                    .expenseTitle(expense.getTitle())
+                    .payerUserId(expense.getPayerUserId())
+                    .occurredAt(LocalDateTime.now())
+                    .build();
+            //outboxEventCommandService 호출
+            outboxEventCommandService.save(
+                    "EXPENSE",
+                    expense.getId(),
+                    "EXPENSE_SETTLED",
+                    KafkaTopicNames.EXPENSE_SETTLED_NOTIFICATION_EVENT,
+                    event
+            );
         }
+
+        // [BADGE 트리거] 수동 정산 완료도 '정산 완료'이므로 뱃지 진행도 갱신
+        badgeTriggerService.triggerSettlementCompleted(
+                settlement.getPayerUserId(),
+                settlement.getPayableAmount(),
+                settlement.getCreatedAt(),
+                completedAt
+        );
 
         return new SettlementManualTransferResponse(
                 settlement.getId(),
@@ -182,6 +232,10 @@ public class SettlementServiceImpl implements SettlementService {
                 completedAt
         );
     }
+    /**
+     * SET-04: 특정 결제안의 정산 진행 현황(대기/완료 건수 + 참여자별 상태)을 조회한다.
+     * 총무(정산 요청자) 본인만 조회할 수 있다.
+     */
     @Override
     public PendingSettlementsResponse getPendingSettlements(Long currentUserId, Long expenseId) {
         if (currentUserId == null) {
@@ -238,9 +292,89 @@ public class SettlementServiceImpl implements SettlementService {
                 settlementItems
         );
     }
+    /**
+     * SET-02 배치 최대 처리 개수를 검증한다.
+     */
     private void validateTransferBatchSize(List<Long> settlementIds) {
         if (settlementIds.size() > TRANSFER_BATCH_MAX_SIZE) {
             throw new CustomException(ErrorCode.COMMON_INVALID_INPUT);
+        }
+    }
+
+    /**
+     * 요청 settlementId 목록과 조회 결과 개수를 비교해 누락 여부를 검증한다.
+     */
+    //정산요청 알림 이벤트 publish 메서드
+    private void publishSettlementRequestNotificationEvents(List<Settlement> settlements, List<Expense> expenses) {
+
+        //expense를 expenseId로 map으로 변형
+        Map<Long, Expense> expenseById = expenses.stream()
+                .collect(Collectors.toMap(Expense::getId, expense -> expense));
+
+        //settlements에서 roomId 추출
+        Long roomId = settlements.get(0).getRoomId();
+        //roomId로 방 참여자 조회
+        Map<Long, Boolean> agreementByUserId = roomParticipantRepository.findByRoom_Id(roomId).stream()
+                .collect(Collectors.toMap(
+                        RoomParticipant::getUserId,
+                        RoomParticipant::isAgreed
+                ));
+        //settlement들을 payerUserId 기준으로 묶기
+        Map<Long, List<Settlement>> settlementsByReceiver = settlements.stream()
+                .collect(Collectors.groupingBy(
+                        Settlement::getPayerUserId,
+                        LinkedHashMap::new,
+                        Collectors.toList()
+                ));
+
+        //사용자별로 묶인 settlement 그룹 처리
+        for (Map.Entry<Long, List<Settlement>> entry : settlementsByReceiver.entrySet()) {
+            Long receiverId = entry.getKey(); //알림 받을 사용자 id
+            List<Settlement> receiverSettlements = entry.getValue(); //사용자가 받아야할 settlement 목록
+            Settlement firstSettlement = receiverSettlements.get(0); //공통값 꺼낼때 잡은 것
+
+            boolean isAgreed = agreementByUserId.getOrDefault(receiverId, false); //이 사용자의 isAgreed 상태 꺼내기
+
+            //총 내야할 금액 조립
+            int totalAmount = receiverSettlements.stream()
+                    .mapToInt(Settlement::getPayableAmount)
+                    .sum();
+
+            //정산 요청 id와 결제 항목명 매핑
+            Map<Long, String> settlementTitles = receiverSettlements.stream()
+                    .collect(Collectors.toMap(
+                            Settlement::getId,
+                            settlement -> {
+                                Expense expense = expenseById.get(settlement.getExpenseId());
+                                return expense != null ? expense.getTitle() : "정산 요청";
+                            },
+                            (left, right) -> left, //key가 중복되면 먼저 값 유지
+                            LinkedHashMap::new //순서 유지
+                    ));
+
+            //이벤트 조립
+            SettlementRequestNotificationEvent event = SettlementRequestNotificationEvent.builder()
+                    .receiverId(receiverId)
+                    .isAgreed(isAgreed)
+                    .roomName(firstSettlement.getRoomName())
+                    .totalAmount(totalAmount)
+                    .requesterUserName(firstSettlement.getRequesterUserName())
+                    .settlements(settlementTitles)
+                    .build();
+
+            //대표 정산 id 추출
+            Long aggregateId = receiverSettlements.stream()
+                    .map(Settlement::getId)
+                    .min(Long::compareTo)
+                    .orElseThrow();
+            //outboxEventCommandService 호출
+            outboxEventCommandService.save(
+                    "SETTLEMENT",
+                    aggregateId,
+                    "SETTLEMENT_REQUESTED",
+                    KafkaTopicNames.SETTLEMENT_REQUEST_NOTIFICATION_EVENT,
+                    event
+            );
         }
     }
 
@@ -250,6 +384,9 @@ public class SettlementServiceImpl implements SettlementService {
         }
     }
 
+    /**
+     * 송금 요청 사용자가 모든 정산 건의 납부자(payer)인지 검증한다.
+     */
     private void validateSettlementPayerAuthorization(Long currentUserId, List<Settlement> settlements) {
         boolean hasForbiddenSettlement = settlements.stream()
                 .anyMatch(settlement -> !currentUserId.equals(settlement.getPayerUserId()));
@@ -259,6 +396,9 @@ public class SettlementServiceImpl implements SettlementService {
         }
     }
 
+    /**
+     * 송금 대상 정산이 모두 PENDING 상태인지 검증한다.
+     */
     private void validateSettlementPendingStatus(List<Settlement> settlements) {
         boolean hasCompletedSettlement = settlements.stream()
                 .anyMatch(settlement -> !SETTLEMENT_PENDING_STATUS.equals(settlement.getStatus()));
@@ -268,6 +408,10 @@ public class SettlementServiceImpl implements SettlementService {
         }
     }
 
+    /**
+     * 요청 ID 목록의 null/음수/중복을 제거하지 않고 즉시 실패 처리한다.
+     * (클라이언트 입력 무결성 검증)
+     */
     private List<Long> validateAndNormalizeIds(List<Long> requestedExpenseIds) {
         if (requestedExpenseIds == null || requestedExpenseIds.isEmpty()) {
             throw new CustomException(ErrorCode.COMMON_INVALID_INPUT);
@@ -287,6 +431,9 @@ public class SettlementServiceImpl implements SettlementService {
                 .toList();
     }
 
+    /**
+     * 요청한 expense ID 목록이 모두 실제 결제안으로 존재하는지 검증한다.
+     */
     private void validateAllExpensesExist(List<Long> requestedIds, List<Expense> expenses) {
         // 요청 ID 수와 조회 결과 수가 다르면 일부 ID가 존재하지 않는 상태다.
         if (expenses.size() != requestedIds.size()) {
@@ -294,6 +441,9 @@ public class SettlementServiceImpl implements SettlementService {
         }
     }
 
+    /**
+     * SET-01 요청자가 결제안의 총무(payer)와 일치하는지 검증한다.
+     */
     private void validateRequester(Long currentUserId, List<Expense> expenses) {
         boolean hasInvalidRequester = expenses.stream()
                 .anyMatch(expense -> !currentUserId.equals(expense.getPayerUserId()));
@@ -303,6 +453,9 @@ public class SettlementServiceImpl implements SettlementService {
         }
     }
 
+    /**
+     * 요청자가 모든 대상 room의 참여자인지 검증한다.
+     */
     private void validateRoomMembership(Long currentUserId, List<Expense> expenses) {
         // 다건 요청에서 room이 섞일 수 있으므로 roomId 단위로 멤버십을 모두 검증한다.
         Set<Long> roomIds = expenses.stream().map(Expense::getRoomId).collect(Collectors.toSet());
@@ -315,6 +468,9 @@ public class SettlementServiceImpl implements SettlementService {
         }
     }
 
+    /**
+     * SET-01 대상 결제안이 모두 PENDING 상태인지 검증한다.
+     */
     private void validateExpenseStatus(List<Expense> expenses) {
         // SET-01은 PENDING 결제만 요청 가능하다.
         boolean hasNonPending = expenses.stream()
@@ -325,6 +481,9 @@ public class SettlementServiceImpl implements SettlementService {
         }
     }
 
+    /**
+     * 참여자 분담금 합계와 결제 총액 일치 여부를 검증한다.
+     */
     private void validateParticipantAmountIntegrity(
             List<Expense> expenses,
             Map<Long, List<ExpenseParticipant>> participantsByExpenseId
@@ -352,6 +511,9 @@ public class SettlementServiceImpl implements SettlementService {
         }
     }
 
+    /**
+     * 대상 room의 이름을 조회해 roomId -> roomName 매핑을 구성한다.
+     */
     private Map<Long, String> loadRoomNames(List<Expense> expenses) {
         Set<Long> roomIds = expenses.stream().map(Expense::getRoomId).collect(Collectors.toSet());
 
@@ -366,6 +528,10 @@ public class SettlementServiceImpl implements SettlementService {
         return roomNameById;
     }
 
+    /**
+     * expense/participant 스냅샷 기준으로 정산 레코드 목록을 생성한다.
+     * 총무 본인에 대한 settlement는 생성하지 않는다.
+     */
     private List<Settlement> buildSettlements(
             List<Expense> expenses,
             Map<Long, List<ExpenseParticipant>> participantsByExpenseId,
@@ -400,6 +566,9 @@ public class SettlementServiceImpl implements SettlementService {
         return settlements;
     }
 
+    /**
+     * DB 제약조건 예외 중 settlement 중복 요청 관련 UNIQUE 위반만 식별한다.
+     */
     private boolean isSettlementUniqueViolation(DataIntegrityViolationException ex) {
         // DataIntegrityViolationException은 범용이므로, 제약명 기반으로 UNIQUE 위반만 선별한다.
         String message = Optional.ofNullable(ex.getMostSpecificCause())
