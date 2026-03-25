@@ -1,6 +1,5 @@
 package com.duckchi.core.domain.user.service;
 
-import com.duckchi.core.domain.user.dto.request.NotificationSettingRequest;
 import com.duckchi.core.domain.user.dto.request.UserProfileEditRequest;
 import com.duckchi.core.domain.user.dto.request.UserProfileImageEditRequest;
 import com.duckchi.core.domain.user.dto.response.UserProfileDetailResponse;
@@ -14,5 +13,4 @@ public interface UserProfileService {
 
     UserProfileEditResponse editProfileImage(Long userId, UserProfileImageEditRequest request);
 
-    void updateNotificationSetting(Long userId, NotificationSettingRequest request);
 }
