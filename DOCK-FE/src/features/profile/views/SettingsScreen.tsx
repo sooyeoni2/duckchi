@@ -2,13 +2,12 @@ import { MaterialCommunityIcons as MaterialDesignIcons } from '@expo/vector-icon
 import { useNavigation } from '@react-navigation/native';
 import type { CompositeNavigationProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useState } from 'react';
+import React from 'react';
 import {
+  Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,6 +17,8 @@ import { AppColorStyles } from '../../../core/theme/colors';
 import { KBODiaGothicTextStyle } from '../../../core/theme/typography';
 import { CustomAppBar } from '../../../shared/components/app_bar/CustomAppBar';
 import { usePopOnTabBlur } from '../../../shared/hooks/usePopOnTabBlur';
+import { logout as logoutService } from '../../auth/models/authService';
+import { useAuthStore } from '../../auth/models/authStore';
 import { useProfileViewModel } from '../viewmodels/useProfileViewModel';
 
 type Nav = CompositeNavigationProp<
@@ -39,12 +40,18 @@ function SettingsRow({
   right?: React.ReactNode;
 }) {
   return (
-    <TouchableOpacity style={styles.row} onPress={onPress} disabled={!onPress} activeOpacity={0.6}>
-      <Text style={styles.rowLabel}>{label}</Text>
-      {right ?? (
-        onPress && <MaterialDesignIcons name="chevron-right" size={20} color={AppColorStyles.black} />
-      )}
-    </TouchableOpacity>
+    <View style={styles.rowWrapper}>
+      <Pressable
+        style={({ pressed }) => [styles.row, pressed && onPress && styles.rowPressed]}
+        onPress={onPress}
+        disabled={!onPress}
+      >
+        <Text style={styles.rowLabel}>{label}</Text>
+        {right ?? (
+          onPress && <MaterialDesignIcons name="chevron-right" size={20} color={AppColorStyles.black} />
+        )}
+      </Pressable>
+    </View>
   );
 }
 
@@ -54,8 +61,18 @@ function RowDivider() {
 
 export function SettingsScreen() {
   const navigation = useNavigation<Nav>();
-  const [notificationEnabled, setNotificationEnabled] = useState(true);
-  const { state } = useProfileViewModel();
+  const clearAuth = useAuthStore(s => s.clear);
+  const { state, reset: resetProfile } = useProfileViewModel();
+
+  const handleLogout = async () => {
+    try {
+      await logoutService();
+    } finally {
+      clearAuth();
+      resetProfile();
+      (navigation as any).reset({ index: 0, routes: [{ name: 'Auth' }] });
+    }
+  };
   const hasAccount = state.status === 'loaded' && state.profile.accounts.length > 0;
 
   const handleAccountSetupPress = () => {
@@ -91,23 +108,6 @@ export function SettingsScreen() {
           <SettingsRow label="자동이체 한도 변경" onPress={() => navigation.navigate('TransferLimit')} />
         </View>
 
-        {/* 알림 */}
-        <SectionLabel title="알림" />
-        <View style={styles.card}>
-          <SettingsRow
-            label="알림 설정"
-            right={
-              <Switch
-                value={notificationEnabled}
-                onValueChange={setNotificationEnabled}
-                trackColor={{ false: AppColorStyles.gray3, true: AppColorStyles.gray1 }}
-                thumbColor={AppColorStyles.white}
-                style={{ alignSelf: 'center' }}
-              />
-            }
-          />
-        </View>
-
         {/* 앱 정보 */}
         <SectionLabel title="앱 정보" />
         <View style={styles.card}>
@@ -125,9 +125,14 @@ export function SettingsScreen() {
 
         {/* 로그아웃 */}
         <View style={[styles.card, { marginTop: 12 }]}>
-          <TouchableOpacity style={styles.row} onPress={() => {}} activeOpacity={0.6}>
-            <Text style={styles.logoutLabel}>로그아웃</Text>
-          </TouchableOpacity>
+          <View style={styles.rowWrapper}>
+            <Pressable
+              style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+              onPress={handleLogout}
+            >
+              <Text style={styles.logoutLabel}>로그아웃</Text>
+            </Pressable>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -148,25 +153,36 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     ...KBODiaGothicTextStyle.medium({ fontSize: 16, color: AppColorStyles.gray2 }),
-    marginTop: 20,
-    marginBottom: 8,
+    marginTop: 14,
+    marginBottom: 6,
     marginLeft: 10,
   },
   card: {
     backgroundColor: AppColorStyles.surface,
-    borderRadius: 10,
-    shadowColor: AppColorStyles.gray2,
+    borderRadius: 18,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
     elevation: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  rowWrapper: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginVertical: 4,
   },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     height: 52,
+    borderRadius: 12,
+  },
+  rowPressed: {
+    backgroundColor: AppColorStyles.gray5,
   },
   rowLabel: {
     ...KBODiaGothicTextStyle.medium({ fontSize: 15, color: AppColorStyles.black }),
@@ -174,7 +190,6 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     backgroundColor: AppColorStyles.divider,
-    marginHorizontal: 16,
   },
   versionText: {
     ...KBODiaGothicTextStyle.medium({ fontSize: 15, color: AppColorStyles.textDisabled }),

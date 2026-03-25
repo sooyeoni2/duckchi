@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.duckchi.pay.domain.room.dto.response.CreateInviteLinkResponse;
+import com.duckchi.pay.domain.room.dto.response.JoinRoomByInviteResponse;
 import com.duckchi.pay.domain.room.dto.response.ValidateInviteLinkResponse;
 import com.duckchi.pay.domain.room.service.InviteLinkService;
 import com.duckchi.pay.global.error.CustomException;
@@ -18,8 +19,9 @@ import java.time.LocalDateTime;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.data.jpa.mapping.JpaMetamodelMappingContext;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -30,10 +32,10 @@ class InviteLinkControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
+    @MockitoBean
     private InviteLinkService inviteLinkService;
 
-    @MockBean
+    @MockitoBean
     private JpaMetamodelMappingContext jpaMetamodelMappingContext;
 
     @Test
@@ -111,6 +113,58 @@ class InviteLinkControllerTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.errorCode").value("ROOM-409-1"));
+    }
+
+    @Test
+    void joinByInviteToken_success_returns200() throws Exception {
+        JoinRoomByInviteResponse response = JoinRoomByInviteResponse.builder()
+                .roomId(101L)
+                .userId(7L)
+                .isAdmin(false)
+                .isAgreed(false)
+                .joinedAt(LocalDateTime.of(2026, 3, 24, 10, 30))
+                .build();
+
+        when(inviteLinkService.joinByInviteToken(eq("valid-token"), eq(7L))).thenReturn(response);
+
+        mockMvc.perform(post("/api/v1/rooms/invites/valid-token/join")
+                        .header("X-User-Id", "7"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.roomId").value(101))
+                .andExpect(jsonPath("$.data.userId").value(7))
+                .andExpect(jsonPath("$.data.isAdmin").value(false))
+                .andExpect(jsonPath("$.data.isAgreed").value(false))
+                .andExpect(jsonPath("$.msg").value("모임 참가가 완료되었습니다."));
+    }
+
+    @Test
+    void joinByInviteToken_withoutHeader_returns401() throws Exception {
+        mockMvc.perform(post("/api/v1/rooms/invites/valid-token/join"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.errorCode").value("COMMON-401-1"));
+    }
+
+    @Test
+    void joinByInviteToken_alreadyParticipant_returns409() throws Exception {
+        when(inviteLinkService.joinByInviteToken(eq("valid-token"), eq(7L)))
+                .thenThrow(new CustomException(ErrorCode.ROOM_ALREADY_PARTICIPANT));
+
+        mockMvc.perform(post("/api/v1/rooms/invites/valid-token/join")
+                        .header("X-User-Id", "7"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.errorCode").value("ROOM-409-1"));
+    }
+
+    @Test
+    void joinByInviteToken_invalidUserIdHeader_returns400() throws Exception {
+        mockMvc.perform(post("/api/v1/rooms/invites/valid-token/join")
+                        .header("X-User-Id", "abc"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.errorCode").value("COMMON-400-1"));
     }
 
     @Test

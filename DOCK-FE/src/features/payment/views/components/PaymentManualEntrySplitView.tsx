@@ -5,7 +5,6 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { AppColorStyles } from '@core/theme/colors';
@@ -14,6 +13,7 @@ import {
   PretendardTextStyle,
 } from '@core/theme/typography';
 import type { PaymentManualEntryState } from '../../viewmodels/usePaymentManualEntryViewModel';
+import { PaymentAnimatedTouchable } from './PaymentAnimatedTouchable';
 
 interface PaymentManualEntrySplitViewProps {
   state: PaymentManualEntryState;
@@ -72,7 +72,7 @@ export function PaymentManualEntrySplitView({
         >
           {state.message}
         </Text>
-        <TouchableOpacity
+        <PaymentAnimatedTouchable
           activeOpacity={0.85}
           onPress={onRetry}
           style={styles.retryButton}
@@ -85,7 +85,7 @@ export function PaymentManualEntrySplitView({
           >
             다시 불러오기
           </Text>
-        </TouchableOpacity>
+        </PaymentAnimatedTouchable>
       </View>
     );
   }
@@ -115,7 +115,7 @@ export function PaymentManualEntrySplitView({
               color: AppColorStyles.black,
             })}
           >
-            {state.draft.itemName}
+            {state.draft.title}
           </Text>
         </View>
       </View>
@@ -247,11 +247,14 @@ export function PaymentManualEntrySplitView({
         </Text>
       )}
 
-      <TouchableOpacity
+      <PaymentAnimatedTouchable
         activeOpacity={0.85}
         disabled={isSubmitDisabled}
         onPress={onSubmit}
-        style={[styles.primaryButton, isSubmitDisabled && styles.primaryButtonDisabled]}
+        style={[
+          styles.primaryButton,
+          isSubmitDisabled && styles.primaryButtonDisabled,
+        ]}
       >
         <Text
           style={KBODiaGothicTextStyle.bold({
@@ -261,7 +264,7 @@ export function PaymentManualEntrySplitView({
         >
           장바구니에 담기
         </Text>
-      </TouchableOpacity>
+      </PaymentAnimatedTouchable>
     </View>
   );
 }

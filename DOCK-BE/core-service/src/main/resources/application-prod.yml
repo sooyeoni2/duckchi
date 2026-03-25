@@ -18,8 +18,21 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     show-sql: false
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: core-service-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "com.duckchi.core.*"
+    listener:
+      ack-mode: manual_immediate
+
 
 jwt:
   secret: ${JWT_SECRET}
@@ -40,3 +53,14 @@ security:
   pay-password:
     pepper: ${PAY_PASSWORD_PEPPER}
     bcrypt-strength: 12
+
+firebase:
+  admin-sdk-path: ${FIREBASE_PROD_ACCOUNT_PATH}
+
+swagger:
+  server-url: ${SWAGGER_SERVER_URL:https://j14c102.p.ssafy.io}
+
+springdoc:
+  swagger-ui:
+    config-url: /api/auth/v3/api-docs/swagger-config
+    url: /api/auth/v3/api-docs

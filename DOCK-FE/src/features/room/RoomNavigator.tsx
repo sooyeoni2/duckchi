@@ -10,7 +10,7 @@ import RoomMoreOptionsScreen from './views/screens/RoomMoreOptionsScreen';
 import AutoTransferAgreeScreen from './views/screens/AutoTransferAgreeScreen';
 import AdminDelegationScreen from './views/screens/AdminDelegationScreen';
 import RoomEditScreen from './views/screens/RoomEditScreen';
-import { SettlementRequestListScreen } from './views/SettlementRequestListScreen';
+import { SettlementRequestListScreen } from './views/screens/SettlementRequestListScreen';
 
 const Stack = createNativeStackNavigator<RoomStackParamList>();
 

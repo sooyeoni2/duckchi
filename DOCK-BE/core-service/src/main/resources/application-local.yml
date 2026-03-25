@@ -27,6 +27,19 @@ spring:
       hibernate:
         format_sql: true
 
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: core-service-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "com.duckchi.core.*"
+    listener:
+      ack-mode: manual_immediate
+
+
 jwt:
   secret: ${JWT_SECRET}
   access-expiration: ${JWT_ACCESS_EXPIRATION:3600000}
@@ -45,3 +58,6 @@ security:
   pay-password:
     pepper: ${PAY_PASSWORD_PEPPER}
     bcrypt-strength: 12
+
+firebase:
+  admin-sdk-path: ${FIREBASE_SERVICE_ACCOUNT_PATH}

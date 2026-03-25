@@ -149,7 +149,10 @@ export const useSettlementViewModel = () => {
     return () => clearInterval(timer);
   }, []);
 
-  const loadedItems = state.status === 'loaded' ? state.items : [];
+  const loadedItems = useMemo(
+    () => (state.status === 'loaded' ? state.items : []),
+    [state],
+  );
 
   const inProgressCount = useMemo(
     () => loadedItems.filter(item => item.status === 'IN_PROGRESS').length,
@@ -166,6 +169,18 @@ export const useSettlementViewModel = () => {
       .map(item => toViewItem(item, nowMs));
   }, [nowMs, selectedTab, state]);
 
+  const refresh = useCallback(async () => {
+    try {
+      const items = await fetchSettlementItems();
+      setState({ status: 'loaded', items });
+    } catch (error) {
+      setState({
+        status: 'error',
+        message: error instanceof Error ? error.message : '정산 목록을 불러오지 못했습니다.',
+      });
+    }
+  }, []);
+
   return {
     state,
     selectedTab,
@@ -175,5 +190,6 @@ export const useSettlementViewModel = () => {
     markAsPaid,
     markAllAsPaid,
     reload: loadSettlements,
+    refresh,
   };
 };

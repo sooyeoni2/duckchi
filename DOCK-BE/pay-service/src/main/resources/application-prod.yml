@@ -18,8 +18,22 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     show-sql: false
+
+  kafka:
+    #Kafka broker 주소
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      # 브로커가 안전하게 받았는지 확인
+      acks: all
+      # 일시적 장애 때 producer 재시도
+      retries: 3
+      properties:
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 5
 
 # [External API] 외부 금융망 연동 설정
 finance:
@@ -31,3 +45,11 @@ ocr:
   naver:
     invoke-url: ${OCR_INVOKE_URL}
     secret: ${OCR_SECRET_KEY}
+
+swagger:
+  server-url: ${SWAGGER_SERVER_URL:https://j14c102.p.ssafy.io}
+
+springdoc:
+  swagger-ui:
+    config-url: /api/payment/v3/api-docs/swagger-config
+    url: /api/payment/v3/api-docs

@@ -1,7 +1,10 @@
 package com.duckchi.pay.infra.finance;
 
+import com.duckchi.pay.infra.config.FinanceFeignConfig;
 import com.duckchi.pay.infra.finance.dto.request.TransactionHistoryRequest;
+import com.duckchi.pay.infra.finance.dto.request.TransferRequest;
 import com.duckchi.pay.infra.finance.dto.response.TransactionHistoryResponse;
+import com.duckchi.pay.infra.finance.dto.response.TransferResponse;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -20,7 +23,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 @FeignClient(
     name = "finance-client", 
     url = "${finance.api.base-url}", // 환경변수 주입을 통해 운영/로컬 환경 유연하게 대응함.
-    path = "/ssafy/api/v1/edu/demandDeposit" // 금융망 도메인별 공통 경로를 상단에 추상화하여 중복 제거함.
+    path = "/ssafy/api/v1/edu/demandDeposit",// 금융망 도메인별 공통 경로를 상단에 추상화하여 중복 제거함.// 금융망 도메인별 공통 경로를 상단에 추상화하여 중복 제거함.
+    configuration = FinanceFeignConfig.class
 )
 public interface FinanceClient {
 
@@ -36,4 +40,13 @@ public interface FinanceClient {
      */
     @PostMapping("/inquireTransactionHistoryList")
     TransactionHistoryResponse fetchTransactionHistory(@RequestBody TransactionHistoryRequest request);
+
+    /**
+     * 정산 송금을 실행한다 (SET-02).
+     *
+     * [중요]
+     * - 이 메서드는 실제 출금/입금이 발생하는 민감 구간이므로 자동 재시도 금지 정책을 사용한다.
+     */
+    @PostMapping("/updateDemandDepositAccountTransfer")
+    TransferResponse transfer(@RequestBody TransferRequest request);
 }

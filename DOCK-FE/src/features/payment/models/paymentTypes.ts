@@ -1,109 +1,148 @@
-﻿import { z } from 'zod';
+import { z } from 'zod';
 
 /**
- * 결제 목록이 가질 수 있는 상태값.
- * .ai 문서 기준으로 아직 요청 전(PENDING), 정산 요청됨(REQUESTED), 완료(SETTLED)만 먼저 다룬다.
+ * --------------------------------------------------------------------------
+ * 1. API 응답 스키마 (Zod) - 백엔드 명세 기준
+ * --------------------------------------------------------------------------
  */
+
+// 공통 응답 래퍼
+export const paymentApiResponseSchema = <T extends z.ZodTypeAny>(dataSchema: T) =>
+  z.object({
+    success: z.boolean(),
+    data: dataSchema,
+    msg: z.string().optional().nullable(),
+    errorCode: z.string().optional().nullable(),
+  });
+
+// 결제 상태 및 입력 방식
 export const expenseStatusSchema = z.enum(['PENDING', 'REQUESTED', 'SETTLED']);
+export type ExpenseStatus = z.infer<typeof expenseStatusSchema>;
+export type ExpenseStatusFilter = ExpenseStatus | 'ALL';
 
-/**
- * 결제 등록 진입 방식.
- * 이후 계좌내역/영수증 OCR/직접 입력 화면을 각각 붙일 때 공통 기준점으로 사용한다.
- */
-export const expenseInputTypeSchema = z.enum([
-  'MANUAL',
-  'ACCOUNT_HISTORY',
-  'OCR',
-]);
+export const expenseInputTypeSchema = z.enum(['MANUAL', 'ACCOUNT_HISTORY', 'OCR']);
+export type ExpenseInputType = z.infer<typeof expenseInputTypeSchema>;
 
-/**
- * PAY-05 "내 결제 목록" 응답 한 건을 검증하는 스키마.
- * 현재 워크스페이스의 백엔드 반영이 늦어져 있을 수 있어서,
- * 문서에 없는 필드는 optional로 두고 화면용 타입에서 보정한다.
- */
-const myExpenseItemSchema = z.object({
+// PAY-05: 내 결제 목록 항목 DTO
+export const expenseSummarySchema = z.object({
   expenseId: z.number(),
-  roomSessionId: z.number().optional(),
+  roomSessionId: z.number().optional().nullable(),
   title: z.string(),
-  participantCount: z.number().int().nonnegative(),
-  totalAmount: z.number().int().nonnegative(),
-  payerUserName: z.string().optional(),
-  status: expenseStatusSchema.optional(),
-  inputType: expenseInputTypeSchema.optional(),
-  paidAt: z.string().optional(),
-  createdAt: z.string().optional(),
-  completedAt: z.string().optional().nullable(),
+  totalAmount: z.number(),
+  payerUserName: z.string().optional().nullable(),
+  inputType: expenseInputTypeSchema.optional().nullable(),
+  status: expenseStatusSchema.optional().nullable(),
+  paidAt: z.string().optional().nullable(),
+  createdAt: z.string().optional().nullable(),
 });
 
-/**
- * 목록 API의 전체 응답 형태.
- * 현재는 success/data 구조를 그대로 가정한다.
- */
-export const myExpenseListResponseSchema = z.object({
-  success: z.boolean(),
-  data: z.array(myExpenseItemSchema),
+// PAY-05: 결제 상세 응답 스키마 DTO
+export const participantDetailSchema = z.object({
+  userId: z.number(),
+  userName: z.string(),
+  userTag: z.string().optional().nullable(),
+  profileImageUrl: z.string().optional().nullable(),
+  splitAmount: z.number(),
 });
 
-/**
- * 계좌 거래 내역 한 건을 검증하는 스키마.
- * 백엔드 AccountHistoryResponse 구조를 그대로 따라가고,
- * historyId 같은 화면 전용 식별자는 service 계층에서 별도로 붙인다.
- */
-const accountHistoryItemResponseSchema = z.object({
+export const itemParticipantDetailSchema = z.object({
+  userId: z.number(),
+  userName: z.string(),
+  userTag: z.string().optional().nullable(),
+  profileImageUrl: z.string().optional().nullable(),
+  splitAmount: z.number(),
+  quantity: z.number(),
+});
+
+export const itemDetailSchema = z.object({
+  name: z.string(),
+  totalAmount: z.number(),
+  quantity: z.number(),
+  itemParticipants: z.array(itemParticipantDetailSchema),
+});
+
+export const expenseDetailSchema = z.object({
+  expenseId: z.number(),
+  title: z.string(),
+  totalAmount: z.number(),
+  paidAt: z.string().optional().nullable(),
+  payerUserName: z.string().optional().nullable(),
+  payerUserId: z.number().optional().nullable(),
+  inputType: expenseInputTypeSchema,
+  participants: z.array(participantDetailSchema),
+  items: z.array(itemDetailSchema),
+});
+
+// PAY-01: 계좌 거래 내역 DTO
+export const accountHistorySchema = z.object({
   transactionMemo: z.string(),
-  amount: z.number().int().nonnegative(),
+  amount: z.number(),
   transactionAt: z.string(),
 });
 
-/**
- * 계좌 거래 내역 목록 응답.
- * 현재 mock도 success/data 구조를 유지해 실제 API 교체 비용을 줄인다.
- */
-export const accountHistoryListResponseSchema = z.object({
-  success: z.boolean(),
-  data: z.array(accountHistoryItemResponseSchema),
+// PAY-03: OCR 결과 (Draft) DTO
+export const ocrDraftItemSchema = z.object({
+  name: z.string(),
+  totalAmount: z.number(),
+  quantity: z.number(),
+});
+
+export const ocrDraftSchema = z.object({
+  title: z.string(),
+  totalAmount: z.number(),
+  paidAt: z.string().optional().nullable(),
+  items: z.array(ocrDraftItemSchema).optional().nullable(),
 });
 
 /**
- * raw response 타입.
- * service 내부에서 "백엔드가 보내준 원본"을 다룰 때 쓴다.
+ * --------------------------------------------------------------------------
+ * 2. FE 내부 사용 타입 (App Model)
+ * --------------------------------------------------------------------------
  */
-export type ExpenseStatus = z.infer<typeof expenseStatusSchema>;
-export type ExpenseInputType = z.infer<typeof expenseInputTypeSchema>;
-export type MyExpenseListResponse = z.infer<typeof myExpenseListResponseSchema>;
-export type AccountHistoryListResponse = z.infer<
-  typeof accountHistoryListResponseSchema
->;
 
-/**
- * 화면과 ViewModel이 사용하는 정제된 타입.
- * - 날짜 문자열은 Date로 바꾼다.
- * - optional 필드는 service에서 fallback을 적용해 항상 채워진 상태로 맞춘다.
- */
+// 내 결제 항목 (정제됨)
 export interface MyExpenseItem {
   expenseId: number;
   roomSessionId: number | null;
   title: string;
-  participantCount: number;
   totalAmount: number;
   payerUserName: string;
   status: ExpenseStatus;
   inputType: ExpenseInputType;
   paidAt: Date | null;
   createdAt: Date | null;
-  completedAt?: Date | null;
+  completedAt?: Date | null; // UI 정렬/표시용
+  participantCount?: number;
+}
+
+// 계좌 거래 내역 항목 (정제됨)
+export interface AccountHistoryItem {
+  id: string; // FE 생성 ID
+  historyId?: string; // 컴포넌트 호환용
+  transactionMemo: string;
+  amount: number;
+  date: Date;
+  transactionAt?: string; // 컴포넌트 호환용
+}
+
+// OCR 영수증 데이터 (정제됨)
+export interface OcrReceiptItem {
+  title: string;
+  totalAmount: number;
+  paidAt: Date | null;
+  items: OcrLineItem[];
+}
+
+export interface OcrLineItem {
+  name: string;
+  amount: number;
+  quantity: number;
 }
 
 /**
- * 목록 화면 상단 필터에 쓰는 값.
- * 전체 보기(ALL)는 실제 API 상태값이 아니고, FE 전용 필터 옵션이다.
+ * UI 구성요소(PaymentExpenseDetailView 등)를 위한 상세 타입
  */
-export type ExpenseStatusFilter = 'ALL' | ExpenseStatus;
 
-/**
- * 결제 상세 화면에서 참여자 분담 정보를 표현하는 타입.
- * 이후 정산 요청/완료 상태를 붙일 때 그대로 확장할 수 있게 분리했다.
- */
 export interface ExpenseParticipantPreview {
   userId: number;
   userName: string;
@@ -112,30 +151,28 @@ export interface ExpenseParticipantPreview {
   isSettled: boolean;
 }
 
-/**
- * 영수증/OCR/수기 입력 결과를 상세 화면에서 보여줄 세부 품목 타입.
- */
 export interface ExpenseLineItemPreview {
   itemId: number;
   name: string;
   quantity: number;
   amount: number;
   assignedParticipants: string[];
+  assignmentDetails?: ExpenseLineItemAssignmentDetail[];
 }
 
-/**
- * 입력 방식별 원본 정보나 부가 정보를 상세 화면에서 행 단위로 보여주기 위한 타입.
- * OCR만 품목 배열을 쓰고, 계좌 내역/직접 입력은 이런 key-value 정보 위주로 노출한다.
- */
+export interface ExpenseLineItemAssignmentDetail {
+  userId: number;
+  userName: string;
+  quantity: number;
+  amount: number;
+}
+
 export interface ExpenseSourceInfoRow {
   label: string;
   value: string;
 }
 
-/**
- * 결제 상세 화면에서 사용하는 확장 타입.
- * 목록에는 없는 부가 설명, 참여자, 품목 정보를 mock으로 먼저 채운다.
- */
+// 결제 상세 내역 (UI에서 사용하는 최종 형태)
 export interface MyExpenseDetail extends MyExpenseItem {
   storeName: string;
   memo: string;
@@ -145,126 +182,137 @@ export interface MyExpenseDetail extends MyExpenseItem {
 }
 
 /**
- * 각 입력 진입 화면에서 어떤 필드를 먼저 구현해야 하는지 보여주기 위한 안내 row.
+ * --------------------------------------------------------------------------
+ * 3. 직접 입력 및 OCR 드래프트 (UI Draft Models)
+ * --------------------------------------------------------------------------
  */
-export interface PaymentEntryGuideField {
-  label: string;
-  value: string;
+
+// 직접 입력 초안
+export interface ManualEntryParticipant {
+  userId: number;
+  userName: string;
+  isSelected: boolean;
+  splitAmount: number;
+}
+
+export interface ManualEntryDraft {
+  roomSessionId: number;
+  title: string;
+  totalAmount: number;
+  participants: ManualEntryParticipant[];
+}
+// 계좌 내역 기반 정산 초안
+export interface AccountHistoryEntryDraft {
+  roomSessionId: number;
+  historyId: string; // 추가됨
+  transactionMemo: string; // 추가됨
+  transactionAt: string; // 추가됨
+  title: string;
+  totalAmount: number;
+  participants: ManualEntryParticipant[];
+  selectedHistoryIds: string[];
 }
 
 /**
- * 계좌/OCR/직접입력 진입 화면의 mock 설명 데이터.
- * API 연결 전에도 사용자가 흐름을 리뷰할 수 있게 텍스트와 필드 구성을 담는다.
+ * OCR 영수증 드래프트 관련
+ */
+
+export type OcrImageSource = 'CAMERA' | 'LIBRARY';
+export type OcrFailureType = 'RECEIPT_UNREADABLE' | 'ITEMS_UNREADABLE' | 'NETWORK_ERROR';
+export type OcrAssignMode = 'MANUAL_SPLIT' | 'QUANTITY_SPLIT' | 'EQUAL_SPLIT' | 'PERSON' | 'QUANTITY';
+export type OcrSplitMode = 'TOTAL' | 'ITEM';
+
+export interface OcrParticipantDraft {
+  userId: number;
+  userName: string;
+  isSelected: boolean;
+  isMe: boolean;
+  splitAmount: number;
+}
+
+export interface OcrLineItemDraft {
+  itemId: number;
+  name: string;
+  unitPrice: number;
+  quantity: number;
+  amount: number;
+  assignment: OcrLineItemAssignment | null;
+}
+
+export interface OcrLineItemAssignment {
+  mode: OcrAssignMode;
+  participantUserIds: number[];
+  quantityAllocations?: OcrItemQuantityAllocation[];
+}
+
+export interface OcrItemQuantityAllocation {
+  userId: number;
+  quantity: number;
+}
+
+export interface OcrReceiptDraft {
+  imageUri: string;
+  storeName: string;
+  paidAt: Date | null;
+  totalAmount: number;
+  splitMode: OcrSplitMode;
+  participants: OcrParticipantDraft[];
+  items: OcrLineItemDraft[];
+}
+
+export interface OcrReceiptSummary {
+  imageUri: string;
+  storeName: string;
+  paidAt: Date | null;
+  totalAmount: number;
+}
+
+export type OcrRecognitionResult = 
+  | { kind: 'SUCCESS'; draft: OcrReceiptDraft }
+  | { kind: 'ITEMS_UNREADABLE'; summary: OcrReceiptSummary }
+  | { kind: 'FAILURE'; failureType: OcrFailureType };
+
+/**
+ * 미리보기 가이드 타입
  */
 export interface PaymentEntryPreview {
-  inputType: ExpenseInputType;
   title: string;
-  headline: string;
+  headline?: string; // 추가됨
   description: string;
-  fieldGuides: PaymentEntryGuideField[];
+  primaryActionLabel?: string; // 추가됨
+  fieldGuides: Array<{
+    label: string;
+    description: string;
+    value?: string; // 추가됨
+  }>;
   checklist: string[];
-  primaryActionLabel: string;
 }
 
 /**
- * 계좌 거래 내역 목록 화면에서 사용하는 정제 타입.
- * 원본 응답에는 id가 없어서, historyId는 FE service에서만 관리한다.
+ * --------------------------------------------------------------------------
+ * 4. API 요청 타입 (Request DTO)
+ * --------------------------------------------------------------------------
  */
-export interface AccountHistoryItem {
-  historyId: string;
-  transactionMemo: string;
-  amount: number;
-  transactionAt: Date;
-}
 
-/**
- * 계좌 내역을 장바구니 등록 폼으로 넘긴 뒤 토글할 참여자 초안.
- */
-export interface AccountHistoryParticipantDraft {
-  userId: number;
-  userName: string;
-  isSelected: boolean;
-  isMe: boolean;
-  splitAmount: number;
-}
-
-/**
- * 계좌 내역 -> 등록 폼으로 넘어가는 순간의 draft 데이터.
- * 거래 원본 필드와 프론트 수정값(itemName, 참여자 선택)을 함께 가진다.
- */
-export interface AccountHistoryEntryDraft {
-  historyId: string;
-  transactionMemo: string;
-  amount: number;
-  transactionAt: Date;
-  itemName: string;
-  participants: AccountHistoryParticipantDraft[];
-}
-
-/**
- * 직접 입력 흐름에서 사용하는 참여자 초안.
- * 1단계에서는 on/off 토글, 2단계에서는 splitAmount 편집까지 같은 draft로 이어간다.
- */
-export interface ManualEntryParticipantDraft {
-  userId: number;
-  userName: string;
-  isSelected: boolean;
-  isMe: boolean;
-  splitAmount: number;
-}
-
-/**
- * 직접 입력 2단계 mock에 사용하는 draft.
- * 장바구니 항목명, 전체 금액, 참여자별 분배 금액을 모두 한 묶음으로 다룬다.
- */
-export interface ManualEntryDraft {
-  itemName: string;
-  totalAmount: number;
-  participants: ManualEntryParticipantDraft[];
-}
-
-/**
- * 결제 등록/수정 화면에서 참여자별 분담값을 담기 위한 draft 타입.
- * 지금은 목록 skeleton 단계지만, 이후 PAY-04 등록 화면으로 확장할 것을 대비해 같이 정리했다.
- */
-export interface ExpenseParticipantDraft {
-  userId: number;
-  splitAmount: number;
-  userName?: string;
-  userTag?: string;
-  profileImageUrl?: string | null;
-}
-
-/**
- * 메뉴별 분배 시, 특정 품목을 누가 얼마씩 부담하는지 담는 draft 타입.
- */
-export interface ExpenseItemSplitDraft {
-  userId: number;
-  splitAmount: number;
-  quantity?: number;
-}
-
-/**
- * OCR/직접입력 상세 품목을 표현하는 draft 타입.
- */
-export interface ExpenseItemDraft {
-  name: string;
-  totalAmount: number;
-  quantity: number;
-  splits: ExpenseItemSplitDraft[];
-}
-
-/**
- * PAY-04 결제 등록 요청 body의 FE 기준 초안.
- * 실제 백엔드 반영이 이 워크스페이스에 들어오면 이 타입을 먼저 맞추면 된다.
- */
-export interface CreateExpenseRequest {
+export interface ExpenseUpsertRequest {
   roomSessionId: number;
-  inputType: ExpenseInputType;
   title: string;
   totalAmount: number;
-  paidAt: string;
-  receiptImageUrl?: string | null;
-  participants: ExpenseParticipantDraft[];
-  items?: ExpenseItemDraft[];
+  paidAt?: string;
+  receiptImageUrl?: string;
+  inputType: ExpenseInputType;
+  participants: Array<{
+    userId: number;
+    splitAmount: number;
+  }>;
+  items?: Array<{
+    name: string;
+    totalAmount: number;
+    quantity: number;
+    splits?: Array<{
+      userId: number;
+      splitAmount: number;
+      quantity: number;
+    }>;
+  }>;
 }

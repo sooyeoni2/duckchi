@@ -1,5 +1,13 @@
+import { MaterialCommunityIcons as MaterialDesignIcons } from '@expo/vector-icons';
 import React from 'react';
-import { Dimensions, StyleSheet, Text, View } from 'react-native';
+import {
+  Animated,
+  Dimensions,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
 import { AppColorStyles } from '@core/theme/colors';
 import { KBODiaGothicTextStyle } from '@core/theme/typography';
@@ -13,17 +21,71 @@ const toWon = (value: number) => `${value.toLocaleString('ko-KR')}원`;
 interface SettlementRowCardProps {
   item: RoomSettlementRow;
   isLast: boolean;
+  onPress?: () => void;
 }
 
-export function SettlementRowCard({ item, isLast }: SettlementRowCardProps) {
-  return (
-    <View style={[styles.rowCard, isLast && styles.rowCardLast]}>
-      <View>
+export function SettlementRowCard({
+  item,
+  isLast,
+  onPress,
+}: SettlementRowCardProps) {
+  const scale = React.useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    Animated.spring(scale, {
+      toValue: 0.97,
+      useNativeDriver: true,
+      speed: 50,
+      bounciness: 0,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scale, {
+      toValue: 1,
+      useNativeDriver: true,
+      speed: 30,
+      bounciness: 4,
+    }).start();
+  };
+
+  const content = (
+    <>
+      <View style={styles.textArea}>
         <Text style={styles.rowTitle}>{item.title}</Text>
         <Text style={styles.rowSubtitle}>{item.subtitle}</Text>
       </View>
-      <Text style={styles.rowAmount}>{toWon(item.amount)}</Text>
-    </View>
+
+      <View style={styles.trailingArea}>
+        <Text style={styles.rowAmount}>{toWon(item.amount)}</Text>
+        {onPress != null && (
+          <MaterialDesignIcons
+            name="chevron-right"
+            size={22 * s}
+            color={AppColorStyles.textHint}
+          />
+        )}
+      </View>
+    </>
+  );
+
+  if (onPress == null) {
+    return <View style={[styles.rowCard, isLast && styles.rowCardLast]}>{content}</View>;
+  }
+
+  return (
+    <Animated.View
+      style={[{ transform: [{ scale }] }, isLast && styles.rowCardLast]}
+    >
+      <Pressable
+        style={styles.rowCard}
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+      >
+        {content}
+      </Pressable>
+    </Animated.View>
   );
 }
 
@@ -46,6 +108,10 @@ const styles = StyleSheet.create({
   rowCardLast: {
     marginBottom: 0,
   },
+  textArea: {
+    flex: 1,
+    paddingRight: 12 * s,
+  },
   rowTitle: {
     ...KBODiaGothicTextStyle.bold({
       fontSize: 18 * s,
@@ -60,6 +126,10 @@ const styles = StyleSheet.create({
       lineHeight: 11 * s,
       color: AppColorStyles.gray3,
     }),
+  },
+  trailingArea: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   rowAmount: {
     ...KBODiaGothicTextStyle.bold({

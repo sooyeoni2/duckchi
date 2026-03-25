@@ -1,10 +1,17 @@
 package com.duckchi.pay.domain.room.repository;
 
 import com.duckchi.pay.domain.room.entity.RoomSession;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
-/**
- * 모임 회차 레포지토리.
- */
+@Repository
 public interface RoomSessionRepository extends JpaRepository<RoomSession, Long> {
+    
+    // 특정 방의 진행 중인(종료되지 않은) 세션을 조회한다.
+    Optional<RoomSession> findByRoom_IdAndEndedAtIsNull(Long roomId);
+
+    // 진행 중 세션이 없을 때 fallback으로 최신 세션을 조회한다.
+    Optional<RoomSession> findTopByRoom_IdOrderByStartedAtDesc(Long roomId);
 }
+

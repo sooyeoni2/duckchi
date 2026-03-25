@@ -1,6 +1,6 @@
 import { MaterialCommunityIcons as MaterialDesignIcons } from '@expo/vector-icons';
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AppColorStyles } from '@core/theme/colors';
 import {
   KBODiaGothicTextStyle,
@@ -32,13 +32,23 @@ export function PaymentExpenseSelectionCard({
   const displayTime = formatExpenseListDate(
     getExpensePrimaryDisplayDate(expense),
   );
+  const scale = React.useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    Animated.spring(scale, { toValue: 0.97, useNativeDriver: true, speed: 50, bounciness: 0 }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 30, bounciness: 4 }).start();
+  };
 
   return (
-    <View
+    <Animated.View
       style={[
         styles.card,
         selected && styles.cardSelected,
         isSettled && styles.cardSettled,
+        { transform: [{ scale }] },
       ]}
     >
       <View style={styles.row}>
@@ -63,6 +73,8 @@ export function PaymentExpenseSelectionCard({
         <TouchableOpacity
           activeOpacity={0.85}
           onPress={onDetailPress}
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
           style={styles.contentButton}
         >
           <View style={styles.titleRow}>
@@ -105,7 +117,7 @@ export function PaymentExpenseSelectionCard({
           </View>
         </TouchableOpacity>
       </View>
-    </View>
+    </Animated.View>
   );
 }
 

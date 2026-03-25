@@ -6,7 +6,6 @@ import {
   Switch,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { AppColorStyles } from '@core/theme/colors';
@@ -15,12 +14,13 @@ import {
   PretendardTextStyle,
 } from '@core/theme/typography';
 import type { PaymentAccountHistoryDraftState } from '../../viewmodels/usePaymentAccountHistoryViewModel';
+import { PaymentAnimatedTouchable } from './PaymentAnimatedTouchable';
 
 interface PaymentAccountHistoryFormViewProps {
   draftState: PaymentAccountHistoryDraftState;
   selectedParticipantCount: number;
   onRetry: (historyId: string) => void;
-  onItemNameChange: (itemName: string) => void;
+  onItemNameChange: (title: string) => void;
   onToggleParticipant: (userId: number) => void;
   onNext: () => void;
 }
@@ -28,21 +28,21 @@ interface PaymentAccountHistoryFormViewProps {
 const formatAmount = (amount: number): string =>
   `${amount.toLocaleString('ko-KR')}원`;
 
-const formatDateTime = (date: Date): string => {
+const formatDateTime = (dateSource: string | Date): string => {
+  const date = typeof dateSource === 'string' ? new Date(dateSource) : dateSource;
+  if (isNaN(date.getTime())) return '날짜 정보 없음';
+
   const year = date.getFullYear();
   const month = `${date.getMonth() + 1}`.padStart(2, '0');
   const day = `${date.getDate()}`.padStart(2, '0');
   const hour = `${date.getHours()}`.padStart(2, '0');
   const minute = `${date.getMinutes()}`.padStart(2, '0');
-  const second = `${date.getSeconds()}`.padStart(2, '0');
 
-  return `${year}.${month}.${day} ${hour}:${minute}:${second}`;
+  return `${year}.${month}.${day} ${hour}:${minute}`;
 };
 
 /**
  * 계좌 내역에서 선택한 거래를 결제 등록 초안으로 바꾸는 폼.
- * 지금 단계에서는 itemName 수정과 참여자 토글만 우선 제공하고,
- * 다음 단계에서 splitAmount 입력이나 실제 저장을 붙일 수 있게 구조를 나눈다.
  */
 export function PaymentAccountHistoryFormView({
   draftState,
@@ -84,7 +84,7 @@ export function PaymentAccountHistoryFormView({
         >
           {draftState.message}
         </Text>
-        <TouchableOpacity
+        <PaymentAnimatedTouchable
           activeOpacity={0.85}
           onPress={() => onRetry(draftState.historyId)}
           style={styles.retryButton}
@@ -97,14 +97,14 @@ export function PaymentAccountHistoryFormView({
           >
             다시 불러오기
           </Text>
-        </TouchableOpacity>
+        </PaymentAnimatedTouchable>
       </View>
     );
   }
 
   const { draft } = draftState;
   const isNextDisabled =
-    draft.itemName.trim().length === 0 || selectedParticipantCount === 0;
+    draft.title.trim().length === 0 || selectedParticipantCount === 0;
 
   return (
     <View>
@@ -154,26 +154,7 @@ export function PaymentAccountHistoryFormView({
               color: AppColorStyles.textHint,
             })}
           >
-            {formatAmount(draft.amount)}
-          </Text>
-        </View>
-
-        <View style={styles.summaryRow}>
-          <Text
-            style={PretendardTextStyle.medium({
-              fontSize: 16,
-              color: AppColorStyles.textHint,
-            })}
-          >
-            거래메모
-          </Text>
-          <Text
-            style={PretendardTextStyle.medium({
-              fontSize: 16,
-              color: AppColorStyles.textHint,
-            })}
-          >
-            {draft.transactionMemo}
+            {formatAmount(draft.totalAmount)}
           </Text>
         </View>
       </View>
@@ -188,7 +169,7 @@ export function PaymentAccountHistoryFormView({
           장바구니 항목명
         </Text>
         <TextInput
-          value={draft.itemName}
+          value={draft.title}
           onChangeText={onItemNameChange}
           placeholder="항목명을 입력해 주세요"
           placeholderTextColor={AppColorStyles.textHint}
@@ -268,11 +249,14 @@ export function PaymentAccountHistoryFormView({
         ))}
       </View>
 
-      <TouchableOpacity
+      <PaymentAnimatedTouchable
         activeOpacity={0.85}
         disabled={isNextDisabled}
         onPress={onNext}
-        style={[styles.primaryButton, isNextDisabled && styles.primaryButtonDisabled]}
+        style={[
+          styles.primaryButton,
+          isNextDisabled && styles.primaryButtonDisabled,
+        ]}
       >
         <Text
           style={KBODiaGothicTextStyle.bold({
@@ -282,7 +266,7 @@ export function PaymentAccountHistoryFormView({
         >
           다음
         </Text>
-      </TouchableOpacity>
+      </PaymentAnimatedTouchable>
     </View>
   );
 }

@@ -1,6 +1,6 @@
 import { axiosClient } from '../../../core/network/axiosClient';
 
-const USE_MOCK = true;
+const USE_MOCK = false;
 
 export const setPayPassword = async (password: string): Promise<void> => {
   if (USE_MOCK) {

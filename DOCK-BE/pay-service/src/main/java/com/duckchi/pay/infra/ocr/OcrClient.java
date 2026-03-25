@@ -2,6 +2,7 @@ package com.duckchi.pay.infra.ocr;
 
 import com.duckchi.pay.infra.ocr.dto.OcrRequest;
 import com.duckchi.pay.infra.ocr.dto.OcrResponse;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -21,6 +22,12 @@ public interface OcrClient {
      */
     @PostMapping
     OcrResponse callReceiptOcr(
+            @RequestHeader("X-OCR-SECRET") String secretKey,
+            @RequestBody OcrRequest request
+    );
+
+    @PostMapping
+    JsonNode callReceiptOcrRaw(
             @RequestHeader("X-OCR-SECRET") String secretKey,
             @RequestBody OcrRequest request
     );
