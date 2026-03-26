@@ -1,4 +1,4 @@
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, CommonActions } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -32,6 +32,7 @@ export function BankAccountCompleteScreen() {
   const navigation = useNavigation<Nav>();
   const { bankName, maskedAccountNo, returnTo } = useRoute<Route>().params;
   const userName = useAuthStore(s => s.user?.name ?? '');
+  const hasPayPassword = useAuthStore(s => s.user?.hasPayPassword ?? false);
   const setHasBankAccount = useAuthStore(s => s.setHasBankAccount);
   const [transferLimit, setTransferLimit] = useState('');
   const limitInputRef = useRef<TextInput>(null);
@@ -56,6 +57,19 @@ export function BankAccountCompleteScreen() {
       } catch {}
     }
     setHasBankAccount();
+    // Settings 흐름이고 이미 비밀번호가 설정된 경우 → 바로 프로필로 이동
+    if (returnTo === 'Settings' && hasPayPassword) {
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{
+            name: 'App',
+            state: { index: 3, routes: [{ name: 'Home' }, { name: 'Room' }, { name: 'Report' }, { name: 'Profile' }] },
+          }],
+        })
+      );
+      return;
+    }
     navigation.replace('PayPasswordSetup', { bankName, maskedAccountNo, returnTo });
   };
 

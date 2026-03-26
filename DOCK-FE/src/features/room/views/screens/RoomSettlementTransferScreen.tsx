@@ -1,8 +1,9 @@
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback } from 'react';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import {
   ActivityIndicator,
+  Alert,
   Dimensions,
   RefreshControl,
   ScrollView,
@@ -20,32 +21,36 @@ import { FilledButton } from '@shared/components/buttons/FilledButton';
 
 import { usePaymentConfirmStore, type PaymentAction } from '../../models/paymentConfirmStore';
 import { useSettlementViewModel } from '../../viewmodels/useSettlementViewModel';
-import { SettlementCard } from './SettlementCard';
-import { SettlementTabHeader } from './SettlementTabHeader';
+import { SettlementCard } from '../components/SettlementCard';
+import { SettlementTabHeader } from '../components/SettlementTabHeader';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const s = SCREEN_WIDTH / 412;
 const CTA_HEIGHT = 60 * s;
 
-interface RoomSettlementTransferViewProps {
+interface RoomSettlementTransferScreenProps {
   onBack: () => void;
+  roomId: number;
 }
 
-export function RoomSettlementTransferView({ onBack }: RoomSettlementTransferViewProps) {
+export function RoomSettlementTransferScreen({ onBack, roomId }: RoomSettlementTransferScreenProps) {
   const rootNavigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const {
     state,
     selectedTab,
     setSelectedTab,
+    isTransferring,
     inProgressCount,
     settlementItems,
-    markAsPaid,
-    markAllAsPaid,
+    transferSingle,
+    transferAllPending,
+    checkAutoDebitAgreed,
     reload,
     refresh,
-  } = useSettlementViewModel();
+  } = useSettlementViewModel(roomId);
 
   const [refreshing, setRefreshing] = React.useState(false);
+  const [isCheckingConsent, setIsCheckingConsent] = React.useState(false);
 
   const handleRefresh = React.useCallback(async () => {
     setRefreshing(true);
@@ -55,29 +60,62 @@ export function RoomSettlementTransferView({ onBack }: RoomSettlementTransferVie
 
   const hasPending = inProgressCount > 0;
   const consume = usePaymentConfirmStore((s) => s.consume);
-  const pendingActionRef = useRef<PaymentAction | null>(null);
+  const setPending = usePaymentConfirmStore((s) => s.setPending);
+
+  const executeTransferAction = useCallback(async (action: PaymentAction) => {
+    try {
+      if (action.type === 'all') {
+        await transferAllPending();
+        return;
+      }
+      await transferSingle(action.id);
+    } catch (error) {
+      Alert.alert(
+        '송금 실패',
+        error instanceof Error ? error.message : '송금 처리 중 오류가 발생했습니다.',
+      );
+    }
+  }, [transferAllPending, transferSingle]);
 
   useFocusEffect(
     useCallback(() => {
       const result = consume();
-      if (result?.confirmed && pendingActionRef.current) {
-        if (pendingActionRef.current.type === 'all') {
-          markAllAsPaid();
-        } else {
-          markAsPaid(pendingActionRef.current.id);
-        }
+      if (result?.confirmed) {
+        void executeTransferAction(result.action);
       }
-      pendingActionRef.current = null;
-    }, [consume, markAsPaid, markAllAsPaid]),
+    }, [consume, executeTransferAction]),
   );
 
-  const setPending = usePaymentConfirmStore((s) => s.setPending);
+  const handleTransferAction = useCallback((action: PaymentAction) => {
+    if (isTransferring || isCheckingConsent) {
+      return;
+    }
 
-  const goToPayPasswordInput = (action: PaymentAction) => {
-    pendingActionRef.current = action;
-    setPending(action);
-    rootNavigation.navigate('PayPasswordInput');
-  };
+    void (async () => {
+      setIsCheckingConsent(true);
+      try {
+        const isAgreed = await checkAutoDebitAgreed();
+
+        // 버튼 클릭 시점에 서버 GET으로 동의 여부를 확정하고 분기한다.
+        if (isAgreed) {
+          await executeTransferAction(action);
+          return;
+        }
+
+        setPending(action);
+        rootNavigation.navigate('PayPasswordInput');
+      } finally {
+        setIsCheckingConsent(false);
+      }
+    })();
+  }, [
+    checkAutoDebitAgreed,
+    executeTransferAction,
+    isCheckingConsent,
+    isTransferring,
+    rootNavigation,
+    setPending,
+  ]);
 
   if (state.status === 'idle' || state.status === 'loading') {
     return (
@@ -134,7 +172,7 @@ export function RoomSettlementTransferView({ onBack }: RoomSettlementTransferVie
           <SettlementCard
             key={item.id}
             item={item}
-            onPressTransfer={() => goToPayPasswordInput({ type: 'single', id: item.id })}
+            onPressTransfer={() => handleTransferAction({ type: 'single', id: item.id })}
           />
         ))}
 
@@ -148,7 +186,8 @@ export function RoomSettlementTransferView({ onBack }: RoomSettlementTransferVie
           <View style={styles.footer}>
             <FilledButton
               text="전체 송금하기"
-              onPress={hasPending ? () => goToPayPasswordInput({ type: 'all' }) : undefined}
+              onPress={hasPending && !isTransferring && !isCheckingConsent ? () => handleTransferAction({ type: 'all' }) : undefined}
+              isLoading={isTransferring || isCheckingConsent}
               height={CTA_HEIGHT}
             />
           </View>

@@ -1,3 +1,5 @@
+import type { NavigatorScreenParams } from '@react-navigation/native';
+
 export type RootStackParamList = {
   Onboarding: undefined;
   Auth: undefined;
@@ -26,6 +28,8 @@ export type ProfileStackParamList = {
   Settings: undefined;
   BankAccountRegister: undefined;
   TransferLimit: undefined;
+  TermsView: { type: 'terms' | 'privacy' };
+  PrivacyView: undefined;
 };
 
 export type RoomStackParamList = {
@@ -35,6 +39,7 @@ export type RoomStackParamList = {
   RoomRestart: { roomId: number };
   RoomMoreOptions: { roomId: number };
   AutoTransferAgree: { roomId: number };
+  AutoTransferJoin: { roomId: number; roomName?: string };
   AdminDelegation: { roomId: number };
   RoomEdit: { roomId: number };
   SettlementRequestList: { roomId: number };
@@ -44,13 +49,15 @@ export type AuthStackParamList = {
   Login: undefined;
   KakaoLogin: undefined;
   Terms: undefined;
+  TermsDetail: { type: 'terms' | 'privacy'; onAgree?: () => void };
+  PrivacyDetail: { onAgree?: () => void };
   ProfileSetup: undefined;
   Registration: undefined;
 };
 
 export type AppTabParamList = {
   Home: undefined;
-  Room: { screen: keyof RoomStackParamList } | undefined;
+  Room: NavigatorScreenParams<RoomStackParamList> | undefined;
   Report: undefined;
-  Profile: { screen: keyof ProfileStackParamList } | undefined;
+  Profile: NavigatorScreenParams<ProfileStackParamList> | undefined;
 };

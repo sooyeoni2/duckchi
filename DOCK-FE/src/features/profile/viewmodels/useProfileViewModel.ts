@@ -22,6 +22,8 @@ const useProfileStore = create<ProfileStore>(set => ({
   reset: () => set({ state: { status: 'idle' } }),
 }));
 
+export const resetProfileStore = () => useProfileStore.getState().reset();
+
 export const useProfileViewModel = () => {
   const { state, setState } = useProfileStore();
 
@@ -75,13 +77,6 @@ export const useProfileViewModel = () => {
     await loadProfile();
   }, [loadProfile]);
 
-  const updateNotificationEnabled = useCallback((value: boolean) => {
-    const current = useProfileStore.getState().state;
-    if (current.status === 'loaded') {
-      setState({ status: 'loaded', profile: { ...current.profile, notificationEnabled: value } });
-    }
-  }, [setState]);
-
   useEffect(() => {
     if (useProfileStore.getState().state.status === 'idle') {
       loadProfile();
@@ -90,5 +85,5 @@ export const useProfileViewModel = () => {
 
   const reset = useProfileStore(s => s.reset);
 
-  return { state, refresh, reset, deleteAccount, updateTransferLimit, updateProfileImage, updateNotificationEnabled };
+  return { state, refresh, reset, deleteAccount, updateTransferLimit, updateProfileImage };
 };

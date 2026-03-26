@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { fetchSettlementItems } from '../models/settlementService';
+import {
+  fetchAutoDebitConsent,
+  fetchSettlementItems,
+  transferSettlements,
+} from '../models/settlementService';
 import type {
   DeadlineTone,
   SettlementItem,
@@ -70,76 +74,63 @@ const toViewItem = (item: SettlementItem, nowMs: number): SettlementViewItem => 
   };
 };
 
-export const useSettlementViewModel = () => {
+export const useSettlementViewModel = (roomId: number) => {
   const [state, setState] = useState<SettlementScreenState>({ status: 'idle' });
   const [selectedTab, setSelectedTab] = useState<SettlementTab>('IN_PROGRESS');
   const [nowMs, setNowMs] = useState<number>(Date.now());
+  const [isTransferring, setIsTransferring] = useState(false);
+
+  const fetchAndSetSettlements = useCallback(async () => {
+    const items = await fetchSettlementItems(roomId);
+    setState({ status: 'loaded', items });
+  }, [roomId]);
 
   const loadSettlements = useCallback(async () => {
     setState({ status: 'loading' });
     try {
-      const items = await fetchSettlementItems();
-      setState({ status: 'loaded', items });
+      await fetchAndSetSettlements();
     } catch (error) {
       setState({
         status: 'error',
         message: error instanceof Error ? error.message : '정산 목록을 불러오지 못했습니다.',
       });
     }
-  }, []);
+  }, [fetchAndSetSettlements]);
 
-  const markAsPaid = useCallback((targetId: number) => {
-    setState(prevState => {
-      if (prevState.status !== 'loaded') {
-        return prevState;
-      }
+  const transferSingle = useCallback(async (settlementId: number) => {
+    setIsTransferring(true);
+    try {
+      await transferSettlements([settlementId]);
+      await fetchAndSetSettlements();
+    } finally {
+      setIsTransferring(false);
+    }
+  }, [fetchAndSetSettlements]);
 
-      const updated = prevState.items.map(item => {
-        if (item.id !== targetId || item.status !== 'IN_PROGRESS') {
-          return item;
-        }
+  const transferAllPending = useCallback(async () => {
+    const pendingIds =
+      state.status === 'loaded'
+        ? state.items
+            .filter(item => item.status === 'IN_PROGRESS')
+            .map(item => item.id)
+        : [];
 
-        return {
-          ...item,
-          status: 'COMPLETED' as const,
-          paidAt: new Date().toISOString(),
-          paidCount: item.totalCount,
-        };
-      });
+    if (pendingIds.length === 0) {
+      return;
+    }
 
-      return { status: 'loaded', items: updated };
-    });
-  }, []);
-
-  const markAllAsPaid = useCallback(() => {
-    setState(prevState => {
-      if (prevState.status !== 'loaded') {
-        return prevState;
-      }
-
-      const nowIso = new Date().toISOString();
-      const updated = prevState.items.map(item => {
-        if (item.status === 'COMPLETED') {
-          return item;
-        }
-
-        return {
-          ...item,
-          status: 'COMPLETED' as const,
-          paidAt: nowIso,
-          paidCount: item.totalCount,
-        };
-      });
-
-      return { status: 'loaded', items: updated };
-    });
-  }, []);
+    setIsTransferring(true);
+    try {
+      await transferSettlements(pendingIds);
+      await fetchAndSetSettlements();
+    } finally {
+      setIsTransferring(false);
+    }
+  }, [fetchAndSetSettlements, state]);
 
   useEffect(() => {
-    if (state.status === 'idle') {
-      loadSettlements();
-    }
-  }, [loadSettlements, state.status]);
+    loadSettlements();
+  }, [loadSettlements]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -171,24 +162,34 @@ export const useSettlementViewModel = () => {
 
   const refresh = useCallback(async () => {
     try {
-      const items = await fetchSettlementItems();
-      setState({ status: 'loaded', items });
+      await fetchAndSetSettlements();
     } catch (error) {
       setState({
         status: 'error',
         message: error instanceof Error ? error.message : '정산 목록을 불러오지 못했습니다.',
       });
     }
-  }, []);
+  }, [fetchAndSetSettlements]);
+
+  const checkAutoDebitAgreed = useCallback(async (): Promise<boolean> => {
+    try {
+      return await fetchAutoDebitConsent(roomId);
+    } catch {
+      // 동의 상태 조회 실패 시 자동송금을 막고 비밀번호 입력 경로로 유도하는 쪽이 안전하다.
+      return false;
+    }
+  }, [roomId]);
 
   return {
     state,
     selectedTab,
     setSelectedTab,
+    isTransferring,
     inProgressCount,
     settlementItems: filteredItems,
-    markAsPaid,
-    markAllAsPaid,
+    transferSingle,
+    transferAllPending,
+    checkAutoDebitAgreed,
     reload: loadSettlements,
     refresh,
   };

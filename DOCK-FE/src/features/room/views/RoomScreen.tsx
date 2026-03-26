@@ -5,8 +5,6 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
 import {
   Dimensions,
-  RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -18,7 +16,6 @@ import type { RoomStackParamList } from '@core/navigation/types';
 import { AppColorStyles } from '@core/theme/colors';
 import {
   KBODiaGothicTextStyle,
-  PretendardTextStyle,
 } from '@core/theme/typography';
 import { CustomAppBar } from '@shared/components/app_bar/CustomAppBar';
 
@@ -27,21 +24,16 @@ import {
   type PaymentContentLayoutState,
 } from '../../payment/models/paymentContentLayout';
 import { getExpenseDetail } from '../../payment/models/paymentService';
-import type { MyExpenseDetail } from '../../payment/models/paymentTypes';
 import { PaymentEntryMethodTabs } from '../../payment/views/components/PaymentEntryMethodTabs';
-import { PaymentExpenseDetailView } from '../../payment/views/components/PaymentExpenseDetailView';
-import {
-  PaymentTabContent,
-  type PaymentTabContentHandle,
-} from '../../payment/views/components/PaymentTabContent';
-import {
-  roomParticipatedPaymentsMock,
-  roomSettlementRequestsMock,
-} from '../models/roomDetailMockData';
+import type { PaymentTabContentHandle } from '../../payment/views/components/PaymentTabContent';
 import { meetingRoomMockData } from '../models/roomMockData';
 import { useRoomStore } from '../models/roomStore';
-import { RoomSettlementTransferView } from './components/RoomSettlementTransferView';
-import { SettlementRowCard } from './components/SettlementRowCard';
+import { useRoomSettlementOverviewViewModel } from '../viewmodels/useRoomSettlementOverviewViewModel';
+import { RoomPaymentTabScreen } from './screens/RoomPaymentTabScreen';
+import { RoomRankingTabScreen } from './screens/RoomRankingTabScreen';
+import type { SettlementDetailState } from './screens/RoomSettlementDetailScreen';
+import { RoomSettlementTabScreen } from './screens/RoomSettlementTabScreen';
+import { RoomSettlementTransferScreen } from './screens/RoomSettlementTransferScreen';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const s = SCREEN_WIDTH / 412;
@@ -54,14 +46,6 @@ const ROOM_TABS = [
 
 type RoomViewMode = 'SUMMARY' | 'TRANSFER';
 type RoomMainTab = (typeof ROOM_TABS)[number]['key'];
-
-type SettlementDetailState =
-  | { status: 'idle' }
-  | { status: 'loading'; expenseId: number }
-  | { status: 'loaded'; expenseId: number; detail: MyExpenseDetail }
-  | { status: 'error'; expenseId: number; message: string };
-
-const toWon = (value: number) => `${value.toLocaleString('ko-KR')}원`;
 
 type Nav = NativeStackNavigationProp<RoomStackParamList, 'RoomDetail'>;
 type Route = RouteProp<RoomStackParamList, 'RoomDetail'>;
@@ -82,23 +66,20 @@ export function RoomScreen() {
     useState<SettlementDetailState>({
       status: 'idle',
     });
-  const [settlementRefreshing, setSettlementRefreshing] = useState(false);
-
-  const handleSettlementRefresh = React.useCallback(async () => {
-    setSettlementRefreshing(true);
-    // TODO: 실제 API 연동 시 여기서 데이터 재요청
-    await new Promise<void>((resolve) => setTimeout(resolve, 500));
-    setSettlementRefreshing(false);
-  }, []);
+  const {
+    state: settlementOverviewState,
+    overviewData: settlementOverviewData,
+    isRefreshing: settlementRefreshing,
+    refresh: handleSettlementRefresh,
+  } = useRoomSettlementOverviewViewModel(route.params.roomId);
   const rooms = useRoomStore((state) => state.rooms);
   const room =
     rooms.find((item) => item.roomId === route.params.roomId) ??
     meetingRoomMockData[0];
 
-  const expectedAmount =
-    room != null ? Math.round(room.totalPay / Math.max(room.memberCount, 1)) : 0;
-  const participatedPayments = roomParticipatedPaymentsMock[room.roomId] ?? [];
-  const settlementRequests = roomSettlementRequestsMock[room.roomId] ?? [];
+  const expectedAmount = settlementOverviewData.expectedAmount;
+  const participatedPayments = settlementOverviewData.participatedPayments;
+  const settlementRequests = settlementOverviewData.settlementRequests;
   const selectedRoomTabIndex = ROOM_TABS.findIndex(
     (tab) => tab.key === selectedRoomTab,
   );
@@ -111,7 +92,8 @@ export function RoomScreen() {
 
     let cancelled = false;
 
-    void getExpenseDetail(settlementDetailState.expenseId)
+    // 상세 조회는 선택한 모임의 expense로 고정해 잘못된 방 상세가 열리지 않게 한다.
+    void getExpenseDetail(settlementDetailState.expenseId, route.params.roomId)
       .then((detail) => {
         if (cancelled) {
           return;
@@ -141,7 +123,7 @@ export function RoomScreen() {
     return () => {
       cancelled = true;
     };
-  }, [settlementDetailState]);
+  }, [route.params.roomId, settlementDetailState]);
 
   const handleSelectRoomTab = React.useCallback(
     (nextTab: RoomMainTab) => {
@@ -205,8 +187,20 @@ export function RoomScreen() {
     }
   }, [isSettlementDetailOpen, navigation, selectedRoomTab]);
 
+  const handleRetrySettlementDetail = React.useCallback((expenseId: number) => {
+    setSettlementDetailState({
+      status: 'loading',
+      expenseId,
+    });
+  }, []);
+
   if (viewMode === 'TRANSFER') {
-    return <RoomSettlementTransferView onBack={() => setViewMode('SUMMARY')} />;
+    return (
+      <RoomSettlementTransferScreen
+        roomId={route.params.roomId}
+        onBack={() => setViewMode('SUMMARY')}
+      />
+    );
   }
 
   const shouldUsePaymentAppBar =
@@ -221,131 +215,6 @@ export function RoomScreen() {
   const showRoomActions =
     !shouldUseSettlementDetailAppBar &&
     (selectedRoomTab !== 'PAYMENT' || paymentLayoutState.showRoomActions);
-
-  const renderSettlementOverview = () => (
-    <ScrollView
-      style={styles.scrollArea}
-      contentContainerStyle={styles.scrollContent}
-      showsVerticalScrollIndicator={false}
-      refreshControl={
-        <RefreshControl
-          refreshing={settlementRefreshing}
-          onRefresh={handleSettlementRefresh}
-          tintColor={AppColorStyles.black}
-        />
-      }
-    >
-      <TouchableOpacity
-        style={styles.expectedCard}
-        activeOpacity={0.85}
-        onPress={() => setViewMode('TRANSFER')}
-      >
-        <Text style={styles.expectedLabel}>예상 금액</Text>
-        <Text style={styles.expectedAmount}>{toWon(expectedAmount)}</Text>
-        <View style={styles.expectedBottomRow}>
-          <Text style={styles.expectedHint}>금액은 변경할 수 있어요.</Text>
-          <View style={styles.expectedActionBadge}>
-            <Text style={styles.expectedAction}>정산하기</Text>
-          </View>
-        </View>
-      </TouchableOpacity>
-
-      <View style={[styles.sectionCard, styles.sectionCardSpacing]}>
-        <Text style={styles.sectionTitle}>내가 참여한 결제</Text>
-        {participatedPayments.length > 0 ? (
-          participatedPayments.map((item, index) => (
-            <SettlementRowCard
-              key={item.id}
-              item={item}
-              isLast={index === participatedPayments.length - 1}
-              onPress={() => handleOpenSettlementDetail(item.id)}
-            />
-          ))
-        ) : (
-          <View style={styles.sectionEmptyBox}>
-            <Text style={styles.emptyText}>참여 중인 결제가 없습니다.</Text>
-          </View>
-        )}
-      </View>
-
-      <View style={[styles.sectionCard, styles.sectionCardBottomSpacing]}>
-        <Text style={styles.sectionTitle}>정산 요청 목록</Text>
-        {settlementRequests.length > 0 ? (
-          settlementRequests.map((item, index) => (
-            <SettlementRowCard
-              key={item.id}
-              item={item}
-              isLast={index === settlementRequests.length - 1}
-              onPress={() => handleOpenSettlementDetail(item.id)}
-            />
-          ))
-        ) : (
-          <View style={styles.sectionEmptyBox}>
-            <Text style={styles.emptyText}>정산 요청이 없습니다.</Text>
-          </View>
-        )}
-      </View>
-
-      <View style={styles.totalCard}>
-        <Text style={styles.totalLabel}>모임 전체 합계</Text>
-        <Text style={styles.totalAmount}>{toWon(room?.totalPay ?? 0)}</Text>
-      </View>
-    </ScrollView>
-  );
-
-  const renderSettlementDetail = () => {
-    if (settlementDetailState.status === 'loading') {
-      return (
-        <View style={styles.detailContainer}>
-          <View style={styles.sceneCenterCard}>
-            <Text style={styles.messageText}>상세 내역을 불러오는 중입니다.</Text>
-          </View>
-        </View>
-      );
-    }
-
-    if (settlementDetailState.status === 'error') {
-      return (
-        <View style={styles.detailContainer}>
-          <View style={styles.sceneCenterCard}>
-            <Text style={styles.errorText}>{settlementDetailState.message}</Text>
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={() =>
-                setSettlementDetailState({
-                  status: 'loading',
-                  expenseId: settlementDetailState.expenseId,
-                })
-              }
-              style={styles.retryButton}
-            >
-              <Text style={styles.retryButtonText}>다시 시도하기</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      );
-    }
-
-    if (settlementDetailState.status !== 'loaded') {
-      return null;
-    }
-
-    return (
-      <ScrollView
-        style={styles.scrollArea}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <PaymentExpenseDetailView
-          expense={settlementDetailState.detail}
-          onEdit={() => {}}
-          onCancel={() => {}}
-          editDisabled
-          cancelDisabled
-        />
-      </ScrollView>
-    );
-  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -364,7 +233,7 @@ export function RoomScreen() {
                   style={styles.moreButton}
                   activeOpacity={0.8}
                   onPress={() =>
-                    navigation.navigate('RoomMoreOptions', { roomId: room.roomId })
+                    navigation.navigate('RoomMoreOptions', { roomId: route.params.roomId })
                   }
                 >
                   <MaterialDesignIcons
@@ -421,22 +290,32 @@ export function RoomScreen() {
       ) : null}
 
       {selectedRoomTab === 'PAYMENT' ? (
-        <PaymentTabContent
-          ref={paymentTabRef}
-          roomId={room.roomId}
+        <RoomPaymentTabScreen
+          roomId={route.params.roomId}
+          paymentTabRef={paymentTabRef}
           onLayoutChange={setPaymentLayoutState}
         />
       ) : selectedRoomTab === 'SETTLEMENT' ? (
-        isSettlementDetailOpen ? renderSettlementDetail() : renderSettlementOverview()
+        <RoomSettlementTabScreen
+          isSettlementDetailOpen={isSettlementDetailOpen}
+          settlementDetailState={settlementDetailState}
+          settlementRefreshing={settlementRefreshing}
+          settlementOverviewErrorMessage={
+            settlementOverviewState.status === 'error'
+              ? settlementOverviewState.message
+              : undefined
+          }
+          expectedAmount={expectedAmount}
+          totalAmount={settlementOverviewData.totalAmount}
+          participatedPayments={participatedPayments}
+          settlementRequests={settlementRequests}
+          onRefresh={handleSettlementRefresh}
+          onOpenSettlementDetail={handleOpenSettlementDetail}
+          onOpenTransfer={() => setViewMode('TRANSFER')}
+          onRetrySettlementDetail={handleRetrySettlementDetail}
+        />
       ) : (
-        <View style={styles.placeholderContainer}>
-          <View style={styles.placeholderCard}>
-            <Text style={styles.sectionTitle}>순위</Text>
-            <Text style={styles.placeholderDescription}>
-              순위 화면은 모임 활동 규칙과 함께 연결될 예정입니다.
-            </Text>
-          </View>
-        </View>
+        <RoomRankingTabScreen />
       )}
     </SafeAreaView>
   );
@@ -501,193 +380,5 @@ const styles = StyleSheet.create({
     height: 5 * s,
     backgroundColor: AppColorStyles.black,
     borderRadius: 4 * s,
-  },
-  scrollArea: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 21 * s,
-    paddingTop: 20 * s,
-    paddingBottom: 32 * s,
-  },
-  detailContainer: {
-    flex: 1,
-    paddingHorizontal: 21 * s,
-    paddingTop: 20 * s,
-  },
-  placeholderContainer: {
-    flex: 1,
-    paddingHorizontal: 21 * s,
-    paddingTop: 20 * s,
-  },
-  placeholderCard: {
-    borderRadius: 18 * s,
-    backgroundColor: AppColorStyles.surface,
-    paddingHorizontal: 16 * s,
-    paddingVertical: 24 * s,
-    borderWidth: 1,
-    borderColor: AppColorStyles.divider,
-  },
-  placeholderDescription: {
-    marginTop: 10 * s,
-    ...PretendardTextStyle.medium({
-      fontSize: 13 * s,
-      lineHeight: 20 * s,
-      color: AppColorStyles.textSecondary,
-    }),
-  },
-  expectedCard: {
-    backgroundColor: AppColorStyles.surface,
-    borderRadius: 18 * s,
-    paddingHorizontal: 16 * s,
-    paddingTop: 20 * s,
-    paddingBottom: 16 * s,
-    marginBottom: 8 * s,
-    borderWidth: 1,
-    borderColor: AppColorStyles.divider,
-  },
-  expectedLabel: {
-    ...KBODiaGothicTextStyle.medium({
-      fontSize: 14 * s,
-      lineHeight: 14 * s,
-      color: AppColorStyles.textSecondary,
-    }),
-  },
-  expectedAmount: {
-    marginTop: 10 * s,
-    ...KBODiaGothicTextStyle.bold({
-      fontSize: 26 * s,
-      lineHeight: 26 * s,
-      color: AppColorStyles.black,
-    }),
-  },
-  expectedBottomRow: {
-    marginTop: 16 * s,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  expectedHint: {
-    ...PretendardTextStyle.medium({
-      fontSize: 12 * s,
-      color: AppColorStyles.textHint,
-    }),
-  },
-  expectedActionBadge: {
-    backgroundColor: AppColorStyles.yellow,
-    borderRadius: 10 * s,
-    paddingHorizontal: 10 * s,
-    paddingVertical: 5 * s,
-  },
-  expectedAction: {
-    ...KBODiaGothicTextStyle.medium({
-      fontSize: 12 * s,
-      lineHeight: 14 * s,
-      color: AppColorStyles.black,
-    }),
-  },
-  sectionCard: {
-    backgroundColor: AppColorStyles.surface,
-    borderRadius: 18 * s,
-    paddingHorizontal: 16 * s,
-    paddingTop: 20 * s,
-    paddingBottom: 16 * s,
-    borderWidth: 1,
-    borderColor: AppColorStyles.divider,
-  },
-  sectionCardSpacing: {
-    marginBottom: 8 * s,
-  },
-  sectionCardBottomSpacing: {
-    marginBottom: 8 * s,
-  },
-  sectionTitle: {
-    marginBottom: 12 * s,
-    ...KBODiaGothicTextStyle.medium({
-      fontSize: 16 * s,
-      lineHeight: 16 * s,
-      color: AppColorStyles.black,
-    }),
-  },
-  sectionEmptyBox: {
-    paddingVertical: 20 * s,
-    paddingHorizontal: 16 * s,
-    borderRadius: 14 * s,
-    backgroundColor: AppColorStyles.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#676767',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  emptyText: {
-    ...KBODiaGothicTextStyle.light({
-      fontSize: 14 * s,
-      color: AppColorStyles.gray2,
-    }),
-  },
-  totalCard: {
-    height: 72 * s,
-    backgroundColor: AppColorStyles.gray1,
-    borderRadius: 18 * s,
-    paddingHorizontal: 16 * s,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  totalLabel: {
-    ...KBODiaGothicTextStyle.medium({
-      fontSize: 16 * s,
-      lineHeight: 16 * s,
-      color: AppColorStyles.white,
-    }),
-  },
-  totalAmount: {
-    ...KBODiaGothicTextStyle.bold({
-      fontSize: 22 * s,
-      lineHeight: 22 * s,
-      color: AppColorStyles.white,
-    }),
-  },
-  sceneCenterCard: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 21 * s,
-    paddingVertical: 28 * s,
-    borderRadius: 18 * s,
-    backgroundColor: AppColorStyles.surface,
-    borderWidth: 1,
-    borderColor: AppColorStyles.divider,
-  },
-  messageText: {
-    ...PretendardTextStyle.medium({
-      fontSize: 14 * s,
-      lineHeight: 22 * s,
-      color: AppColorStyles.textSecondary,
-    }),
-    textAlign: 'center',
-  },
-  errorText: {
-    ...PretendardTextStyle.medium({
-      fontSize: 14 * s,
-      lineHeight: 22 * s,
-      color: AppColorStyles.textSecondary,
-    }),
-    textAlign: 'center',
-  },
-  retryButton: {
-    marginTop: 16 * s,
-    paddingHorizontal: 16 * s,
-    paddingVertical: 10 * s,
-    borderRadius: 10 * s,
-    backgroundColor: AppColorStyles.yellow,
-  },
-  retryButtonText: {
-    ...KBODiaGothicTextStyle.medium({
-      fontSize: 14 * s,
-      color: AppColorStyles.black,
-    }),
   },
 });

@@ -16,4 +16,5 @@ public interface UserFcmTokenRepository extends JpaRepository<UserFcmToken, Long
 
     List<UserFcmToken> findAllByUserIdInAndIsActiveTrueAndNotificationEnabledTrue(List<Long> userIds);
 
+    List<UserFcmToken> findAllByUserIdAndIsActiveTrueAndNotificationEnabledTrue(Long userId);
 }

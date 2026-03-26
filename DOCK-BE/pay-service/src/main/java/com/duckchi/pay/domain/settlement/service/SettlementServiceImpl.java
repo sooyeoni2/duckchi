@@ -5,9 +5,12 @@ import com.duckchi.pay.domain.expense.entity.Expense;
 import com.duckchi.pay.domain.expense.entity.ExpenseParticipant;
 import com.duckchi.pay.domain.expense.repository.ExpenseParticipantRepository;
 import com.duckchi.pay.domain.expense.repository.ExpenseRepository;
+import com.duckchi.pay.domain.room.entity.RoomParticipant;
 import com.duckchi.pay.domain.room.entity.Room;
 import com.duckchi.pay.domain.room.repository.RoomParticipantRepository;
 import com.duckchi.pay.domain.room.repository.RoomRepository;
+import com.duckchi.pay.domain.settlement.dto.event.ExpenseSettledNotificationEvent;
+import com.duckchi.pay.domain.settlement.dto.event.SettlementRequestNotificationEvent;
 import com.duckchi.pay.domain.settlement.dto.request.SettlementManualTransferRequest;
 import com.duckchi.pay.domain.settlement.dto.request.SettlementRequestCreateRequest;
 import com.duckchi.pay.domain.settlement.dto.request.SettlementTransferRequest;
@@ -20,12 +23,16 @@ import com.duckchi.pay.global.error.CustomException;
 import com.duckchi.pay.global.error.ErrorCode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import com.duckchi.pay.infra.kafka.service.OutboxEventCommandService;
+import com.duckchi.pay.infra.kafka.type.KafkaTopicNames;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -52,6 +59,7 @@ public class SettlementServiceImpl implements SettlementService {
     private final RoomRepository roomRepository;
     private final RoomParticipantRepository roomParticipantRepository;
     private final SettlementTransferExecutor settlementTransferExecutor;
+    private final OutboxEventCommandService outboxEventCommandService;
     private final BadgeTriggerService badgeTriggerService;
 
     /**
@@ -107,6 +115,10 @@ public class SettlementServiceImpl implements SettlementService {
 
         // settlement 생성이 확정된 뒤에만 expense 상태를 REQUESTED로 전이한다.
         expenses.forEach(Expense::markRequested);
+
+        publishSettlementRequestNotificationEvents(settlements, expenses);
+
+
     }
 
     /**
@@ -186,10 +198,27 @@ public class SettlementServiceImpl implements SettlementService {
         // 동일 결제의 미완료 정산이 0건이 되는 시점에만 결제 상태를 SETTLED로 전이한다.
         if (!settlementRepository.existsByExpenseIdAndStatus(expense.getId(), SETTLEMENT_PENDING_STATUS)) {
             expense.markSettled();
+
+            //Event 만들기
+            ExpenseSettledNotificationEvent event = ExpenseSettledNotificationEvent.builder()
+                    .expenseId(expense.getId())
+                    .expenseTitle(expense.getTitle())
+                    .payerUserId(expense.getPayerUserId())
+                    .occurredAt(LocalDateTime.now())
+                    .build();
+            //outboxEventCommandService 호출
+            outboxEventCommandService.save(
+                    "EXPENSE",
+                    expense.getId(),
+                    "EXPENSE_SETTLED",
+                    KafkaTopicNames.EXPENSE_SETTLED_NOTIFICATION_EVENT,
+                    event
+            );
         }
 
         // [BADGE 트리거] 수동 정산 완료도 '정산 완료'이므로 뱃지 진행도 갱신
         badgeTriggerService.triggerSettlementCompleted(
+                settlement.getId(),
                 settlement.getPayerUserId(),
                 settlement.getPayableAmount(),
                 settlement.getCreatedAt(),
@@ -276,6 +305,80 @@ public class SettlementServiceImpl implements SettlementService {
     /**
      * 요청 settlementId 목록과 조회 결과 개수를 비교해 누락 여부를 검증한다.
      */
+    //정산요청 알림 이벤트 publish 메서드
+    private void publishSettlementRequestNotificationEvents(List<Settlement> settlements, List<Expense> expenses) {
+
+        //expense를 expenseId로 map으로 변형
+        Map<Long, Expense> expenseById = expenses.stream()
+                .collect(Collectors.toMap(Expense::getId, expense -> expense));
+
+        //settlements에서 roomId 추출
+        Long roomId = settlements.get(0).getRoomId();
+        //roomId로 방 참여자 조회
+        Map<Long, Boolean> agreementByUserId = roomParticipantRepository.findByRoom_Id(roomId).stream()
+                .collect(Collectors.toMap(
+                        RoomParticipant::getUserId,
+                        RoomParticipant::isAgreed
+                ));
+        //settlement들을 payerUserId 기준으로 묶기
+        Map<Long, List<Settlement>> settlementsByReceiver = settlements.stream()
+                .collect(Collectors.groupingBy(
+                        Settlement::getPayerUserId,
+                        LinkedHashMap::new,
+                        Collectors.toList()
+                ));
+
+        //사용자별로 묶인 settlement 그룹 처리
+        for (Map.Entry<Long, List<Settlement>> entry : settlementsByReceiver.entrySet()) {
+            Long receiverId = entry.getKey(); //알림 받을 사용자 id
+            List<Settlement> receiverSettlements = entry.getValue(); //사용자가 받아야할 settlement 목록
+            Settlement firstSettlement = receiverSettlements.get(0); //공통값 꺼낼때 잡은 것
+
+            boolean isAgreed = agreementByUserId.getOrDefault(receiverId, false); //이 사용자의 isAgreed 상태 꺼내기
+
+            //총 내야할 금액 조립
+            int totalAmount = receiverSettlements.stream()
+                    .mapToInt(Settlement::getPayableAmount)
+                    .sum();
+
+            //정산 요청 id와 결제 항목명 매핑
+            Map<Long, String> settlementTitles = receiverSettlements.stream()
+                    .collect(Collectors.toMap(
+                            Settlement::getId,
+                            settlement -> {
+                                Expense expense = expenseById.get(settlement.getExpenseId());
+                                return expense != null ? expense.getTitle() : "정산 요청";
+                            },
+                            (left, right) -> left, //key가 중복되면 먼저 값 유지
+                            LinkedHashMap::new //순서 유지
+                    ));
+
+            //이벤트 조립
+            SettlementRequestNotificationEvent event = SettlementRequestNotificationEvent.builder()
+                    .receiverId(receiverId)
+                    .isAgreed(isAgreed)
+                    .roomName(firstSettlement.getRoomName())
+                    .totalAmount(totalAmount)
+                    .requesterUserName(firstSettlement.getRequesterUserName())
+                    .settlements(settlementTitles)
+                    .build();
+
+            //대표 정산 id 추출
+            Long aggregateId = receiverSettlements.stream()
+                    .map(Settlement::getId)
+                    .min(Long::compareTo)
+                    .orElseThrow();
+            //outboxEventCommandService 호출
+            outboxEventCommandService.save(
+                    "SETTLEMENT",
+                    aggregateId,
+                    "SETTLEMENT_REQUESTED",
+                    KafkaTopicNames.SETTLEMENT_REQUEST_NOTIFICATION_EVENT,
+                    event
+            );
+        }
+    }
+
     private void validateAllSettlementsExist(List<Long> requestedIds, List<Settlement> settlements) {
         if (settlements.size() != requestedIds.size()) {
             throw new CustomException(ErrorCode.SETTLEMENT_NOT_FOUND);
