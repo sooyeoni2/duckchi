@@ -26,8 +26,9 @@ public class ExpenseValidator {
     /**
      * 등록/수정 공통 사전 검증.
      */
-    public void validateRegistration(Long userId, Long roomId, ExpenseUpsertRequest request) {
-        validateRoomAndSession(roomId, request);
+    public Long validateRegistration(Long userId, Long roomId, ExpenseUpsertRequest request) {
+        RoomSession session = roomSessionRepository.findByRoom_IdAndEndedAtIsNull(roomId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
         validateRoomMember(roomId, userId);
 
         Set<Long> participantUserIds = validateParticipantsIntegrity(roomId, request);
@@ -35,6 +36,8 @@ public class ExpenseValidator {
         if (request.getItems() != null) {
             validateItemsIntegrity(roomId, request.getItems(), participantUserIds);
         }
+        
+        return session.getId();
     }
 
     /**
@@ -59,13 +62,7 @@ public class ExpenseValidator {
         }
     }
 
-    private void validateRoomAndSession(Long roomId, ExpenseUpsertRequest request) {
-        RoomSession session = roomSessionRepository.findById(request.getRoomSessionId())
-                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
-        if (!session.getRoom().getId().equals(roomId)) {
-            throw new CustomException(ErrorCode.ROOM_SESSION_MISMATCH);
-        }
-    }
+
 
     private Set<Long> validateParticipantsIntegrity(Long roomId, ExpenseUpsertRequest request) {
         validateUniqueParticipantIds(request);

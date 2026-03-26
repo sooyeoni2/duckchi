@@ -145,12 +145,12 @@ public class ExpenseServiceImpl implements ExpenseService {
     @Override
     @Transactional
     public Long registerExpense(Long userId, Long roomId, ExpenseUpsertRequest request) {
-        expenseValidator.validateRegistration(userId, roomId, request);
+        Long activeSessionId = expenseValidator.validateRegistration(userId, roomId, request);
         Map<Long, UserProfileSnapshotResponse> profileMap = getUserProfiles(collectReferencedUserIds(userId, request));
 
         Expense expense = Expense.builder()
                 .roomId(roomId)
-                .roomSessionId(request.getRoomSessionId())
+                .roomSessionId(activeSessionId)
                 .payerUserId(userId)
                 .payerUserName(resolveRequiredProfile(profileMap, userId).getUserName())
                 .inputType(request.getInputType())
@@ -217,6 +217,7 @@ public class ExpenseServiceImpl implements ExpenseService {
     public void updateExpense(Long userId, Long roomId, Long expenseId, ExpenseUpsertRequest request) {
         Expense expense = findExpenseWithRoomCheck(roomId, expenseId);
         expenseValidator.validateEditableByRequester(userId, expense);
+        
         expenseValidator.validateRegistration(userId, roomId, request);
         Map<Long, UserProfileSnapshotResponse> profileMap = getUserProfiles(collectReferencedUserIds(userId, request));
 

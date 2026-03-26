@@ -1,11 +1,11 @@
 import React from 'react';
 import { create } from 'zustand';
-import { getMyExpenses } from '../models/paymentService';
+import { getMyExpenses } from '../models/services/paymentService';
 import type {
   ExpenseStatus,
   ExpenseStatusFilter,
   MyExpenseItem,
-} from '../models/paymentTypes';
+} from '../models/types/paymentTypes';
 
 /**
  * payment 목록 화면의 모든 상태.
