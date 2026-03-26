@@ -28,6 +28,8 @@ export type ProfileStackParamList = {
   Settings: undefined;
   BankAccountRegister: undefined;
   TransferLimit: undefined;
+  TermsView: { type: 'terms' | 'privacy' };
+  PrivacyView: undefined;
 };
 
 export type RoomStackParamList = {
