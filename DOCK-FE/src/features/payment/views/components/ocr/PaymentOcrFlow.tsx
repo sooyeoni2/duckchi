@@ -18,6 +18,7 @@ import { PaymentOcrEntryView } from './PaymentOcrEntryView';
 import { PaymentOcrFailureView } from './PaymentOcrFailureView';
 import { PaymentOcrMenuSplitView } from './PaymentOcrMenuSplitView';
 import { PaymentOcrSplitSetupView } from './PaymentOcrSplitSetupView';
+import { PaymentOcrPreviewView } from './PaymentOcrPreviewView';
 import { PaymentAnimatedTouchable } from '../common/PaymentAnimatedTouchable';
 
 interface PaymentOcrFlowProps {
@@ -35,7 +36,7 @@ export interface PaymentOcrFlowHandle {
   goBack: () => void;
 }
 
-type OcrScene = 'entry' | 'failure' | 'editor' | 'splitSetup' | 'menuSplit';
+type OcrScene = 'entry' | 'preview' | 'failure' | 'editor' | 'splitSetup' | 'menuSplit';
 
 function buildCompleteMessage(
   isEditMode: boolean,
@@ -88,6 +89,8 @@ export const PaymentOcrFlow = React.forwardRef<
     assignTargetItem,
     resetState,
     scanReceipt,
+    pickImage,
+    recognizeImage,
     loadExistingDraft,
     fallbackToTotalOnly,
     updateLineItemName,
@@ -171,20 +174,33 @@ export const PaymentOcrFlow = React.forwardRef<
   const handleScan = React.useCallback(
     async (source: OcrImageSource) => {
       onClearFeedback();
-      const result = await scanReceipt(source);
-      const rootScene: OcrScene = mode === 'create' ? 'entry' : 'editor';
+      const result = await pickImage(source);
 
-      if (result === 'loaded') {
-        replaceHistory([rootScene, 'editor']);
-        return;
-      }
-
-      if (result === 'failed') {
-        replaceHistory([rootScene, 'failure']);
+      if (result === 'picked') {
+        pushScene('preview');
       }
     },
-    [mode, onClearFeedback, replaceHistory, scanReceipt],
+    [onClearFeedback, pickImage, pushScene],
   );
+
+  const handleConfirmPreview = React.useCallback(async () => {
+    if (state.status !== 'preview') {
+      return;
+    }
+
+    const { imageUri, source } = state;
+    const result = await recognizeImage(imageUri, source);
+    const rootScene: OcrScene = mode === 'create' ? 'entry' : 'editor';
+
+    if (result === 'loaded') {
+      replaceHistory([rootScene, 'editor']);
+      return;
+    }
+
+    if (result === 'failed') {
+      replaceHistory([rootScene, 'failure']);
+    }
+  }, [mode, recognizeImage, replaceHistory, state]);
 
   const handleEditorNext = React.useCallback(() => {
     if (draft == null) {
@@ -340,6 +356,20 @@ export const PaymentOcrFlow = React.forwardRef<
           }}
           onPressLibrary={() => {
             void handleScan('LIBRARY');
+          }}
+        />
+      );
+    }
+
+    if (scene === 'preview' && state.status === 'preview') {
+      return (
+        <PaymentOcrPreviewView
+          imageUri={state.imageUri}
+          onConfirm={() => {
+            void handleConfirmPreview();
+          }}
+          onRetake={() => {
+            goBack();
           }}
         />
       );
