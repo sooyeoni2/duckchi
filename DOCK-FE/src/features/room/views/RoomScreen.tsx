@@ -139,10 +139,15 @@ export function RoomScreen() {
         setSettlementDetailState({ status: 'idle' });
       }
 
+      if (nextTab === 'SETTLEMENT') {
+        // 결제 탭에서 정산 요청 직후 돌아오면 최신 my-set 데이터가 즉시 보이도록 갱신한다.
+        void handleSettlementRefresh();
+      }
+
       setRoomTabHistory((previousHistory) => [...previousHistory, selectedRoomTab]);
       setSelectedRoomTab(nextTab);
     },
-    [selectedRoomTab],
+    [handleSettlementRefresh, selectedRoomTab],
   );
 
   const handleOpenSettlementDetail = React.useCallback((expenseId: number) => {

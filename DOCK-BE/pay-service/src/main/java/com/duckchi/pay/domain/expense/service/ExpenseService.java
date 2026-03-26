@@ -1,6 +1,5 @@
 package com.duckchi.pay.domain.expense.service;
 
-import com.duckchi.pay.domain.expense.dto.request.AccountHistoryRequest;
 import com.duckchi.pay.domain.expense.dto.request.ExpenseUpsertRequest;
 import com.duckchi.pay.domain.expense.dto.response.AccountHistoryResponse;
 import com.duckchi.pay.domain.expense.dto.response.ExpenseDetailResponse;
@@ -14,7 +13,7 @@ import java.util.List;
  */
 public interface ExpenseService {
 
-    List<AccountHistoryResponse> getAccountHistory(Long userId, AccountHistoryRequest request);
+    List<AccountHistoryResponse> getAccountHistory(Long userId);
 
     List<ExpenseParticipantOptionResponse> getExpenseParticipants(Long userId, Long roomId);
 

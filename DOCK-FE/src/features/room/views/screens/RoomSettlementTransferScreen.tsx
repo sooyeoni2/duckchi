@@ -59,6 +59,10 @@ export function RoomSettlementTransferScreen({ onBack, roomId }: RoomSettlementT
   }, [refresh]);
 
   const hasPending = inProgressCount > 0;
+  const emptyMessage =
+    selectedTab === 'COMPLETED'
+      ? '완료된 정산 내역이 없습니다.'
+      : '진행중인 정산 내역이 없습니다.';
   const consume = usePaymentConfirmStore((s) => s.consume);
   const setPending = usePaymentConfirmStore((s) => s.setPending);
 
@@ -178,7 +182,7 @@ export function RoomSettlementTransferScreen({ onBack, roomId }: RoomSettlementT
 
         {settlementItems.length === 0 && (
           <View style={styles.emptyBox}>
-            <Text style={styles.emptyText}>표시할 정산 내역이 없습니다.</Text>
+            <Text style={styles.emptyText}>{emptyMessage}</Text>
           </View>
         )}
 

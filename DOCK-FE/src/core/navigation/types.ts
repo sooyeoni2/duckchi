@@ -3,7 +3,7 @@ import type { NavigatorScreenParams } from '@react-navigation/native';
 export type RootStackParamList = {
   Onboarding: undefined;
   Auth: undefined;
-  App: undefined;
+  App: NavigatorScreenParams<AppTabParamList> | undefined;
   BankAccountSetup: { returnTo: 'App' | 'Settings' | 'NewUser'; lockedBankCode?: string };
   BankAccountVerify: {
     accountId: number;
@@ -28,6 +28,8 @@ export type ProfileStackParamList = {
   Settings: undefined;
   BankAccountRegister: undefined;
   TransferLimit: undefined;
+  TermsView: { type: 'terms' | 'privacy' };
+  PrivacyView: undefined;
 };
 
 export type RoomStackParamList = {
@@ -37,7 +39,7 @@ export type RoomStackParamList = {
   RoomRestart: { roomId: number };
   RoomMoreOptions: { roomId: number };
   AutoTransferAgree: { roomId: number };
-  AutoTransferJoin: { roomId: number; roomName?: string };
+  AutoTransferJoin: { roomId: number; roomName?: string; inviteToken?: string };
   AdminDelegation: { roomId: number };
   RoomEdit: { roomId: number };
   SettlementRequestList: { roomId: number };

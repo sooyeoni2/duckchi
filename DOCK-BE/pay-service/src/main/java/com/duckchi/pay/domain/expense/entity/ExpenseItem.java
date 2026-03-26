@@ -19,6 +19,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.BatchSize;
 
 /**
  * 결제 품목 엔티티.
@@ -50,6 +51,7 @@ public class ExpenseItem {
     private Integer quantity;
 
     @Builder.Default
+    @BatchSize(size = 100)
     @OneToMany(mappedBy = "expenseItem", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ExpenseItemParticipant> itemParticipants = new ArrayList<>();
 }

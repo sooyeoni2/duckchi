@@ -20,7 +20,7 @@ export const usePayPasswordViewModel = () => {
         return { ok: true };
       } catch (e: any) {
         const code = parseErrorCode(e);
-        if (code === 'PAY-409-1') return { ok: false, error: 'ALREADY_SET' };
+        if (code === 'PAYPASS-409-1') return { ok: false, error: 'ALREADY_SET' };
         return { ok: false, error: 'SERVER_ERROR' };
       } finally {
         setIsSettingUp(false);

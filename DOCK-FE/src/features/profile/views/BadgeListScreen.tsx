@@ -75,7 +75,9 @@ export function BadgeListScreen() {
     );
   }
 
-  const { acquiredBadges, lockedBadges } = state.data;
+  const { acquiredBadges } = state.data;
+  const acquiredIds = new Set(acquiredBadges.map(b => b.id));
+  const lockedBadges = state.data.lockedBadges.filter(b => !acquiredIds.has(b.id));
   const acquiredCount = acquiredBadges.length;
   const totalCount = acquiredCount + lockedBadges.length;
   const progress = totalCount > 0 ? acquiredCount / totalCount : 0;
@@ -119,8 +121,8 @@ export function BadgeListScreen() {
             <View key={rowIndex} style={styles.row}>
               {row.map(item =>
                 item.type === 'acquired'
-                  ? <AcquiredBadgeItem key={item.badge.id} badge={item.badge} />
-                  : <LockedBadgeItem key={item.badge.id} badge={item.badge} onPress={() => setSelectedBadge(item.badge)} />,
+                  ? <AcquiredBadgeItem key={`acquired-${item.badge.id}`} badge={item.badge} />
+                  : <LockedBadgeItem key={`locked-${item.badge.id}`} badge={item.badge} onPress={() => setSelectedBadge(item.badge)} />,
               )}
               {/* 마지막 행이 3개 미만이면 빈 칸 채우기 */}
               {row.length < COLUMNS &&

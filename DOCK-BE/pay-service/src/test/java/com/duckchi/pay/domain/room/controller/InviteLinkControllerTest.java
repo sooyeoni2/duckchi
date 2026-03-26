@@ -84,12 +84,15 @@ class InviteLinkControllerTest {
     @Test
     void validateInviteLink_success_returns200() throws Exception {
         when(inviteLinkService.validateInviteLink(eq("valid-token"), eq(null)))
-                .thenReturn(ValidateInviteLinkResponse.of(true));
+                .thenReturn(ValidateInviteLinkResponse.of(true, 101L, "C102 회식", false));
 
         mockMvc.perform(get("/api/v1/rooms/invites/valid-token"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.valid").value(true));
+                .andExpect(jsonPath("$.data.valid").value(true))
+                .andExpect(jsonPath("$.data.roomId").value(101))
+                .andExpect(jsonPath("$.data.roomName").value("C102 회식"))
+                .andExpect(jsonPath("$.data.alreadyParticipant").value(false));
     }
 
     @Test
@@ -104,15 +107,17 @@ class InviteLinkControllerTest {
     }
 
     @Test
-    void validateInviteLink_alreadyParticipant_returns409() throws Exception {
+    void validateInviteLink_alreadyParticipant_returns200WithFlag() throws Exception {
         when(inviteLinkService.validateInviteLink(eq("valid-token"), eq(7L)))
-                .thenThrow(new CustomException(ErrorCode.ROOM_ALREADY_PARTICIPANT));
+                .thenReturn(ValidateInviteLinkResponse.of(true, 101L, "C102 회식", true));
 
         mockMvc.perform(get("/api/v1/rooms/invites/valid-token")
                         .header("X-User-Id", "7"))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.errorCode").value("ROOM-409-1"));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.valid").value(true))
+                .andExpect(jsonPath("$.data.alreadyParticipant").value(true))
+                .andExpect(jsonPath("$.data.roomId").value(101));
     }
 
     @Test

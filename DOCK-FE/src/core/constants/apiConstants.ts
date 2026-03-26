@@ -42,7 +42,13 @@ export const ENDPOINTS = {
     autoDebitConsents: (roomId: number | string) =>
       `/api/v1/rooms/${roomId}/auto-debit/consents`,
   },
+  settlement: {
+    request: '/api/v1/settlements/request',
+  },
   insight: {
+    monthlySummary: '/api/v1/analytics/monthly/summary',
+    monthlyCategories: '/api/v1/analytics/monthly/categories',
+    monthlyRoomsRanking: '/api/v1/analytics/monthly/rooms-ranking',
     trends: '/api/v1/analytics/trends',
   },
 };
