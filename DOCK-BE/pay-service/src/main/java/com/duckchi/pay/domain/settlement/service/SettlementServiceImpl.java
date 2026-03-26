@@ -219,6 +219,7 @@ public class SettlementServiceImpl implements SettlementService {
 
         // [BADGE 트리거] 수동 정산 완료도 '정산 완료'이므로 뱃지 진행도 갱신
         badgeTriggerService.triggerSettlementCompleted(
+                settlement.getId(),
                 settlement.getPayerUserId(),
                 settlement.getPayableAmount(),
                 settlement.getCreatedAt(),

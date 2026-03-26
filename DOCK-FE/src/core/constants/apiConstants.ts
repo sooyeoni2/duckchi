@@ -36,6 +36,21 @@ export const ENDPOINTS = {
     // OCR 영수증 분석 (PAY-03)
     ocr: '/api/v1/expenses/ocr',
   },
+  room: {
+    roomLists: '/api/v1/rooms/room-lists',
+    mySet: (roomId: number | string) => `/api/v1/rooms/${roomId}/my-set`,
+    autoDebitConsents: (roomId: number | string) =>
+      `/api/v1/rooms/${roomId}/auto-debit/consents`,
+  },
+  settlement: {
+    request: '/api/v1/settlements/request',
+  },
+  insight: {
+    monthlySummary: '/api/v1/analytics/monthly/summary',
+    monthlyCategories: '/api/v1/analytics/monthly/categories',
+    monthlyRoomsRanking: '/api/v1/analytics/monthly/rooms-ranking',
+    trends: '/api/v1/analytics/trends',
+  },
 };
 
 export const KAKAO_CLIENT_ID: string = extra.kakaoClientId ?? '';

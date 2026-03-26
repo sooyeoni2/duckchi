@@ -8,6 +8,7 @@ import { MeetingRoomRestartScreen } from './views/MeetingRoomRestartScreen';
 import { RoomListScreen } from './views/RoomListScreen';
 import RoomMoreOptionsScreen from './views/screens/RoomMoreOptionsScreen';
 import AutoTransferAgreeScreen from './views/screens/AutoTransferAgreeScreen';
+import AutoTransferJoinScreen from './views/screens/AutoTransferJoinScreen';
 import AdminDelegationScreen from './views/screens/AdminDelegationScreen';
 import RoomEditScreen from './views/screens/RoomEditScreen';
 import { SettlementRequestListScreen } from './views/screens/SettlementRequestListScreen';
@@ -24,6 +25,7 @@ export function RoomNavigator() {
       <Stack.Screen name="RoomRestart" component={MeetingRoomRestartScreen} />
       <Stack.Screen name="RoomMoreOptions" component={RoomMoreOptionsScreen} options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="AutoTransferAgree" component={AutoTransferAgreeScreen} options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="AutoTransferJoin" component={AutoTransferJoinScreen} options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="AdminDelegation" component={AdminDelegationScreen} options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="RoomEdit" component={RoomEditScreen} options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="SettlementRequestList" component={SettlementRequestListScreen} options={{ animation: 'slide_from_right' }} />

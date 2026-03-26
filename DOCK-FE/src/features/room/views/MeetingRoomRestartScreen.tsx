@@ -10,24 +10,47 @@ import { AppColorStyles } from '../../../core/theme/colors';
 import { CustomAppBar } from '../../../shared/components/app_bar/CustomAppBar';
 import { MeetingRoomEditor } from '../components/MeetingRoomEditor';
 import { getMeetingRoomRestartDraft, type MeetingRoomTag } from '../models/roomMockData';
+import { useRoomActionViewModel } from '../viewmodels/useRoomActionViewModel';
+import { useRoomStore } from '../models/roomStore';
 
 export function MeetingRoomRestartScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RoomStackParamList, 'RoomRestart'>>();
   const route = useRoute<RouteProp<RoomStackParamList, 'RoomRestart'>>();
-  const draft = getMeetingRoomRestartDraft(route.params.roomId);
+  const roomId = route.params.roomId;
+  
+  const rooms = useRoomStore((state) => state.rooms);
+  const currentRoom = rooms.find((r) => r.roomId === roomId);
+  
+  const draft = getMeetingRoomRestartDraft(roomId);
 
-  const [roomName, setRoomName] = useState(draft.roomName);
-  const [detail, setDetail] = useState(draft.description);
-  const [selectedTag, setSelectedTag] = useState<MeetingRoomTag>(draft.category);
+  const [roomName, setRoomName] = useState(currentRoom?.roomName || draft.roomName);
+  const [detail, setDetail] = useState(currentRoom?.description || draft.description);
+  const [selectedTag, setSelectedTag] = useState<MeetingRoomTag>(
+    (currentRoom?.category as MeetingRoomTag) || draft.category
+  );
+
+  const { startRoom } = useRoomActionViewModel(roomId);
 
   const handleRestartRoom = () => {
     if (!roomName.trim()) {
-      Alert.alert('모임 다시 시작하기', '모임 이름을 입력해 주세요.');
+      Alert.alert('시작하기', '모임 이름을 입력해 주세요.');
       return;
     }
 
-    Alert.alert('모임 다시 시작하기', 'mock 재시작 화면입니다.', [
-      { text: '확인', onPress: () => navigation.goBack() },
+    Alert.alert('시작하기', '모임을 시작하시겠습니까?', [
+      { text: '취소', style: 'cancel' },
+      {
+        text: '시작',
+        onPress: async () => {
+          const success = await startRoom({
+            category: selectedTag,
+            description: detail,
+          });
+          if (success) {
+            navigation.goBack();
+          }
+        },
+      },
     ]);
   };
 
@@ -46,8 +69,9 @@ export function MeetingRoomRestartScreen() {
         onRoomNameChange={setRoomName}
         onDetailChange={setDetail}
         onTagChange={setSelectedTag}
-        submitLabel="모임 다시 시작하기"
+        submitLabel="시작하기"
         onSubmit={handleRestartRoom}
+        roomNameEnabled={false}
       />
     </SafeAreaView>
   );

@@ -8,45 +8,53 @@ import type { RoomStackParamList } from '../../../core/navigation/types';
 import { AppColorStyles } from '../../../core/theme/colors';
 import { CustomAppBar } from '../../../shared/components/app_bar/CustomAppBar';
 import { MeetingRoomEditor } from '../components/MeetingRoomEditor';
-import { MeetingRoomLinkSheet } from '../components/MeetingRoomLinkSheet';
-import {
-  createMeetingRoomDraftMock,
-  getMeetingRoomInviteLinkMock,
-  type MeetingRoomTag,
-} from '../models/roomMockData';
-import { useRoomStore } from '../models/roomStore';
+import { createMeetingRoomDraftMock, type MeetingRoomTag } from '../models/roomMockData';
+import { createMeetingRoom } from '../models/roomService';
 
 export function MeetingRoomCreateScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RoomStackParamList, 'RoomCreate'>>();
   const [roomName, setRoomName] = useState(createMeetingRoomDraftMock.roomName);
   const [detail, setDetail] = useState(createMeetingRoomDraftMock.description);
   const [selectedTag, setSelectedTag] = useState<MeetingRoomTag>(createMeetingRoomDraftMock.category);
-  const [sheetVisible, setSheetVisible] = useState(false);
-  const addRoom = useRoomStore((s) => s.addRoom);
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  const inviteLink = getMeetingRoomInviteLinkMock(201);
-
-  const handleCreateRoom = () => {
+  const handleCreateRoom = async () => {
     if (!roomName.trim()) {
       Alert.alert('모임방 만들기', '모임 이름을 입력해 주세요.');
       return;
     }
 
-    setSheetVisible(true);
-  };
+    try {
+      setIsProcessing(true);
+      // 백엔드 명세가 data 랩핑되어 있을 수 있으므로 처리
+      const response = await createMeetingRoom({
+        roomName: roomName.trim(),
+        category: selectedTag,
+        description: detail.trim(),
+      });
+      
+      const createdRoomId = response?.data?.roomId || response?.roomId;
+      
+      if (!createdRoomId) {
+        throw new Error('응답에 roomId가 없습니다.');
+      }
 
-  const handleCopyLink = () => {
-    Alert.alert('초대 링크', '링크가 복사되었습니다.');
-  };
-
-  const handleCloseSheet = () => {
-    addRoom({ roomName, category: selectedTag, description: detail });
-    setSheetVisible(false);
-    navigation.goBack();
+      // 모임방 생성 완료 시, 자동이체 가입 동의 화면으로 납치
+      navigation.replace('AutoTransferJoin', {
+        roomId: createdRoomId,
+        roomName: roomName.trim(),
+      });
+      
+    } catch (error: any) {
+      Alert.alert('생성 실패', error?.response?.data?.message || '모임방 생성 중 오류가 발생했습니다.');
+      console.error(error);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: AppColorStyles.background }} edges={['top']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: AppColorStyles.background }} edges={['top'] as const}>
       <CustomAppBar
         centerTitle={false}
         showDivider
@@ -61,14 +69,8 @@ export function MeetingRoomCreateScreen() {
         onDetailChange={setDetail}
         onTagChange={setSelectedTag}
         submitLabel="방 만들기"
-        onSubmit={handleCreateRoom}
+        onSubmit={isProcessing ? () => {} : handleCreateRoom}
         showInviteGuide
-      />
-      <MeetingRoomLinkSheet
-        visible={sheetVisible}
-        inviteLink={inviteLink}
-        onCopyLink={handleCopyLink}
-        onLater={handleCloseSheet}
       />
     </SafeAreaView>
   );

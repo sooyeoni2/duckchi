@@ -45,8 +45,8 @@ public class OcrResponse {
 
     @Getter @NoArgsConstructor @AllArgsConstructor
     public static class PaymentInfo {
-        private TextInfo date;
-        private TextInfo time;
+        private DateInfo date;
+        private TimeInfo time;
         private PriceInfo totalPrice;
     }
 
@@ -68,6 +68,32 @@ public class OcrResponse {
     }
 
     @Getter @NoArgsConstructor @AllArgsConstructor
+    public static class DateInfo {
+        private String text;
+        private FormattedDate formatted;
+    }
+
+    @Getter @NoArgsConstructor @AllArgsConstructor
+    public static class FormattedDate {
+        private String year;
+        private String month;
+        private String day;
+    }
+
+    @Getter @NoArgsConstructor @AllArgsConstructor
+    public static class TimeInfo {
+        private String text;
+        private FormattedTime formatted;
+    }
+
+    @Getter @NoArgsConstructor @AllArgsConstructor
+    public static class FormattedTime {
+        private String hour;
+        private String minute;
+        private String second;
+    }
+
+    @Getter @NoArgsConstructor @AllArgsConstructor
     public static class PriceInfo {
         private PriceDetails price;
     }
@@ -75,5 +101,11 @@ public class OcrResponse {
     @Getter @NoArgsConstructor @AllArgsConstructor
     public static class PriceDetails {
         private String text; // 실제 정규화된 금액 텍스트임.
+        private FormattedValue formatted;
+    }
+
+    @Getter @NoArgsConstructor @AllArgsConstructor
+    public static class FormattedValue {
+        private String value;
     }
 }

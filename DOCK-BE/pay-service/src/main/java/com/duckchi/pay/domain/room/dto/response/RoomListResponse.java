@@ -12,6 +12,7 @@ public class RoomListResponse {
     private Long roomId;
     private String roomName;
     private String category;
+    private String description;
 
     @JsonProperty("isProgress")
     private boolean isProgress;

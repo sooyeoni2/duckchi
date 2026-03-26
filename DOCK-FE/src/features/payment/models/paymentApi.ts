@@ -59,10 +59,14 @@ export async function fetchOcrAnalysisApi(imageUrl: string) {
 }
 
 /**
- * 🛠 [임시 테스트용] 실제 방 연결 전까지 roomId를 1로 고정
+ * roomId가 문자열로 넘어오는 케이스를 숫자로 정규화해 API 경로를 안정적으로 맞춘다.
  */
 function getEffectiveRoomId(roomId: number | string): number {
-  return 1; // 어떤 방을 누르든 1번 방으로 고정
+  const parsed = typeof roomId === 'string' ? Number(roomId) : roomId;
+  if (Number.isNaN(parsed) || parsed <= 0) {
+    throw new Error('유효하지 않은 모임방 ID입니다.');
+  }
+  return parsed;
 }
 
 /**
@@ -84,6 +88,17 @@ export async function createExpenseApi(roomId: number | string, request: Expense
 export async function fetchMyExpensesApi(roomId: number | string) {
   const effectiveId = getEffectiveRoomId(roomId);
   const response = await axiosClient.get(ENDPOINTS.payment.myExpenses(effectiveId));
+  return validateAndUnwrap(response, z.array(expenseSummarySchema));
+}
+
+/**
+ * --------------------------------------------------------------------------
+ * PAY-05: 모임 전체 결제안 목록 조회
+ * --------------------------------------------------------------------------
+ */
+export async function fetchRoomExpensesApi(roomId: number | string) {
+  const effectiveId = getEffectiveRoomId(roomId);
+  const response = await axiosClient.get(ENDPOINTS.payment.expenses(effectiveId));
   return validateAndUnwrap(response, z.array(expenseSummarySchema));
 }
 
@@ -138,6 +153,22 @@ export async function fetchExpenseParticipantsApi(roomId: number | string) {
     userTag: z.string().optional().nullable(),
     profileImageUrl: z.string().optional().nullable(),
   })));
+}
+
+/**
+ * --------------------------------------------------------------------------
+ * SET-01: 정산 요청 발송
+ * --------------------------------------------------------------------------
+ */
+export async function requestSettlementsApi(expenseIds: number[]) {
+  const response = await axiosClient.post(ENDPOINTS.settlement.request, {
+    requestedExpenseIds: expenseIds,
+  });
+
+  const responseData = response.data;
+  if (responseData?.success !== true) {
+    throw new Error(responseData?.msg ?? '정산 요청에 실패했습니다.');
+  }
 }
 
 /**

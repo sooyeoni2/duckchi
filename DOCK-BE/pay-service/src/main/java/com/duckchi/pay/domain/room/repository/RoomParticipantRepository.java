@@ -14,6 +14,10 @@ public interface RoomParticipantRepository extends JpaRepository<RoomParticipant
 
     Optional<RoomParticipant> findByRoom_IdAndUserId(Long roomId, Long userId);
 
+    long countByRoom_Id(Long roomId);
+
+    long countByRoom_IdAndIsAgreedTrue(Long roomId);
+
     // [ROOM-16] 특정 방의 모든 참여자 엔티티를 조회한다.
     List<RoomParticipant> findByRoom_Id(Long roomId);
 

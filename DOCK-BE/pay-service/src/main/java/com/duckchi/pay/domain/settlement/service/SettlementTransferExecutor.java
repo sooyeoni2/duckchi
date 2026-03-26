@@ -90,6 +90,7 @@ public class SettlementTransferExecutor {
         // [BADGE 트리거] 정산 송금 완료 시 뱃지 진행도 갱신
         // NOBLE_DUCK(금액), ASSASSIN_DUCK(1시간 이내), TURTLE_DUCK(48시간 초과), NIGHTOWL_DUCK(새벽 시간대)
         badgeTriggerService.triggerSettlementCompleted(
+                settlement.getId(),
                 settlement.getPayerUserId(),
                 settlement.getPayableAmount(),
                 settlement.getCreatedAt(),
