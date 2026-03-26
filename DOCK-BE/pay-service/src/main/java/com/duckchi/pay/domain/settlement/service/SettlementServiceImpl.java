@@ -143,6 +143,7 @@ public class SettlementServiceImpl implements SettlementService {
 
         List<Long> sortedSettlementIds = settlementIds.stream().sorted().toList();
         List<Long> failedSettlementIds = new ArrayList<>();
+        boolean hasInsufficientBalanceFailure = false;
 
         for (Long settlementId : sortedSettlementIds) {
             try {
@@ -150,11 +151,18 @@ public class SettlementServiceImpl implements SettlementService {
             } catch (CustomException ex) {
                 // 다건 송금은 외부망/DB 완전 원자성이 불가능하므로 건별 실패를 수집해 최종 partial 오류로 응답한다.
                 failedSettlementIds.add(settlementId);
+                // 사용자 조치(충전)로 즉시 해결 가능한 실패 원인은 일반 partial보다 우선 노출한다.
+                if (ErrorCode.SETTLEMENT_INSUFFICIENT_BALANCE.equals(ex.getErrorCode())) {
+                    hasInsufficientBalanceFailure = true;
+                }
                 log.warn("정산 송금 실패. settlementId={}, errorCode={}", settlementId, ex.getErrorCode().getCode());
             }
         }
 
         if (!failedSettlementIds.isEmpty()) {
+            if (hasInsufficientBalanceFailure) {
+                throw new CustomException(ErrorCode.SETTLEMENT_INSUFFICIENT_BALANCE, failedSettlementIds);
+            }
             throw new CustomException(ErrorCode.SETTLEMENT_TRANSFER_PARTIAL, failedSettlementIds);
         }
     }
@@ -581,4 +589,3 @@ public class SettlementServiceImpl implements SettlementService {
                 || message.contains(UK_SETTLEMENTS_BANK_TRANSACTION_ID);
     }
 }
-
