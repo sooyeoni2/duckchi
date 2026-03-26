@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 import com.duckchi.pay.domain.expense.entity.Expense;
 import com.duckchi.pay.domain.expense.repository.ExpenseParticipantRepository;
 import com.duckchi.pay.domain.expense.repository.ExpenseRepository;
+import com.duckchi.pay.domain.badge.service.BadgeTriggerService;
 import com.duckchi.pay.domain.room.repository.RoomParticipantRepository;
 import com.duckchi.pay.domain.room.repository.RoomRepository;
 import com.duckchi.pay.domain.settlement.dto.event.ExpenseSettledNotificationEvent;
@@ -52,6 +53,9 @@ class SettlementExpenseSettledNotificationTest {
     @Mock
     private OutboxEventCommandService outboxEventCommandService;
 
+    @Mock
+    private BadgeTriggerService badgeTriggerService;
+
     @InjectMocks
     private SettlementServiceImpl settlementService;
 
@@ -68,6 +72,7 @@ class SettlementExpenseSettledNotificationTest {
                 .expenseId(expenseId)
                 .requesterUserId(currentUserId)
                 .payerUserId(20L)
+                .payableAmount(10000)
                 .status("PENDING")
                 .build();
         ReflectionTestUtils.setField(settlement, "id", settlementId);
@@ -125,6 +130,7 @@ class SettlementExpenseSettledNotificationTest {
                 .expenseId(expenseId)
                 .requesterUserId(currentUserId)
                 .payerUserId(20L)
+                .payableAmount(10000)
                 .status("PENDING")
                 .build();
         ReflectionTestUtils.setField(settlement, "id", settlementId);

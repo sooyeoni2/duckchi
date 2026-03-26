@@ -1,5 +1,5 @@
 import * as ImagePicker from 'expo-image-picker';
-import type { OcrImageSource } from './paymentTypes';
+import type { OcrImageSource } from './types/paymentTypes';
 
 export interface PickedReceiptImage {
   uri: string;
