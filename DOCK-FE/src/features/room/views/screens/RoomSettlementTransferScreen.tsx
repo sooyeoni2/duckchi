@@ -90,6 +90,12 @@ export function RoomSettlementTransferScreen({ onBack, roomId }: RoomSettlementT
     }, [consume, executeTransferAction]),
   );
 
+  useFocusEffect(
+    useCallback(() => {
+      void refresh();
+    }, [refresh]),
+  );
+
   const handleTransferAction = useCallback((action: PaymentAction) => {
     if (isTransferring || isCheckingConsent) {
       return;

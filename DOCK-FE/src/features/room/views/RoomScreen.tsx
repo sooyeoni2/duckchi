@@ -119,6 +119,17 @@ export function RoomScreen() {
   }, [navigation, route.params.initialTab]);
 
   React.useEffect(() => {
+    if (route.params.showTransfer !== true) {
+      return;
+    }
+
+    setViewMode('TRANSFER');
+
+    // 알림 라우팅으로 전달된 showTransfer는 1회성으로 소비한다.
+    navigation.setParams({ showTransfer: undefined });
+  }, [navigation, route.params.showTransfer]);
+
+  React.useEffect(() => {
     if (settlementDetailState.status !== 'loading') {
       return;
     }
