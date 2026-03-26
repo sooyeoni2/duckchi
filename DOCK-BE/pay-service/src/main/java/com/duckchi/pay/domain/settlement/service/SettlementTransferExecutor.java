@@ -16,6 +16,7 @@ import com.duckchi.pay.infra.finance.dto.request.FinanceRequestHeader;
 import com.duckchi.pay.infra.finance.dto.request.TransferRequest;
 import com.duckchi.pay.infra.finance.dto.response.FinanceResponseHeader;
 import com.duckchi.pay.infra.finance.dto.response.TransferResponse;
+import feign.FeignException;
 import java.time.LocalDateTime;
 
 import com.duckchi.pay.infra.kafka.service.OutboxEventCommandService;
@@ -135,9 +136,45 @@ public class SettlementTransferExecutor {
         } catch (CustomException ex) {
             throw ex;
         } catch (Exception ex) {
+            if (hasInsufficientBalanceSignal(ex)) {
+                log.warn("SSAFY 송금 API 실패(A1014 감지). 잔액 부족으로 매핑합니다. message={}", ex.getMessage());
+                throw new CustomException(ErrorCode.SETTLEMENT_INSUFFICIENT_BALANCE);
+            }
             log.error("SSAFY 송금 API 호출 실패. settlement transfer request={}", transferRequest, ex);
             throw new CustomException(ErrorCode.FINANCE_API_ERROR);
         }
+    }
+
+    /**
+     * 금융 클라이언트가 예외를 던지는 경로에서도 A1014 신호를 놓치지 않기 위해
+     * 예외 메시지/본문을 함께 검사한다.
+     */
+    private boolean hasInsufficientBalanceSignal(Exception ex) {
+        if (containsInsufficientBalanceCode(ex.getMessage())) {
+            return true;
+        }
+
+        if (ex instanceof FeignException feignException
+                && containsInsufficientBalanceCode(feignException.contentUTF8())) {
+            return true;
+        }
+
+        Throwable cause = ex.getCause();
+        while (cause != null) {
+            if (containsInsufficientBalanceCode(cause.getMessage())) {
+                return true;
+            }
+            if (cause instanceof FeignException feignCause
+                    && containsInsufficientBalanceCode(feignCause.contentUTF8())) {
+                return true;
+            }
+            cause = cause.getCause();
+        }
+        return false;
+    }
+
+    private boolean containsInsufficientBalanceCode(String text) {
+        return StringUtils.hasText(text) && text.contains(FINANCE_INSUFFICIENT_BALANCE_CODE);
     }
 
     /**
