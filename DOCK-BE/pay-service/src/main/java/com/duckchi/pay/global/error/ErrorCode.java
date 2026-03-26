@@ -41,6 +41,7 @@ public enum ErrorCode {
     SETTLEMENT_ALREADY_COMPLETED("SET-409-5", HttpStatus.CONFLICT, "이미 송금 완료된 정산이 포함되어 있습니다."),
     SETTLEMENT_TRANSFER_PARTIAL("SET-409-6", HttpStatus.CONFLICT, "일부 정산 송금에 실패했습니다."),
     SETTLEMENT_NOT_REQUESTED("SET-409-7", HttpStatus.CONFLICT, "정산 요청 전 결제는 정산 현황을 조회할 수 없습니다."),
+    SETTLEMENT_INSUFFICIENT_BALANCE("SET-409-8", HttpStatus.CONFLICT, "잔액이 부족하여 송금에 실패했습니다."),
 
     //ROOM
     ROOM_SESSION_MISMATCH("ROOM-400-4", HttpStatus.BAD_REQUEST, "해당 회차는 요청된 모임방에 속해있지 않습니다."),

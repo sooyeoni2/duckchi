@@ -5,6 +5,7 @@ import {
   joinRoomByInviteToken,
   updateAutoDebitConsent,
   validateInviteLink,
+  createInviteLink,
 } from '../models/roomService';
 import { Alert } from 'react-native';
 
@@ -12,6 +13,7 @@ interface AutoTransferJoinState {
   isProcessing: boolean;
   roomTitle: string;
   creatorName: string;
+  inviteLink: string;
 }
 
 interface AutoTransferJoinStore {
@@ -35,6 +37,7 @@ const initialState: AutoTransferJoinState = {
   isProcessing: false,
   roomTitle: '',
   creatorName: '',
+  inviteLink: '',
 };
 
 const useAutoTransferJoinStore = create<AutoTransferJoinStore>((set) => ({
@@ -130,12 +133,27 @@ export const useAutoTransferJoinViewModel = (roomId: number) => {
     async (inviteToken?: string) => processJoin('DECLINED', inviteToken),
     [processJoin],
   );
+  
+  const fetchInviteLink = useCallback(async () => {
+    try {
+      updateState({ isProcessing: true });
+      const response = await createInviteLink(roomId);
+      updateState({ inviteLink: response.inviteLink, isProcessing: false });
+      return response.inviteLink;
+    } catch (e: any) {
+      updateState({ isProcessing: false });
+      // Error handling is handled by caller or kept silent for now
+      console.error('Failed to create invite link:', e);
+      return '';
+    }
+  }, [roomId, updateState]);
 
   return { 
     state: { ...state, transferLimit, userName }, 
     setRoomInfo,
     validateInviteBeforeJoin,
     agreeAndJoin, 
-    skipAndJoin 
+    skipAndJoin,
+    fetchInviteLink
   };
 };
