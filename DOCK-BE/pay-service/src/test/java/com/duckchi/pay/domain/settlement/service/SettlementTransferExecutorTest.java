@@ -84,6 +84,22 @@ class SettlementTransferExecutorTest {
     }
 
     @Test
+    void transferOne_whenFinanceClientThrowsA1014Exception_throwsInsufficientBalance() {
+        Settlement settlement = createPendingSettlement(100L, 1L, 9L);
+        stubCommonTransferDependencies(settlement);
+        when(financeClient.transfer(any()))
+                .thenThrow(new RuntimeException("finance error responseCode=A1014"));
+
+        CustomException ex = assertThrows(CustomException.class,
+                () -> settlementTransferExecutor.transferOne(1L, 100L));
+
+        assertEquals(ErrorCode.SETTLEMENT_INSUFFICIENT_BALANCE, ex.getErrorCode());
+        assertEquals("PENDING", settlement.getStatus());
+        assertNull(settlement.getBankTransactionId());
+        verifyNoInteractions(expenseRepository, badgeTriggerService, outboxEventCommandService);
+    }
+
+    @Test
     void transferOne_whenFinanceResponseIsBusinessFailure_throwsFinanceApiError() {
         Settlement settlement = createPendingSettlement(100L, 1L, 9L);
         stubCommonTransferDependencies(settlement);

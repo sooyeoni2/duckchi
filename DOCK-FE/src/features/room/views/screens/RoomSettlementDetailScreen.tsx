@@ -4,8 +4,8 @@ import { Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from
 import { AppColorStyles } from '@core/theme/colors';
 import { KBODiaGothicTextStyle, PretendardTextStyle } from '@core/theme/typography';
 
-import { PaymentExpenseDetailView } from '../../../payment/views/components/PaymentExpenseDetailView';
-import type { MyExpenseDetail } from '../../../payment/models/paymentTypes';
+import { PaymentExpenseDetailView } from '../../../payment/views/components/detail/PaymentExpenseDetailView';
+import type { MyExpenseDetail } from '../../../payment/models/types/paymentTypes';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const s = SCREEN_WIDTH / 412;

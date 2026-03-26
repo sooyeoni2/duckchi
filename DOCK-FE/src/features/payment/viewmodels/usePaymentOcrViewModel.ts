@@ -3,7 +3,7 @@ import { pickReceiptImage } from '../models/paymentImagePicker';
 import {
   getExistingOcrDraft,
   recognizeReceiptImage,
-} from '../models/paymentOcrService';
+} from '../models/services/paymentOcrService';
 import type {
   OcrAssignMode,
   OcrFailureType,
@@ -12,7 +12,7 @@ import type {
   OcrLineItemDraft,
   OcrReceiptDraft,
   OcrReceiptSummary,
-} from '../models/paymentTypes';
+} from '../models/types/paymentTypes';
 
 export type PaymentOcrState =
   | { status: 'idle' }

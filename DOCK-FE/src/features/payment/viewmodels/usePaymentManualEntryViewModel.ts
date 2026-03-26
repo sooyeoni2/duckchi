@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuthStore } from '@features/auth/models/authStore';
-import { getManualEntryDraft } from '../models/paymentService';
-import type { ManualEntryDraft } from '../models/paymentTypes';
+import { getManualEntryDraft } from '../models/services/paymentService';
+import type { ManualEntryDraft } from '../models/types/paymentTypes';
 
 /**
  * 직접 입력 flow의 draft 조회 상태.
@@ -105,6 +105,39 @@ export function usePaymentManualEntryViewModel(roomId: number) {
   const resetDraft = React.useCallback(() => {
     setState({ status: 'idle' });
   }, []);
+
+  const loadDraftFromDetail = React.useCallback(async (detail: any) => {
+    setState({ status: 'loading' });
+    try {
+      // API 통신부를 통해 모임방 멤버들을 가져온 뒤 detail 정보로 오버라이드.
+      const participants = await getManualEntryDraft(roomId).then(d => d.participants);
+      
+      const hydratedParticipants = participants.map((p: any) => {
+        const matched = detail.participants.find((ep: any) => ep.userId === p.userId);
+        return {
+          ...p,
+          isSelected: !!matched,
+          splitAmount: matched ? matched.splitAmount : 0,
+        };
+      });
+
+      setState({
+        status: 'loaded',
+        draft: {
+          expenseId: detail.expenseId,
+          roomSessionId: detail.roomSessionId,
+          title: detail.title,
+          totalAmount: detail.totalAmount,
+          participants: hydratedParticipants,
+        },
+      });
+    } catch (error) {
+      setState({
+        status: 'error',
+        message: error instanceof Error ? error.message : '초안을 불러오지 못했습니다.',
+      });
+    }
+  }, [roomId]);
 
   const updateTitle = React.useCallback((title: string) => {
     setState((previousState) => {
@@ -223,6 +256,7 @@ export function usePaymentManualEntryViewModel(roomId: number) {
   return {
     state,
     loadDraft,
+    loadDraftFromDetail,
     resetDraft,
     updateTitle,
     updateTotalAmount,

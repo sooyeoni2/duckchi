@@ -22,10 +22,10 @@ import { CustomAppBar } from '@shared/components/app_bar/CustomAppBar';
 import {
   defaultPaymentContentLayoutState,
   type PaymentContentLayoutState,
-} from '../../payment/models/paymentContentLayout';
-import { getExpenseDetail } from '../../payment/models/paymentService';
-import { PaymentEntryMethodTabs } from '../../payment/views/components/PaymentEntryMethodTabs';
-import type { PaymentTabContentHandle } from '../../payment/views/components/PaymentTabContent';
+} from '../../payment/models/utils/paymentContentLayout';
+import { getExpenseDetail } from '../../payment/models/services/paymentService';
+import { PaymentEntryMethodTabs } from '../../payment/views/components/entry/PaymentEntryMethodTabs';
+import type { PaymentTabContentHandle } from '../../payment/views/components/entry/PaymentTabContent';
 import { meetingRoomMockData } from '../models/roomMockData';
 import { useRoomStore } from '../models/roomStore';
 import { useRoomSettlementOverviewViewModel } from '../viewmodels/useRoomSettlementOverviewViewModel';
@@ -67,7 +67,6 @@ export function RoomScreen() {
     useState<RoomMainTab>(initialRoomTab);
   const [paymentLayoutState, setPaymentLayoutState] =
     useState<PaymentContentLayoutState>(defaultPaymentContentLayoutState);
-  const [_roomTabHistory, setRoomTabHistory] = useState<RoomMainTab[]>([]);
   const [settlementDetailState, setSettlementDetailState] =
     useState<SettlementDetailState>({
       status: 'idle',
@@ -138,7 +137,7 @@ export function RoomScreen() {
 
     // 상세 조회는 선택한 모임의 expense로 고정해 잘못된 방 상세가 열리지 않게 한다.
     void getExpenseDetail(settlementDetailState.expenseId, route.params.roomId)
-      .then((detail) => {
+      .then((detail: any) => {
         if (cancelled) {
           return;
         }
@@ -149,7 +148,7 @@ export function RoomScreen() {
           detail,
         });
       })
-      .catch((error) => {
+      .catch((error: any) => {
         if (cancelled) {
           return;
         }
@@ -187,8 +186,6 @@ export function RoomScreen() {
         // 결제 탭에서 정산 요청 직후 돌아오면 최신 my-set 데이터가 즉시 보이도록 갱신한다.
         void handleSettlementRefresh();
       }
-
-      setRoomTabHistory((previousHistory) => [...previousHistory, selectedRoomTab]);
       setSelectedRoomTab(nextTab);
     },
     [handleSettlementRefresh, selectedRoomTab],
@@ -212,22 +209,6 @@ export function RoomScreen() {
 
     if (selectedRoomTab === 'SETTLEMENT' && isSettlementDetailOpen) {
       setSettlementDetailState({ status: 'idle' });
-      return;
-    }
-
-    let previousTab: RoomMainTab | null = null;
-
-    setRoomTabHistory((currentHistory) => {
-      if (currentHistory.length === 0) {
-        return currentHistory;
-      }
-
-      previousTab = currentHistory[currentHistory.length - 1];
-      return currentHistory.slice(0, -1);
-    });
-
-    if (previousTab != null) {
-      setSelectedRoomTab(previousTab);
       return;
     }
 
@@ -300,7 +281,7 @@ export function RoomScreen() {
       paymentLayoutState.topTabMode === 'ENTRY' ? (
         <PaymentEntryMethodTabs
           activeTab={paymentLayoutState.activeEntryTab ?? 'ACCOUNT_HISTORY'}
-          onChange={(nextTab) => paymentTabRef.current?.selectEntryTab(nextTab)}
+          onChange={(nextTab: any) => paymentTabRef.current?.selectEntryTab(nextTab)}
         />
       ) : (selectedRoomTab !== 'PAYMENT' ||
           paymentLayoutState.topTabMode === 'ROOM') &&
