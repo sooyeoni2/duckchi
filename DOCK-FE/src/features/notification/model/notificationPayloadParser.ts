@@ -5,6 +5,7 @@ import type {
   NotificationTargetScreen,
   RoomLifecycleNotification,
   SettlementCompletedNotification,
+  SettlementRequestNotification,
   SettlementRequestAutoTransferNotification,
   SettlementRequestOneClickTransferNotification,
   SettlementRequestReminderNotification,
@@ -27,6 +28,40 @@ const toPositiveInteger = (value: string | undefined): number | null => {
 const toOptionalPositiveInteger = (value: string | undefined): number | undefined => {
   const parsedValue = toPositiveInteger(value);
   return parsedValue ?? undefined;
+};
+
+const toOptionalBoolean = (value: string | undefined): boolean | undefined => {
+  if (value === 'true') {
+    return true;
+  }
+
+  if (value === 'false') {
+    return false;
+  }
+
+  return undefined;
+};
+
+const toOptionalPositiveIntegerArray = (value: string | undefined): number[] | undefined => {
+  if (value == null || value.trim().length === 0) {
+    return undefined;
+  }
+
+  try {
+    const parsed = JSON.parse(value);
+
+    if (!Array.isArray(parsed)) {
+      return undefined;
+    }
+
+    const positiveIntegers = parsed
+      .map((item) => Number(item))
+      .filter((item) => Number.isInteger(item) && item > 0);
+
+    return positiveIntegers.length > 0 ? positiveIntegers : undefined;
+  } catch {
+    return undefined;
+  }
 };
 
 const toOptionalTargetScreen = (
@@ -76,6 +111,8 @@ export const parseNotificationMessage = (
   message: NotificationMessage,
 ): AppNotification | null => {
   switch (message.data.type) {
+    case 'SETTLEMENT_REQUEST':
+      return parseSettlementRequest(message);
     case 'SETTLEMENT_REQUEST_REMINDER':
       return parseSettlementRequestReminder(message);
     case 'SETTLEMENT_REQUEST_AUTO_TRANSFER':
@@ -91,6 +128,24 @@ export const parseNotificationMessage = (
     default:
       return null;
   }
+};
+
+const parseSettlementRequest = (
+  message: NotificationMessage,
+): SettlementRequestNotification | null => {
+  const baseFields = getBaseFields(message);
+  const isAgreed = toOptionalBoolean(message.data.isAgreed);
+
+  if (baseFields == null || isAgreed == null) {
+    return null;
+  }
+
+  return {
+    type: 'SETTLEMENT_REQUEST',
+    ...baseFields,
+    isAgreed,
+    settlementIds: toOptionalPositiveIntegerArray(message.data.settlementIds),
+  };
 };
 
 //스케줄링 기반 알림 메세지 파싱

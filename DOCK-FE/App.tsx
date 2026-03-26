@@ -17,10 +17,14 @@ import {
 } from '@core/notifications';
 import {
   displayNotificationMessage,
+  getAppNotification,
+  getForegroundNotificationActions,
   handleDisplayedNotificationEvent,
   InAppNotificationBanner,
+  openNotificationAction,
   openNotificationMessage,
   openNotificationEvent,
+  type NotificationAction,
 } from '@features/notification';
 import { loadTokenFromStorage, useAuthStore } from './src/features/auth/models/authStore';
 import { axiosClient } from './src/core/network/axiosClient';
@@ -89,6 +93,7 @@ function App() {
     'Pretendard-Black': require('./src/assets/fonts/Pretendard-Black.ttf'),
   });
   const [foregroundBannerMessage, setForegroundBannerMessage] = React.useState<NotificationMessage | null>(null);
+  const [foregroundBannerActions, setForegroundBannerActions] = React.useState<NotificationAction[]>([]);
   const foregroundBannerTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -116,6 +121,12 @@ function App() {
   const handleForegroundMessage = React.useCallback((message: NotificationMessage) => {
     const title = message.title ?? '알림';
     const body = message.body ?? '';
+    const isNotificationSetupInfoMessage =
+      title.includes('알림 설정') || body.includes('알림이 설정되었습니다');
+
+    if (isNotificationSetupInfoMessage) {
+      return;
+    }
 
     if (title === '뱃지 획득') {
       resetBadgeStore();
@@ -126,12 +137,23 @@ function App() {
     // foreground에서는 OS 배너 외에 인앱 배너도 항상 보여준다.
     setForegroundBannerMessage(message);
 
+    const appNotification = getAppNotification(message);
+    const shouldShowForegroundActions =
+      appNotification?.type === 'SETTLEMENT_REQUEST' &&
+      appNotification.isAgreed === true &&
+      (appNotification.settlementIds?.length ?? 0) > 0;
+
+    setForegroundBannerActions(
+      shouldShowForegroundActions ? getForegroundNotificationActions(message) : [],
+    );
+
     if (foregroundBannerTimerRef.current != null) {
       clearTimeout(foregroundBannerTimerRef.current);
     }
 
     foregroundBannerTimerRef.current = setTimeout(() => {
       setForegroundBannerMessage(null);
+      setForegroundBannerActions([]);
       foregroundBannerTimerRef.current = null;
     }, 4500);
 
@@ -228,6 +250,7 @@ function App() {
     }
 
     setForegroundBannerMessage(null);
+    setForegroundBannerActions([]);
   }, [foregroundBannerMessage]);
 
   const handleForegroundBannerClose = React.useCallback(() => {
@@ -237,6 +260,18 @@ function App() {
     }
 
     setForegroundBannerMessage(null);
+    setForegroundBannerActions([]);
+  }, []);
+
+  const handleForegroundBannerActionPress = React.useCallback((action: NotificationAction) => {
+    if (foregroundBannerTimerRef.current != null) {
+      clearTimeout(foregroundBannerTimerRef.current);
+      foregroundBannerTimerRef.current = null;
+    }
+
+    openNotificationAction(action);
+    setForegroundBannerMessage(null);
+    setForegroundBannerActions([]);
   }, []);
 
   useEffect(() => () => {
@@ -382,8 +417,10 @@ function App() {
         visible={foregroundBannerMessage != null}
         title={foregroundBannerMessage?.title}
         body={foregroundBannerMessage?.body}
+        actions={foregroundBannerActions}
         onPress={handleForegroundBannerPress}
         onClose={handleForegroundBannerClose}
+        onActionPress={handleForegroundBannerActionPress}
       />
     </SafeAreaProvider>
   );

@@ -84,10 +84,18 @@ export const fetchAutoDebitConsent = async (roomId: number): Promise<boolean> =>
   return response.data.data.isAgreed === true;
 };
 
-export const transferSettlements = async (settlementIds: number[]): Promise<void> => {
+export const transferSettlements = async (settlementIds: number[]): Promise<string | undefined> => {
   if (settlementIds.length === 0) {
-    return;
+    return undefined;
   }
 
-  await axiosClient.post('/api/v1/settlements/transfer', { settlementIds });
+  const response = await axiosClient.post<ApiEnvelope<unknown>>('/api/v1/settlements/transfer', {
+    settlementIds,
+  });
+
+  if (response.data?.success === false) {
+    throw new Error(response.data?.msg ?? '정산 처리에 실패했습니다.');
+  }
+
+  return response.data?.msg;
 };

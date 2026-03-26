@@ -1,9 +1,7 @@
-//앱이 타입들의 정의
-
 import type { NotificationMessage } from '@core/notifications';
 
-//알림 타입 정의
 export type AppNotificationType =
+  | 'SETTLEMENT_REQUEST'
   | 'SETTLEMENT_REQUEST_REMINDER'
   | 'SETTLEMENT_REQUEST_AUTO_TRANSFER'
   | 'SETTLEMENT_REQUEST_ONE_CLICK_TRANSFER'
@@ -11,13 +9,11 @@ export type AppNotificationType =
   | 'ROOM_LIFECYCLE'
   | 'N_BBANG_RESULT';
 
-//알림 이동 목적지 타입 정의
 export type NotificationTargetScreen =
   | 'AUTO_TRANSFER_AGREE'
   | 'SETTLEMENT_REQUEST_LIST'
   | 'ROOM_DETAIL';
 
-// 알림 원문을 유지해두면 foreground 표시나 추적 로그에서 재사용하기 쉽다.
 export interface AppNotificationBase {
   type: AppNotificationType;
   title?: string;
@@ -26,7 +22,12 @@ export interface AppNotificationBase {
   roomId: number;
 }
 
-// 정산 요청 리마인드 알림은 방 식별자와 요청 식별자를 기반으로 이동 화면을 결정한다.
+export interface SettlementRequestNotification extends AppNotificationBase {
+  type: 'SETTLEMENT_REQUEST';
+  isAgreed: boolean;
+  settlementIds?: number[];
+}
+
 export interface SettlementRequestReminderNotification
   extends AppNotificationBase {
   type: 'SETTLEMENT_REQUEST_REMINDER';
@@ -35,7 +36,6 @@ export interface SettlementRequestReminderNotification
   targetScreen?: NotificationTargetScreen;
 }
 
-// 정산 요청 알림 - 자동이체
 export interface SettlementRequestAutoTransferNotification
   extends AppNotificationBase {
   type: 'SETTLEMENT_REQUEST_AUTO_TRANSFER';
@@ -44,33 +44,30 @@ export interface SettlementRequestAutoTransferNotification
   requestSummary?: string;
 }
 
-// 정산 요청 알림 - 원클릭 이체
 export interface SettlementRequestOneClickTransferNotification
   extends AppNotificationBase {
   type: 'SETTLEMENT_REQUEST_ONE_CLICK_TRANSFER';
   settlementRequestId: number;
 }
 
-// 정산 완료 알림
 export interface SettlementCompletedNotification extends AppNotificationBase {
   type: 'SETTLEMENT_COMPLETED';
   settlementRequestId?: number;
 }
 
-// 모임 시작,완료 알림
 export interface RoomLifecycleNotification extends AppNotificationBase {
   type: 'ROOM_LIFECYCLE';
   eventType: 'ROOM_STARTED' | 'ROOM_ENDED';
   roomName?: string;
 }
 
-// N빵 알림
 export interface NBbangResultNotification extends AppNotificationBase {
   type: 'N_BBANG_RESULT';
   selectedParticipantNames: string[];
 }
 
 export type AppNotification =
+  | SettlementRequestNotification
   | SettlementRequestReminderNotification
   | SettlementRequestAutoTransferNotification
   | SettlementRequestOneClickTransferNotification
@@ -78,7 +75,6 @@ export type AppNotification =
   | RoomLifecycleNotification
   | NBbangResultNotification;
 
-// 네비게이션 스택 목적지
 export type NotificationNavigationTarget =
   | {
       kind: 'home';
@@ -122,9 +118,18 @@ export type NotificationNavigationTarget =
       params: {
         roomId: number;
       };
+    }
+  | {
+      kind: 'room';
+      rootScreen: 'App';
+      tabScreen: 'Room';
+      nestedScreen: 'SettlementTransferAction';
+      params: {
+        roomId: number;
+        settlementIds: number[];
+      };
     };
 
-// 알림액션 타입 정의
 export interface NotificationAction {
   id:
     | 'OPEN_DEFAULT_DESTINATION'
@@ -134,3 +139,4 @@ export interface NotificationAction {
   label: string;
   target: NotificationNavigationTarget;
 }
+
