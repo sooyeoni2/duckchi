@@ -12,6 +12,7 @@ import AutoTransferJoinScreen from './views/screens/AutoTransferJoinScreen';
 import AdminDelegationScreen from './views/screens/AdminDelegationScreen';
 import RoomEditScreen from './views/screens/RoomEditScreen';
 import { SettlementRequestListScreen } from './views/screens/SettlementRequestListScreen';
+import PaymentListScreen from '../payment/views/screens/PaymentListScreen';
 
 const Stack = createNativeStackNavigator<RoomStackParamList>();
 
@@ -28,6 +29,7 @@ export function RoomNavigator() {
       <Stack.Screen name="AdminDelegation" component={AdminDelegationScreen} options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="RoomEdit" component={RoomEditScreen} options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="SettlementRequestList" component={SettlementRequestListScreen} options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="PaymentList" component={PaymentListScreen} options={{ animation: 'slide_from_right' }} />
     </Stack.Navigator>
   );
 }

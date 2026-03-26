@@ -1,0 +1,190 @@
+﻿src/features/payment/models/api/paymentApi.ts(11,8): error TS2307: Cannot find module './paymentTypes' or its corresponding type declarations.
+src/features/payment/models/api/paymentApi.ts(14,8): error TS2307: Cannot find module './paymentTypes' or its corresponding type declarations.
+src/features/payment/models/paymentImagePicker.ts(2,37): error TS2307: Cannot find module './paymentTypes' or its corresponding type declarations.
+src/features/payment/models/services/paymentMappers.ts(8,8): error TS2307: Cannot find module './paymentTypes' or its corresponding type declarations.
+src/features/payment/models/services/paymentMappers.ts(15,8): error TS2307: Cannot find module './paymentTypes' or its corresponding type declarations.
+src/features/payment/models/services/paymentMappers.ts(67,40): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/features/payment/models/services/paymentMappers.ts(74,31): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/features/payment/models/services/paymentMappers.ts(74,37): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/features/payment/models/services/paymentMappers.ts(79,55): error TS7006: Parameter 'ip' implicitly has an 'any' type.
+src/features/payment/models/services/paymentMappers.ts(80,52): error TS7006: Parameter 'ip' implicitly has an 'any' type.
+src/features/payment/models/services/paymentMappers.ts(109,25): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/features/payment/models/services/paymentOcrService.ts(9,8): error TS2307: Cannot find module './paymentTypes' or its corresponding type declarations.
+src/features/payment/models/services/paymentService.ts(11,8): error TS2307: Cannot find module './paymentApi' or its corresponding type declarations.
+src/features/payment/models/services/paymentService.ts(26,8): error TS2307: Cannot find module './paymentTypes' or its corresponding type declarations.
+src/features/payment/models/services/paymentService.ts(125,22): error TS7006: Parameter 'dto' implicitly has an 'any' type.
+src/features/payment/models/services/paymentService.ts(125,27): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/features/payment/models/utils/paymentContentLayout.ts(1,39): error TS2307: Cannot find module './paymentTypes' or its corresponding type declarations.
+src/features/payment/models/utils/paymentDisplay.ts(1,36): error TS2307: Cannot find module './paymentTypes' or its corresponding type declarations.
+src/features/payment/viewmodels/usePaymentAccountHistoryViewModel.ts(5,8): error TS2307: Cannot find module '../models/paymentService' or its corresponding type declarations.
+src/features/payment/viewmodels/usePaymentAccountHistoryViewModel.ts(10,8): error TS2307: Cannot find module '../models/paymentTypes' or its corresponding type declarations.
+src/features/payment/viewmodels/usePaymentAccountHistoryViewModel.ts(31,59): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/features/payment/viewmodels/usePaymentAccountHistoryViewModel.ts(36,45): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/features/payment/viewmodels/usePaymentAccountHistoryViewModel.ts(145,20): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+src/features/payment/viewmodels/usePaymentAccountHistoryViewModel.ts(148,55): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/features/payment/viewmodels/usePaymentAccountHistoryViewModel.ts(160,20): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+src/features/payment/viewmodels/usePaymentAccountHistoryViewModel.ts(165,46): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/features/payment/viewmodels/usePaymentAccountHistoryViewModel.ts(173,20): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+src/features/payment/viewmodels/usePaymentAccountHistoryViewModel.ts(195,22): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+src/features/payment/viewmodels/usePaymentListViewModel.ts(3,31): error TS2307: Cannot find module '../models/paymentService' or its corresponding type declarations.
+src/features/payment/viewmodels/usePaymentListViewModel.ts(8,8): error TS2307: Cannot find module '../models/paymentTypes' or its corresponding type declarations.
+src/features/payment/viewmodels/usePaymentManualEntryViewModel.ts(2,37): error TS2307: Cannot find module '../models/paymentService' or its corresponding type declarations.
+src/features/payment/viewmodels/usePaymentManualEntryViewModel.ts(3,39): error TS2307: Cannot find module '../models/paymentTypes' or its corresponding type declarations.
+src/features/payment/viewmodels/usePaymentManualEntryViewModel.ts(21,6): error TS7006: Parameter 'participant' implicitly has an 'any' type.
+src/features/payment/viewmodels/usePaymentManualEntryViewModel.ts(27,45): error TS7006: Parameter 'participant' implicitly has an 'any' type.
+src/features/payment/viewmodels/usePaymentManualEntryViewModel.ts(39,43): error TS7006: Parameter 'participant' implicitly has an 'any' type.
+src/features/payment/viewmodels/usePaymentManualEntryViewModel.ts(137,63): error TS7006: Parameter 'participant' implicitly has an 'any' type.
+src/features/payment/viewmodels/usePaymentManualEntryViewModel.ts(159,39): error TS7006: Parameter 'participant' implicitly has an 'any' type.
+src/features/payment/viewmodels/usePaymentManualEntryViewModel.ts(183,65): error TS7006: Parameter 'participant' implicitly has an 'any' type.
+src/features/payment/viewmodels/usePaymentManualEntryViewModel.ts(200,42): error TS7006: Parameter 'participant' implicitly has an 'any' type.
+src/features/payment/viewmodels/usePaymentManualEntryViewModel.ts(205,6): error TS7006: Parameter 'sum' implicitly has an 'any' type.
+src/features/payment/viewmodels/usePaymentManualEntryViewModel.ts(205,11): error TS7006: Parameter 'participant' implicitly has an 'any' type.
+src/features/payment/viewmodels/usePaymentOcrViewModel.ts(6,8): error TS2307: Cannot find module '../models/paymentOcrService' or its corresponding type declarations.
+src/features/payment/viewmodels/usePaymentOcrViewModel.ts(15,8): error TS2307: Cannot find module '../models/paymentTypes' or its corresponding type declarations.
+src/features/payment/viewmodels/usePaymentOcrViewModel.ts(53,37): error TS7006: Parameter 'sum' implicitly has an 'any' type.
+src/features/payment/viewmodels/usePaymentOcrViewModel.ts(53,42): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/features/payment/viewmodels/usePaymentOcrViewModel.ts(64,6): error TS7006: Parameter 'participant' implicitly has an 'any' type.
+src/features/payment/viewmodels/usePaymentOcrViewModel.ts(70,45): error TS7006: Parameter 'participant' implicitly has an 'any' type.
+src/features/payment/viewmodels/usePaymentOcrViewModel.ts(82,43): error TS7006: Parameter 'participant' implicitly has an 'any' type.
+src/features/payment/viewmodels/usePaymentOcrViewModel.ts(106,47): error TS7006: Parameter 'participant' implicitly has an 'any' type.
+src/features/payment/viewmodels/usePaymentOcrViewModel.ts(116,14): error TS7006: Parameter 'participant' implicitly has an 'any' type.
+src/features/payment/viewmodels/usePaymentOcrViewModel.ts(117,11): error TS7006: Parameter 'participant' implicitly has an 'any' type.
+src/features/payment/viewmodels/usePaymentOcrViewModel.ts(279,49): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/features/payment/viewmodels/usePaymentOcrViewModel.ts(303,51): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/features/payment/viewmodels/usePaymentOcrViewModel.ts(328,49): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/features/payment/viewmodels/usePaymentOcrViewModel.ts(349,12): error TS7006: Parameter 'maxItemId' implicitly has an 'any' type.
+src/features/payment/viewmodels/usePaymentOcrViewModel.ts(349,23): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/features/payment/viewmodels/usePaymentOcrViewModel.ts(397,61): error TS7006: Parameter 'participant' implicitly has an 'any' type.
+src/features/payment/viewmodels/usePaymentOcrViewModel.ts(408,18): error TS7006: Parameter 'participant' implicitly has an 'any' type.
+src/features/payment/viewmodels/usePaymentOcrViewModel.ts(409,15): error TS7006: Parameter 'participant' implicitly has an 'any' type.
+src/features/payment/viewmodels/usePaymentOcrViewModel.ts(413,34): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/features/payment/viewmodels/usePaymentOcrViewModel.ts(422,82): error TS7006: Parameter 'id' implicitly has an 'any' type.
+src/features/payment/viewmodels/usePaymentOcrViewModel.ts(426,22): error TS7006: Parameter 'allocation' implicitly has an 'any' type.
+src/features/payment/viewmodels/usePaymentOcrViewModel.ts(449,52): error TS7006: Parameter 'candidate' implicitly has an 'any' type.
+src/features/payment/viewmodels/usePaymentOcrViewModel.ts(538,10): error TS7006: Parameter 'candidate' implicitly has an 'any' type.
+src/features/payment/viewmodels/usePaymentOcrViewModel.ts(569,49): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/features/payment/viewmodels/usePaymentOcrViewModel.ts(610,49): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/features/payment/viewmodels/usePaymentOcrViewModel.ts(625,33): error TS7006: Parameter 'participant' implicitly has an 'any' type.
+src/features/payment/viewmodels/usePaymentOcrViewModel.ts(632,26): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/features/payment/viewmodels/usePaymentOcrViewModel.ts(634,26): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/features/payment/viewmodels/usePaymentOcrViewModel.ts(636,6): error TS7006: Parameter 'sum' implicitly has an 'any' type.
+src/features/payment/viewmodels/usePaymentOcrViewModel.ts(636,11): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/features/payment/viewmodels/usePaymentOcrViewModel.ts(641,27): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/features/payment/views/components/common/PaymentAnimatedTouchable.tsx(10,40): error TS2307: Cannot find module '../hooks/usePressScaleAnimation' or its corresponding type declarations.
+src/features/payment/views/components/common/PaymentExpenseStatusBadge.tsx(8,8): error TS2307: Cannot find module '../../models/paymentDisplay' or its corresponding type declarations.
+src/features/payment/views/components/common/PaymentExpenseStatusBadge.tsx(9,36): error TS2307: Cannot find module '../../models/paymentTypes' or its corresponding type declarations.
+src/features/payment/views/components/common/PaymentOverviewView.tsx(13,36): error TS2307: Cannot find module '../../models/paymentContentLayout' or its corresponding type declarations.
+src/features/payment/views/components/common/PaymentOverviewView.tsx(14,39): error TS2307: Cannot find module '../../viewmodels/usePaymentListViewModel' or its corresponding type declarations.
+src/features/payment/views/components/common/PaymentOverviewView.tsx(15,54): error TS2307: Cannot find module '../../models/paymentTypes' or its corresponding type declarations.
+src/features/payment/views/components/common/PaymentOverviewView.tsx(17,44): error TS2307: Cannot find module './PaymentExpenseGroupSection' or its corresponding type declarations.
+src/features/payment/views/components/common/PaymentOverviewView.tsx(18,44): error TS2307: Cannot find module './PaymentRequestActionButton' or its corresponding type declarations.
+src/features/payment/views/components/common/PaymentOverviewView.tsx(200,36): error TS7006: Parameter 'action' implicitly has an 'any' type.
+src/features/payment/views/components/common/PaymentOverviewView.tsx(200,44): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/features/payment/views/components/common/PaymentStatusFilterBar.tsx(5,42): error TS2307: Cannot find module '../../models/paymentTypes' or its corresponding type declarations.
+src/features/payment/views/components/detail/PaymentExpenseDetailView.tsx(12,8): error TS2307: Cannot find module '../../models/paymentTypes' or its corresponding type declarations.
+src/features/payment/views/components/detail/PaymentExpenseDetailView.tsx(13,42): error TS2307: Cannot find module './PaymentAnimatedTouchable' or its corresponding type declarations.
+src/features/payment/views/components/detail/PaymentExpenseDetailView.tsx(78,41): error TS7006: Parameter 'userName' implicitly has an 'any' type.
+src/features/payment/views/components/detail/PaymentExpenseDetailView.tsx(78,51): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/features/payment/views/components/detail/PaymentExpenseDetailView.tsx(146,43): error TS7006: Parameter 'row' implicitly has an 'any' type.
+src/features/payment/views/components/detail/PaymentExpenseDetailView.tsx(156,38): error TS7006: Parameter 'participant' implicitly has an 'any' type.
+src/features/payment/views/components/detail/PaymentExpenseDetailView.tsx(186,37): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/features/payment/views/components/detail/PaymentExpenseGroupSection.tsx(8,36): error TS2307: Cannot find module '../../models/paymentTypes' or its corresponding type declarations.
+src/features/payment/views/components/detail/PaymentExpenseSelectionCard.tsx(13,8): error TS2307: Cannot find module '../../models/paymentDisplay' or its corresponding type declarations.
+src/features/payment/views/components/detail/PaymentExpenseSelectionCard.tsx(14,36): error TS2307: Cannot find module '../../models/paymentTypes' or its corresponding type declarations.
+src/features/payment/views/components/detail/PaymentExpenseSelectionCard.tsx(15,43): error TS2307: Cannot find module './PaymentExpenseStatusBadge' or its corresponding type declarations.
+src/features/payment/views/components/detail/PaymentRequestActionButton.tsx(5,42): error TS2307: Cannot find module './PaymentAnimatedTouchable' or its corresponding type declarations.
+src/features/payment/views/components/entry/PaymentEntryMethodSelector.tsx(5,39): error TS2307: Cannot find module '../../models/paymentTypes' or its corresponding type declarations.
+src/features/payment/views/components/entry/PaymentEntryMethodTabs.tsx(12,39): error TS2307: Cannot find module '../../models/paymentTypes' or its corresponding type declarations.
+src/features/payment/views/components/entry/PaymentEntryMethodTabs.tsx(13,36): error TS2307: Cannot find module '../../models/paymentContentLayout' or its corresponding type declarations.
+src/features/payment/views/components/entry/PaymentEntryMethodTabs.tsx(14,42): error TS2307: Cannot find module './PaymentAnimatedTouchable' or its corresponding type declarations.
+src/features/payment/views/components/entry/PaymentEntryMethodTabs.tsx(66,32): error TS7006: Parameter 'tab' implicitly has an 'any' type.
+src/features/payment/views/components/entry/PaymentEntryMethodTabs.tsx(66,37): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/features/payment/views/components/entry/PaymentEntryPreviewScreen.tsx(8,42): error TS2307: Cannot find module '../../models/paymentTypes' or its corresponding type declarations.
+src/features/payment/views/components/entry/PaymentEntryPreviewScreen.tsx(115,37): error TS7006: Parameter 'field' implicitly has an 'any' type.
+src/features/payment/views/components/entry/PaymentEntryPreviewScreen.tsx(148,35): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/features/payment/views/components/entry/PaymentEntryPreviewScreen.tsx(148,41): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/features/payment/views/components/entry/PaymentTabContent.tsx(18,8): error TS2307: Cannot find module '../../models/paymentContentLayout' or its corresponding type declarations.
+src/features/payment/views/components/entry/PaymentTabContent.tsx(19,34): error TS2307: Cannot find module '../../models/paymentService' or its corresponding type declarations.
+src/features/payment/views/components/entry/PaymentTabContent.tsx(23,8): error TS2307: Cannot find module '../../models/paymentTypes' or its corresponding type declarations.
+src/features/payment/views/components/entry/PaymentTabContent.tsx(24,51): error TS2307: Cannot find module '../../viewmodels/usePaymentAccountHistoryViewModel' or its corresponding type declarations.
+src/features/payment/views/components/entry/PaymentTabContent.tsx(25,41): error TS2307: Cannot find module '../../viewmodels/usePaymentListViewModel' or its corresponding type declarations.
+src/features/payment/views/components/entry/PaymentTabContent.tsx(26,48): error TS2307: Cannot find module '../../viewmodels/usePaymentManualEntryViewModel' or its corresponding type declarations.
+src/features/payment/views/components/entry/PaymentTabContent.tsx(27,47): error TS2307: Cannot find module './PaymentAccountHistoryFormView' or its corresponding type declarations.
+src/features/payment/views/components/entry/PaymentTabContent.tsx(28,47): error TS2307: Cannot find module './PaymentAccountHistoryListView' or its corresponding type declarations.
+src/features/payment/views/components/entry/PaymentTabContent.tsx(29,48): error TS2307: Cannot find module './PaymentAccountHistorySplitView' or its corresponding type declarations.
+src/features/payment/views/components/entry/PaymentTabContent.tsx(30,42): error TS2307: Cannot find module './PaymentAnimatedTouchable' or its corresponding type declarations.
+src/features/payment/views/components/entry/PaymentTabContent.tsx(31,42): error TS2307: Cannot find module './PaymentExpenseDetailView' or its corresponding type declarations.
+src/features/payment/views/components/entry/PaymentTabContent.tsx(32,45): error TS2307: Cannot find module './PaymentManualEntrySetupView' or its corresponding type declarations.
+src/features/payment/views/components/entry/PaymentTabContent.tsx(33,45): error TS2307: Cannot find module './PaymentManualEntrySplitView' or its corresponding type declarations.
+src/features/payment/views/components/entry/PaymentTabContent.tsx(34,54): error TS2307: Cannot find module './PaymentOcrFlow' or its corresponding type declarations.
+src/features/payment/views/components/entry/PaymentTabContent.tsx(35,37): error TS2307: Cannot find module './PaymentOverviewView' or its corresponding type declarations.
+src/features/payment/views/components/entry/PaymentTabContent.tsx(185,14): error TS7006: Parameter 'detail' implicitly has an 'any' type.
+src/features/payment/views/components/entry/PaymentTabContent.tsx(196,15): error TS7006: Parameter 'error' implicitly has an 'any' type.
+src/features/payment/views/components/entry/PaymentTabContent.tsx(253,28): error TS7006: Parameter 'expense' implicitly has an 'any' type.
+src/features/payment/views/components/entry/PaymentTabContent.tsx(257,28): error TS7006: Parameter 'expense' implicitly has an 'any' type.
+src/features/payment/views/components/entry/PaymentTabContent.tsx(261,28): error TS7006: Parameter 'expense' implicitly has an 'any' type.
+src/features/payment/views/components/entry/PaymentTabContent.tsx(266,52): error TS7006: Parameter 'expense' implicitly has an 'any' type.
+src/features/payment/views/components/entry/PaymentTabContent.tsx(426,8): error TS7006: Parameter 'participant' implicitly has an 'any' type.
+src/features/payment/views/components/entry/PaymentTabContent.tsx(459,8): error TS7006: Parameter 'participant' implicitly has an 'any' type.
+src/features/payment/views/components/entry/PaymentTabContent.tsx(730,21): error TS7006: Parameter 'historyId' implicitly has an 'any' type.
+src/features/payment/views/components/entry/PaymentTabContent.tsx(745,21): error TS7006: Parameter 'historyId' implicitly has an 'any' type.
+src/features/payment/views/components/history/PaymentAccountHistoryCard.tsx(8,41): error TS2307: Cannot find module '../../models/paymentTypes' or its corresponding type declarations.
+src/features/payment/views/components/history/PaymentAccountHistoryCard.tsx(9,42): error TS2307: Cannot find module './PaymentAnimatedTouchable' or its corresponding type declarations.
+src/features/payment/views/components/history/PaymentAccountHistoryFormView.tsx(16,54): error TS2307: Cannot find module '../../viewmodels/usePaymentAccountHistoryViewModel' or its corresponding type declarations.
+src/features/payment/views/components/history/PaymentAccountHistoryFormView.tsx(17,42): error TS2307: Cannot find module './PaymentAnimatedTouchable' or its corresponding type declarations.
+src/features/payment/views/components/history/PaymentAccountHistoryFormView.tsx(206,34): error TS7006: Parameter 'participant' implicitly has an 'any' type.
+src/features/payment/views/components/history/PaymentAccountHistoryListView.tsx(13,49): error TS2307: Cannot find module '../../viewmodels/usePaymentAccountHistoryViewModel' or its corresponding type declarations.
+src/features/payment/views/components/history/PaymentAccountHistoryListView.tsx(14,42): error TS2307: Cannot find module './PaymentAnimatedTouchable' or its corresponding type declarations.
+src/features/payment/views/components/history/PaymentAccountHistoryListView.tsx(112,30): error TS7006: Parameter 'history' implicitly has an 'any' type.
+src/features/payment/views/components/history/PaymentAccountHistorySplitView.tsx(15,54): error TS2307: Cannot find module '../../viewmodels/usePaymentAccountHistoryViewModel' or its corresponding type declarations.
+src/features/payment/views/components/history/PaymentAccountHistorySplitView.tsx(16,42): error TS2307: Cannot find module './PaymentAnimatedTouchable' or its corresponding type declarations.
+src/features/payment/views/components/history/PaymentAccountHistorySplitView.tsx(104,6): error TS7006: Parameter 'participant' implicitly has an 'any' type.
+src/features/payment/views/components/history/PaymentAccountHistorySplitView.tsx(214,36): error TS7006: Parameter 'participant' implicitly has an 'any' type.
+src/features/payment/views/components/manual/PaymentManualEntrySetupView.tsx(16,46): error TS2307: Cannot find module '../../viewmodels/usePaymentManualEntryViewModel' or its corresponding type declarations.
+src/features/payment/views/components/manual/PaymentManualEntrySetupView.tsx(17,42): error TS2307: Cannot find module './PaymentAnimatedTouchable' or its corresponding type declarations.
+src/features/payment/views/components/manual/PaymentManualEntrySetupView.tsx(196,34): error TS7006: Parameter 'participant' implicitly has an 'any' type.
+src/features/payment/views/components/manual/PaymentManualEntrySplitView.tsx(15,46): error TS2307: Cannot find module '../../viewmodels/usePaymentManualEntryViewModel' or its corresponding type declarations.
+src/features/payment/views/components/manual/PaymentManualEntrySplitView.tsx(16,42): error TS2307: Cannot find module './PaymentAnimatedTouchable' or its corresponding type declarations.
+src/features/payment/views/components/manual/PaymentManualEntrySplitView.tsx(94,6): error TS7006: Parameter 'participant' implicitly has an 'any' type.
+src/features/payment/views/components/manual/PaymentManualEntrySplitView.tsx(154,36): error TS7006: Parameter 'participant' implicitly has an 'any' type.
+src/features/payment/views/components/ocr/PaymentOcrAssignSheet.tsx(20,8): error TS2307: Cannot find module '../../models/paymentTypes' or its corresponding type declarations.
+src/features/payment/views/components/ocr/PaymentOcrAssignSheet.tsx(21,42): error TS2307: Cannot find module './PaymentAnimatedTouchable' or its corresponding type declarations.
+src/features/payment/views/components/ocr/PaymentOcrEditorView.tsx(14,38): error TS2307: Cannot find module '../../models/paymentTypes' or its corresponding type declarations.
+src/features/payment/views/components/ocr/PaymentOcrEditorView.tsx(15,42): error TS2307: Cannot find module './PaymentAnimatedTouchable' or its corresponding type declarations.
+src/features/payment/views/components/ocr/PaymentOcrEditorView.tsx(63,28): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/features/payment/views/components/ocr/PaymentOcrEditorView.tsx(71,23): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/features/payment/views/components/ocr/PaymentOcrEditorView.tsx(145,27): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/features/payment/views/components/ocr/PaymentOcrEntryView.tsx(9,42): error TS2307: Cannot find module './PaymentAnimatedTouchable' or its corresponding type declarations.
+src/features/payment/views/components/ocr/PaymentOcrFailureView.tsx(11,8): error TS2307: Cannot find module '../../models/paymentTypes' or its corresponding type declarations.
+src/features/payment/views/components/ocr/PaymentOcrFailureView.tsx(12,42): error TS2307: Cannot find module './PaymentAnimatedTouchable' or its corresponding type declarations.
+src/features/payment/views/components/ocr/PaymentOcrFlow.tsx(13,37): error TS2307: Cannot find module '../../models/paymentTypes' or its corresponding type declarations.
+src/features/payment/views/components/ocr/PaymentOcrFlow.tsx(14,40): error TS2307: Cannot find module '../../viewmodels/usePaymentOcrViewModel' or its corresponding type declarations.
+src/features/payment/views/components/ocr/PaymentOcrFlow.tsx(21,42): error TS2307: Cannot find module './PaymentAnimatedTouchable' or its corresponding type declarations.
+src/features/payment/views/components/ocr/PaymentOcrFlow.tsx(199,27): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/features/payment/views/components/ocr/PaymentOcrMenuSplitView.tsx(12,8): error TS2307: Cannot find module '../../models/paymentTypes' or its corresponding type declarations.
+src/features/payment/views/components/ocr/PaymentOcrMenuSplitView.tsx(13,42): error TS2307: Cannot find module './PaymentAnimatedTouchable' or its corresponding type declarations.
+src/features/payment/views/components/ocr/PaymentOcrMenuSplitView.tsx(60,47): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/features/payment/views/components/ocr/PaymentOcrMenuSplitView.tsx(61,45): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/features/payment/views/components/ocr/PaymentOcrMenuSplitView.tsx(90,34): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/features/payment/views/components/ocr/PaymentOcrMenuSplitView.tsx(139,32): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/features/payment/views/components/ocr/PaymentOcrSplitSetupView.tsx(9,52): error TS2307: Cannot find module '../../models/paymentTypes' or its corresponding type declarations.
+src/features/payment/views/components/ocr/PaymentOcrSplitSetupView.tsx(10,42): error TS2307: Cannot find module './PaymentAnimatedTouchable' or its corresponding type declarations.
+src/features/payment/views/components/ocr/PaymentOcrSplitSetupView.tsx(117,32): error TS7006: Parameter 'participant' implicitly has an 'any' type.
+src/features/payment/views/screens/AccountHistoryScreen.tsx(13,36): error TS2307: Cannot find module '../../models/paymentTypes' or its corresponding type declarations.
+src/features/payment/views/screens/PaymentRegistrationScreen.tsx(14,76): error TS2307: Cannot find module '../../models/paymentService' or its corresponding type declarations.
+src/features/payment/views/screens/PaymentRegistrationScreen.tsx(65,33): error TS7006: Parameter 'm' implicitly has an 'any' type.
+src/features/payment/views/screens/PaymentScreen.tsx(9,34): error TS2307: Cannot find module './components/PaymentHeaderBar' or its corresponding type declarations.
+src/features/payment/views/screens/PaymentScreen.tsx(10,35): error TS2307: Cannot find module './components/PaymentTabContent' or its corresponding type declarations.
+src/features/payment/views/screens/PaymentScreen.tsx(14,8): error TS2307: Cannot find module './components/PaymentSectionTabs' or its corresponding type declarations.
+src/features/report/models/api/reportApi.ts(10,8): error TS2307: Cannot find module './reportTypes' or its corresponding type declarations.
+src/features/room/views/RoomScreen.tsx(25,8): error TS2307: Cannot find module '../../payment/models/paymentContentLayout' or its corresponding type declarations.
+src/features/room/views/RoomScreen.tsx(26,34): error TS2307: Cannot find module '../../payment/models/paymentService' or its corresponding type declarations.
+src/features/room/views/RoomScreen.tsx(27,40): error TS2307: Cannot find module '../../payment/views/components/PaymentEntryMethodTabs' or its corresponding type declarations.
+src/features/room/views/RoomScreen.tsx(28,46): error TS2307: Cannot find module '../../payment/views/components/PaymentTabContent' or its corresponding type declarations.
+src/features/room/views/RoomScreen.tsx(97,14): error TS7006: Parameter 'detail' implicitly has an 'any' type.
+src/features/room/views/RoomScreen.tsx(108,15): error TS7006: Parameter 'error' implicitly has an 'any' type.
+src/features/room/views/RoomScreen.tsx(254,22): error TS7006: Parameter 'nextTab' implicitly has an 'any' type.
+src/features/room/views/screens/RoomPaymentTabScreen.tsx(3,48): error TS2307: Cannot find module '../../../payment/models/paymentContentLayout' or its corresponding type declarations.
+src/features/room/views/screens/RoomPaymentTabScreen.tsx(7,8): error TS2307: Cannot find module '../../../payment/views/components/PaymentTabContent' or its corresponding type declarations.
+src/features/room/views/screens/RoomSettlementDetailScreen.tsx(7,42): error TS2307: Cannot find module '../../../payment/views/components/PaymentExpenseDetailView' or its corresponding type declarations.
+src/features/room/views/screens/RoomSettlementDetailScreen.tsx(8,38): error TS2307: Cannot find module '../../../payment/models/paymentTypes' or its corresponding type declarations.

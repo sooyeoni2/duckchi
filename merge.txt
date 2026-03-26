@@ -1,0 +1,17 @@
+﻿Auto-merging DOCK-BE/pay-service/src/main/java/com/duckchi/pay/domain/expense/service/ExpenseServiceImpl.java
+Auto-merging DOCK-BE/pay-service/src/main/java/com/duckchi/pay/domain/settlement/service/SettlementTransferExecutor.java
+Auto-merging DOCK-BE/pay-service/src/test/java/com/duckchi/pay/domain/settlement/service/SettlementTransferExecutorTest.java
+CONFLICT (add/add): Merge conflict in DOCK-BE/pay-service/src/test/java/com/duckchi/pay/domain/settlement/service/SettlementTransferExecutorTest.java
+Auto-merging DOCK-FE/src/core/constants/apiConstants.ts
+CONFLICT (content): Merge conflict in DOCK-FE/src/core/constants/apiConstants.ts
+Auto-merging DOCK-FE/src/features/payment/models/api/paymentApi.ts
+Auto-merging DOCK-FE/src/features/payment/models/services/paymentService.ts
+CONFLICT (content): Merge conflict in DOCK-FE/src/features/payment/models/services/paymentService.ts
+Auto-merging DOCK-FE/src/features/payment/viewmodels/usePaymentManualEntryViewModel.ts
+CONFLICT (content): Merge conflict in DOCK-FE/src/features/payment/viewmodels/usePaymentManualEntryViewModel.ts
+Auto-merging DOCK-FE/src/features/payment/views/components/entry/PaymentTabContent.tsx
+CONFLICT (content): Merge conflict in DOCK-FE/src/features/payment/views/components/entry/PaymentTabContent.tsx
+Auto-merging DOCK-FE/src/features/payment/views/components/manual/PaymentManualEntrySplitView.tsx
+Auto-merging DOCK-FE/src/features/room/views/RoomScreen.tsx
+CONFLICT (content): Merge conflict in DOCK-FE/src/features/room/views/RoomScreen.tsx
+Automatic merge failed; fix conflicts and then commit the result.

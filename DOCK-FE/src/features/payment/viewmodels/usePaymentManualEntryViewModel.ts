@@ -1,4 +1,5 @@
 import React from 'react';
+import { useAuthStore } from '@features/auth/models/authStore';
 import { getManualEntryDraft } from '../models/services/paymentService';
 import type { ManualEntryDraft } from '../models/types/paymentTypes';
 
@@ -56,10 +57,11 @@ const distributeAmountEvenly = (draft: ManualEntryDraft): ManualEntryDraft => {
 };
 
 /**
- * 직접 입력 mock 전용 ViewModel.
+ * 직접 입력 ViewModel.
  * amount/participant/splitAmount를 한 draft에서 이어서 관리한다.
  */
 export function usePaymentManualEntryViewModel(roomId: number) {
+  const currentUserId = useAuthStore((state) => state.user?.userId ?? null);
   const [state, setState] = React.useState<PaymentManualEntryState>({
     status: 'idle',
   });
@@ -72,7 +74,19 @@ export function usePaymentManualEntryViewModel(roomId: number) {
     setState({ status: 'loading' });
 
     try {
-      const draft = await getManualEntryDraft(roomId);
+      const baseDraft = await getManualEntryDraft(roomId);
+      const draft: ManualEntryDraft = {
+        ...baseDraft,
+        participants: baseDraft.participants.map((participant) => ({
+          ...participant,
+          // 본인 식별 가독성을 유지하기 위해 라벨에 (나)를 붙인다.
+          userName:
+            currentUserId != null && participant.userId === currentUserId
+              ? `${participant.userName} (나)`
+              : participant.userName,
+        })),
+      };
+
       setState({
         status: 'loaded',
         draft,
@@ -86,7 +100,7 @@ export function usePaymentManualEntryViewModel(roomId: number) {
             : '직접 입력 초안을 불러오지 못했습니다.',
       });
     }
-  }, [roomId]);
+  }, [currentUserId, roomId]);
 
   const resetDraft = React.useCallback(() => {
     setState({ status: 'idle' });

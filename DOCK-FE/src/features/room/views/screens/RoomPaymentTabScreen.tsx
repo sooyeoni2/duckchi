@@ -1,10 +1,10 @@
 import React from 'react';
 
-import type { PaymentContentLayoutState } from '../../../payment/models/paymentContentLayout';
+import type { PaymentContentLayoutState } from '../../../payment/models/utils/paymentContentLayout';
 import {
   PaymentTabContent,
   type PaymentTabContentHandle,
-} from '../../../payment/views/components/PaymentTabContent';
+} from '../../../payment/views/components/entry/PaymentTabContent';
 
 interface RoomPaymentTabScreenProps {
   roomId: number;

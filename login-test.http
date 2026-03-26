@@ -1,0 +1,10 @@
+### 카카오 로그인 인가코드로 토큰 발급 테스트
+POST http://127.0.0.1:8080/api/v1/auth/oauth/login
+Content-Type: application/json
+
+{
+  "authorizationCode": "QV5i9gmIbiZmtJYxgYRZWs3Nb1mJdkGwneobmnfNOx-p4xVmexiElQAAAAQKDRSjAAABnR1YJstb9Pmr5eg_ZA",
+  "redirectUri": "http://127.0.0.1:8080/api/v1/auth/oauth/login"
+}
+
+### 응답으로 온 accessToken을 복사해서 이후 API 테스트에 사용하세요.

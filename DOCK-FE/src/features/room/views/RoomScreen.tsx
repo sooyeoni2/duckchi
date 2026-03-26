@@ -57,8 +57,14 @@ export function RoomScreen() {
   const [viewMode, setViewMode] = useState<RoomViewMode>(
     route.params.showTransfer === true ? 'TRANSFER' : 'SUMMARY',
   );
+  const initialRoomTab: RoomMainTab =
+    route.params.initialTab === 'PAYMENT' ||
+    route.params.initialTab === 'RANKING' ||
+    route.params.initialTab === 'SETTLEMENT'
+      ? route.params.initialTab
+      : 'SETTLEMENT';
   const [selectedRoomTab, setSelectedRoomTab] =
-    useState<RoomMainTab>('SETTLEMENT');
+    useState<RoomMainTab>(initialRoomTab);
   const [paymentLayoutState, setPaymentLayoutState] =
     useState<PaymentContentLayoutState>(defaultPaymentContentLayoutState);
   const [settlementDetailState, setSettlementDetailState] =
@@ -83,6 +89,33 @@ export function RoomScreen() {
     (tab) => tab.key === selectedRoomTab,
   );
   const isSettlementDetailOpen = settlementDetailState.status !== 'idle';
+
+  React.useEffect(() => {
+    const requestedInitialTab = route.params.initialTab;
+
+    if (
+      requestedInitialTab !== 'PAYMENT' &&
+      requestedInitialTab !== 'SETTLEMENT' &&
+      requestedInitialTab !== 'RANKING'
+    ) {
+      return;
+    }
+
+    setSelectedRoomTab(requestedInitialTab);
+    setRoomTabHistory([]);
+
+    if (requestedInitialTab !== 'PAYMENT') {
+      setPaymentLayoutState(defaultPaymentContentLayoutState);
+    }
+
+    if (requestedInitialTab !== 'SETTLEMENT') {
+      setSettlementDetailState({ status: 'idle' });
+    }
+
+    // 알림 라우팅으로 전달된 initialTab은 1회성으로 소비해서,
+    // 같은 화면 인스턴스에서 다음 알림 탭 이동도 정상 반영되도록 한다.
+    navigation.setParams({ initialTab: undefined });
+  }, [navigation, route.params.initialTab]);
 
   React.useEffect(() => {
     if (settlementDetailState.status !== 'loading') {
@@ -138,9 +171,13 @@ export function RoomScreen() {
         setSettlementDetailState({ status: 'idle' });
       }
 
+      if (nextTab === 'SETTLEMENT') {
+        // 결제 탭에서 정산 요청 직후 돌아오면 최신 my-set 데이터가 즉시 보이도록 갱신한다.
+        void handleSettlementRefresh();
+      }
       setSelectedRoomTab(nextTab);
     },
-    [selectedRoomTab],
+    [handleSettlementRefresh, selectedRoomTab],
   );
 
   const handleOpenSettlementDetail = React.useCallback((expenseId: number) => {

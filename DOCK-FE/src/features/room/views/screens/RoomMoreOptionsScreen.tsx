@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, ScrollView, Alert, ActivityIndicator, Clipboard } from 'react-native';
 import { SafeAreaView, Edges } from 'react-native-safe-area-context';
 import { AppColorStyles } from '@core/theme/colors';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
@@ -12,7 +12,6 @@ import { useRoomActionViewModel } from '../../viewmodels/useRoomActionViewModel'
 import { RoomMenuItem } from '../components/RoomMenuItem';
 import { RoomActionConfirmBottomSheet, type PendingSettlement } from '../components/RoomActionConfirmBottomSheet';
 import { MeetingRoomLinkSheet } from '../../components/MeetingRoomLinkSheet';
-import { getMeetingRoomInviteLinkMock } from '../../models/roomMockData';
 
 type Route = RouteProp<RoomStackParamList, 'RoomMoreOptions'>;
 
@@ -31,9 +30,6 @@ const RoomMoreOptionsScreen: React.FC = () => {
   );
 
   const { state: actionState, startRoom, endRoom, deleteRoom, leaveRoom } = useRoomActionViewModel(roomId);
-
-  // 팀 공용 MeetingRoomLinkSheet에서 사용할 초대 링크 Mock
-  const inviteLink = getMeetingRoomInviteLinkMock(roomId);
 
   // 미완료 정산 Mock 제거 (실제 연동 시 서버 데이터로 교체 예정)
   const pendingSettlement: PendingSettlement | undefined = undefined;
@@ -153,10 +149,11 @@ const RoomMoreOptionsScreen: React.FC = () => {
       {/* 초대링크 공유 — 팀 공용 MeetingRoomLinkSheet 사용 */}
       <MeetingRoomLinkSheet
         visible={isInviteModalVisible}
-        inviteLink={inviteLink}
+        inviteLink={state.inviteLink}
         title="친구를 모임방으로 초대하기"
         showLater={false}
         onCopyLink={() => {
+          Clipboard.setString(state.inviteLink);
           Alert.alert('초대 링크', '링크가 복사되었습니다.');
         }}
         onLater={closeInviteModal}

@@ -35,3 +35,5 @@ documents/
 
 #firebase 서비스 계정 키
 DOCK-BE/core-service/secrets/firebase/*.json
+# notification manual test file
+DOCK-BE/core-service/http/notification-manual-test.http

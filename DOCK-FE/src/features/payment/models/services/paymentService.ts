@@ -5,8 +5,10 @@ import {
   fetchExpenseDetailApi,
   fetchExpenseParticipantsApi,
   fetchMyExpensesApi,
+  fetchRoomExpensesApi,
   fetchOcrAnalysisApi,
   getPaymentErrorMessage,
+  requestSettlementsApi,
   updateExpenseApi,
 } from '../api/paymentApi';
 import {
@@ -67,11 +69,19 @@ export const getAccountHistoryEntryDraft = async (roomId: number | string): Prom
  */
 export const getManualEntryDraft = async (roomId: number | string): Promise<ManualEntryDraft> => {
   const participants = await getExpenseParticipants(roomId);
+  // 직접입력 진입 시 참여자 목록은 실서버 응답으로 초기화하고,
+  // 분배 화면에서 금액을 다시 입력하도록 splitAmount는 0으로 시작한다.
   return {
-    roomSessionId: typeof roomId === 'string' ? parseInt(roomId, 10) : roomId,
+    // roomId와 roomSessionId는 다른 값일 수 있어 여기서 임의 추정하지 않는다.
+    roomSessionId: 0,
     title: '',
     totalAmount: 0,
-    participants: participants.map((p: any) => ({ ...p, isSelected: true, splitAmount: 0 })),
+    participants: participants.map((participant: any) => ({
+      userId: participant.userId,
+      userName: participant.userName,
+      isSelected: true,
+      splitAmount: 0,
+    })),
   };
 };
 
@@ -86,6 +96,42 @@ export const getMyExpenses = async (roomId: number | string): Promise<MyExpenseI
     return dtos.map(toMyExpenseItem);
   } catch (error) {
     throw new Error(getPaymentErrorMessage(error, '내 결제 목록을 불러오지 못했습니다.'));
+  }
+};
+
+/**
+ * --------------------------------------------------------------------------
+ * 결제 생성용 roomSessionId 추출
+ * --------------------------------------------------------------------------
+ */
+export const getRoomSessionIdForExpenseCreation = async (
+  roomId: number | string,
+): Promise<number | null> => {
+  try {
+    const dtos = await fetchRoomExpensesApi(roomId);
+    return (
+      dtos.find((dto) => dto.roomSessionId != null && dto.roomSessionId > 0)
+        ?.roomSessionId ?? null
+    );
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * --------------------------------------------------------------------------
+ * 정산 요청 발송 서비스 (SET-01)
+ * --------------------------------------------------------------------------
+ */
+export const requestSettlements = async (expenseIds: number[]): Promise<void> => {
+  if (expenseIds.length === 0) {
+    return;
+  }
+
+  try {
+    await requestSettlementsApi(expenseIds);
+  } catch (error) {
+    throw new Error(getPaymentErrorMessage(error, '정산 요청에 실패했습니다.'));
   }
 };
 
