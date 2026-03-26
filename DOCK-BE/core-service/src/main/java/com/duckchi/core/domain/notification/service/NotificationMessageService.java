@@ -1,5 +1,6 @@
 package com.duckchi.core.domain.notification.service;
 
+import com.duckchi.core.domain.notification.dto.event.ExpenseSettledNotificationEvent;
 import com.duckchi.core.domain.notification.dto.event.SettlementRequestNotificationEvent;
 
 public interface NotificationMessageService {
@@ -15,10 +16,10 @@ public interface NotificationMessageService {
     void sendSettlementRequestOneclickMessage(String token, SettlementRequestNotificationEvent event);
 
     //정산 완료 알림
-    void sendExpenseSettledMessage(String token, String expenseTitle);
+    void sendExpenseSettledMessage(String token, ExpenseSettledNotificationEvent event);
     //모임 시작, 종료 알림
-    void sendRoomStartedMessage(String token, String roomName);
-    void sendRoomEndedMessage(String token, String roomName);
+    void sendRoomStartedMessage(String token, String roomName, Long roomId);
+    void sendRoomEndedMessage(String token, String roomName,Long roomId);
 
     //뱃지 획득 알림
     void sendBadgeAcquiredMessage(String token, String badgeName);

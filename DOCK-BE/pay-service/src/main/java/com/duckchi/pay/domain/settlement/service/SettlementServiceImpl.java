@@ -203,6 +203,7 @@ public class SettlementServiceImpl implements SettlementService {
             ExpenseSettledNotificationEvent event = ExpenseSettledNotificationEvent.builder()
                     .expenseId(expense.getId())
                     .expenseTitle(expense.getTitle())
+                    .roomId(expense.getRoomId())
                     .payerUserId(expense.getPayerUserId())
                     .occurredAt(LocalDateTime.now())
                     .build();
@@ -358,6 +359,7 @@ public class SettlementServiceImpl implements SettlementService {
                     .receiverId(receiverId)
                     .isAgreed(isAgreed)
                     .roomName(firstSettlement.getRoomName())
+                    .roomId(firstSettlement.getRoomId())
                     .totalAmount(totalAmount)
                     .requesterUserName(firstSettlement.getRequesterUserName())
                     .settlements(settlementTitles)
