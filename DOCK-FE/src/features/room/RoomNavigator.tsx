@@ -12,7 +12,7 @@ import AutoTransferJoinScreen from './views/screens/AutoTransferJoinScreen';
 import AdminDelegationScreen from './views/screens/AdminDelegationScreen';
 import RoomEditScreen from './views/screens/RoomEditScreen';
 import { SettlementRequestListScreen } from './views/screens/SettlementRequestListScreen';
-import PaymentListScreen from '../payment/views/screens/PaymentListScreen';
+import { PaymentScreen as PaymentListScreen } from '../payment/views/screens/PaymentScreen';
 
 const Stack = createNativeStackNavigator<RoomStackParamList>();
 

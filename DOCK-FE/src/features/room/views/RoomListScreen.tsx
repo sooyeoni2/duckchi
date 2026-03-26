@@ -41,7 +41,7 @@ export function RoomListScreen() {
   };
 
   const handleActionPress = async (meeting: MeetingRoom) => {
-    if (meeting.status === 'ENDED') {
+    if (meeting.status === 'ENDED' || meeting.status === 'READY') {
       navigation.navigate('RoomRestart', { roomId: meeting.roomId });
       return;
     }
