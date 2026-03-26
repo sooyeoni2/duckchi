@@ -93,4 +93,20 @@ export const openNotificationMessage = (
 // 알림 열림 이벤트도 message 단위 실행기로 바로 연결할 수 있게 감싼다.
 export const openNotificationEvent = (
   event: NotificationOpenEvent,
-): boolean => openNotificationMessage(event.message);
+): boolean => {
+  const queuedPressActionId = event.message.data.__pressActionId;
+
+  if (
+    queuedPressActionId != null &&
+    queuedPressActionId !== 'OPEN_DEFAULT_DESTINATION'
+  ) {
+    const actions = getForegroundNotificationActions(event.message);
+    const matchedAction = actions.find((action) => action.id === queuedPressActionId);
+
+    if (matchedAction != null) {
+      return openNotificationAction(matchedAction);
+    }
+  }
+
+  return openNotificationMessage(event.message);
+};

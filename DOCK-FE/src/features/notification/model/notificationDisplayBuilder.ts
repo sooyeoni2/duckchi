@@ -36,8 +36,11 @@ export const buildDisplayNotification = (
   notification: AppNotification,
 ) => {
   const actions = getNotificationActions(notification);
+  const fallbackIdBase = `${message.data.type ?? 'unknown'}_${message.data.roomId ?? '0'}_${message.sentTime ?? 0}`;
+  const notificationId = message.messageId ?? fallbackIdBase;
 
   return {
+    id: notificationId,
     title: notification.title ?? '새 알림',
     body: notification.body ?? '도착한 알림을 확인해 주세요.',
     data: toNotificationData(message),
