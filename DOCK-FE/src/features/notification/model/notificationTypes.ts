@@ -8,7 +8,7 @@ export type AppNotificationType =
   | 'SETTLEMENT_REQUEST_AUTO_TRANSFER'
   | 'SETTLEMENT_REQUEST_ONE_CLICK_TRANSFER'
   | 'SETTLEMENT_COMPLETED'
-  | 'MEETING_STATUS_CHANGED'
+  | 'ROOM_LIFECYCLE'
   | 'N_BBANG_RESULT';
 
 //알림 이동 목적지 타입 정의
@@ -58,9 +58,9 @@ export interface SettlementCompletedNotification extends AppNotificationBase {
 }
 
 // 모임 시작,완료 알림
-export interface MeetingStatusChangedNotification extends AppNotificationBase {
-  type: 'MEETING_STATUS_CHANGED';
-  meetingStatus: 'STARTED' | 'ENDED';
+export interface RoomLifecycleNotification extends AppNotificationBase {
+  type: 'ROOM_LIFECYCLE';
+  eventType: 'ROOM_STARTED' | 'ROOM_ENDED';
   roomName?: string;
 }
 
@@ -75,7 +75,7 @@ export type AppNotification =
   | SettlementRequestAutoTransferNotification
   | SettlementRequestOneClickTransferNotification
   | SettlementCompletedNotification
-  | MeetingStatusChangedNotification
+  | RoomLifecycleNotification
   | NBbangResultNotification;
 
 // 네비게이션 스택 목적지
@@ -109,6 +109,15 @@ export type NotificationNavigationTarget =
       rootScreen: 'App';
       tabScreen: 'Room';
       nestedScreen: 'SettlementRequestList';
+      params: {
+        roomId: number;
+      };
+    }
+  | {
+      kind: 'room';
+      rootScreen: 'App';
+      tabScreen: 'Room';
+      nestedScreen: 'PaymentList';
       params: {
         roomId: number;
       };

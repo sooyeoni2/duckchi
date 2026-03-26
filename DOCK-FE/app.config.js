@@ -27,11 +27,10 @@ module.exports = {
         usesCleartextTraffic: true,
       googleServicesFile: './android/app/google-services.json',
     },
-    "plugins": [
-    "@notifee/react-native",
-    "@react-native-firebase/app",
-    "@react-native-firebase/messaging"
-  ],
+    plugins: [
+      '@react-native-firebase/app',
+      '@react-native-firebase/messaging',
+    ],
     extra: {
       apiBaseUrl: process.env.API_BASE_URL ?? 'http://10.0.2.2:8080',
       kakaoClientId: process.env.KAKAO_CLIENT_ID,

@@ -16,3 +16,23 @@ export const ensureDefaultNotificationChannel = async (): Promise<string> =>
 export const requestNotificationDisplayPermission = async (): Promise<void> => {
   await notifee.requestPermission();
 };
+
+// foreground 알림이 뜨지 않을 때 OS/채널 상태를 빠르게 확인하기 위한 진단 로그
+export const logNotificationDebugState = async (): Promise<void> => {
+  try {
+    const settings = await notifee.getNotificationSettings();
+    console.log('[NOTI][DEBUG] notification settings', settings);
+  } catch (error) {
+    console.warn('[NOTI][DEBUG] failed to read notification settings', error);
+  }
+
+  try {
+    const isBlocked = await notifee.isChannelBlocked(DEFAULT_NOTIFICATION_CHANNEL_ID);
+    console.log('[NOTI][DEBUG] default channel blocked', {
+      channelId: DEFAULT_NOTIFICATION_CHANNEL_ID,
+      isBlocked,
+    });
+  } catch (error) {
+    console.warn('[NOTI][DEBUG] failed to check channel blocked state', error);
+  }
+};

@@ -61,13 +61,33 @@ export const buildDisplayNotification = (
 export const displayNotificationMessage = async (
   message: NotificationMessage,
 ): Promise<boolean> => {
+  console.log('[NOTI] displayNotificationMessage input', {
+    title: message.title,
+    body: message.body,
+    data: message.data,
+    messageId: message.messageId,
+    sentTime: message.sentTime,
+  });
+
   const notification = getAppNotification(message);
 
   if (notification == null) {
+    console.warn('[NOTI] parse failed in displayNotificationMessage', {
+      reason: 'getAppNotification returned null',
+      data: message.data,
+      title: message.title,
+      body: message.body,
+    });
     return false;
   }
 
+  console.log('[NOTI] parse success in displayNotificationMessage', {
+    type: notification.type,
+    roomId: notification.roomId,
+  });
+
   await notifee.displayNotification(buildDisplayNotification(message, notification));
+  console.log('[NOTI] notifee.displayNotification success');
   return true;
 };
 

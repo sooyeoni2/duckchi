@@ -1,9 +1,9 @@
 import type { NotificationMessage } from '@core/notifications';
 import type {
   AppNotification,
-  MeetingStatusChangedNotification,
   NBbangResultNotification,
   NotificationTargetScreen,
+  RoomLifecycleNotification,
   SettlementCompletedNotification,
   SettlementRequestAutoTransferNotification,
   SettlementRequestOneClickTransferNotification,
@@ -42,17 +42,6 @@ const toOptionalTargetScreen = (
   }
 };
 
-const toOptionalMeetingStatus = (
-  value: string | undefined,
-): MeetingStatusChangedNotification['meetingStatus'] | null => {
-  switch (value) {
-    case 'STARTED':
-    case 'ENDED':
-      return value;
-    default:
-      return null;
-  }
-};
 
 const toNameList = (value: string | undefined): string[] => {
   if (value == null || value.trim().length === 0) {
@@ -82,7 +71,7 @@ const getBaseFields = (
   };
 };
 
-// core에서 정규화한 메시지를 앱 알림 도메인 타입으로 안전하게 변환한다.
+// core에서 정규화한 메시지를 프론트 앱 알림 도메인 타입으로 안전하게 변환
 export const parseNotificationMessage = (
   message: NotificationMessage,
 ): AppNotification | null => {
@@ -95,8 +84,8 @@ export const parseNotificationMessage = (
       return parseSettlementRequestOneClickTransfer(message);
     case 'SETTLEMENT_COMPLETED':
       return parseSettlementCompleted(message);
-    case 'MEETING_STATUS_CHANGED':
-      return parseMeetingStatusChanged(message);
+    case 'ROOM_LIFECYCLE':
+      return parseRoomLifecycle(message);
     case 'N_BBANG_RESULT':
       return parseNBbangResult(message);
     default:
@@ -104,6 +93,7 @@ export const parseNotificationMessage = (
   }
 };
 
+//스케줄링 기반 알림 메세지 파싱
 const parseSettlementRequestReminder = (
   message: NotificationMessage,
 ): SettlementRequestReminderNotification | null => {
@@ -123,7 +113,7 @@ const parseSettlementRequestReminder = (
     targetScreen: toOptionalTargetScreen(message.data.targetScreen),
   };
 };
-
+//정산 요청 알림 - 자동이체 동의자 메세지 파싱 
 const parseSettlementRequestAutoTransfer = (
   message: NotificationMessage,
 ): SettlementRequestAutoTransferNotification | null => {
@@ -143,6 +133,7 @@ const parseSettlementRequestAutoTransfer = (
   };
 };
 
+//정산 요청 알림 - 자동이체 미동의자 메세지 파싱 
 const parseSettlementRequestOneClickTransfer = (
   message: NotificationMessage,
 ): SettlementRequestOneClickTransferNotification | null => {
@@ -160,6 +151,7 @@ const parseSettlementRequestOneClickTransfer = (
   };
 };
 
+//정산완료 알림 메세지 파싱
 const parseSettlementCompleted = (
   message: NotificationMessage,
 ): SettlementCompletedNotification | null => {
@@ -176,24 +168,41 @@ const parseSettlementCompleted = (
   };
 };
 
-const parseMeetingStatusChanged = (
-  message: NotificationMessage,
-): MeetingStatusChangedNotification | null => {
-  const baseFields = getBaseFields(message);
-  const meetingStatus = toOptionalMeetingStatus(message.data.meetingStatus);
 
-  if (baseFields == null || meetingStatus == null) {
+// 모임방 시작,종료 타입 파싱
+const parseRoomLifecycle = (
+  message: NotificationMessage,
+): RoomLifecycleNotification | null => {
+  const baseFields = getBaseFields(message);
+
+  if (baseFields == null) {
+    return null;
+  }
+
+  const eventType = (() => {
+    switch (message.data.eventType) {
+      case 'ROOM_STARTED': //eventType이 모임방 시작인 경우 
+        return 'ROOM_STARTED' as const;
+      case 'ROOM_ENDED': //eventType이 모임방 종료인 경우
+        return 'ROOM_ENDED' as const;
+      default:
+        return null;
+    }
+  })();
+
+  if (eventType == null) {
     return null;
   }
 
   return {
-    type: 'MEETING_STATUS_CHANGED',
+    type: 'ROOM_LIFECYCLE',
     ...baseFields,
-    meetingStatus,
+    eventType,
     roomName: message.data.roomName,
   };
 };
 
+// N빵룰렛 메세지 파싱
 const parseNBbangResult = (
   message: NotificationMessage,
 ): NBbangResultNotification | null => {

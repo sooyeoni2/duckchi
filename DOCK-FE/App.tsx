@@ -9,12 +9,15 @@ import {
   bootstrapNotifications,
   consumeAllNotificationOpens,
   ensureDefaultNotificationChannel,
+  logNotificationDebugState,
   requestNotificationDisplayPermission,
   type NotificationMessage,
 } from '@core/notifications';
 import {
   displayNotificationMessage,
   handleDisplayedNotificationEvent,
+  InAppNotificationBanner,
+  openNotificationMessage,
   openNotificationEvent,
 } from '@features/notification';
 import { loadTokenFromStorage, useAuthStore } from './src/features/auth/models/authStore';
@@ -53,6 +56,8 @@ function App() {
     'Pretendard-ExtraBold': require('./src/assets/fonts/Pretendard-ExtraBold.ttf'),
     'Pretendard-Black': require('./src/assets/fonts/Pretendard-Black.ttf'),
   });
+  const [foregroundBannerMessage, setForegroundBannerMessage] = React.useState<NotificationMessage | null>(null);
+  const foregroundBannerTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const restoreAuth = async () => {
@@ -77,7 +82,19 @@ function App() {
 
   // foreground 수신 시에는 Notifee 로컬 알림을 띄워 액션 버튼까지 같은 UX로 맞춘다.
   const handleForegroundMessage = React.useCallback((message: NotificationMessage) => {
-    displayNotificationMessage(message).catch(() => {
+    // foreground에서는 OS 배너 외에 인앱 배너도 항상 보여준다.
+    setForegroundBannerMessage(message);
+
+    if (foregroundBannerTimerRef.current != null) {
+      clearTimeout(foregroundBannerTimerRef.current);
+    }
+
+    foregroundBannerTimerRef.current = setTimeout(() => {
+      setForegroundBannerMessage(null);
+      foregroundBannerTimerRef.current = null;
+    }, 4500);
+
+    if (false) displayNotificationMessage(message).catch(() => {
       // 알림 표시 실패는 앱 흐름을 막지 않는다.
     });
   }, []);
@@ -90,6 +107,7 @@ function App() {
     const initializeNotifications = async () => {
       const cleanup = await requestNotificationDisplayPermission()
         .then(() => ensureDefaultNotificationChannel())
+        .then(() => logNotificationDebugState())
         .then(() =>
           bootstrapNotifications({
             onForegroundMessage: handleForegroundMessage,
@@ -132,6 +150,35 @@ function App() {
     });
   }, []);
 
+  const handleForegroundBannerPress = React.useCallback(() => {
+    if (foregroundBannerTimerRef.current != null) {
+      clearTimeout(foregroundBannerTimerRef.current);
+      foregroundBannerTimerRef.current = null;
+    }
+
+    if (foregroundBannerMessage != null) {
+      openNotificationMessage(foregroundBannerMessage);
+    }
+
+    setForegroundBannerMessage(null);
+  }, [foregroundBannerMessage]);
+
+  const handleForegroundBannerClose = React.useCallback(() => {
+    if (foregroundBannerTimerRef.current != null) {
+      clearTimeout(foregroundBannerTimerRef.current);
+      foregroundBannerTimerRef.current = null;
+    }
+
+    setForegroundBannerMessage(null);
+  }, []);
+
+  useEffect(() => () => {
+    if (foregroundBannerTimerRef.current != null) {
+      clearTimeout(foregroundBannerTimerRef.current);
+      foregroundBannerTimerRef.current = null;
+    }
+  }, []);
+
   if (!fontsLoaded && !fontError) return null;
   if (!authReady) return null;
 
@@ -158,6 +205,13 @@ function App() {
           <Stack.Screen name="PayPasswordInput" component={PayPasswordInputScreen} />
         </Stack.Navigator>
       </NavigationContainer>
+      <InAppNotificationBanner
+        visible={foregroundBannerMessage != null}
+        title={foregroundBannerMessage?.title}
+        body={foregroundBannerMessage?.body}
+        onPress={handleForegroundBannerPress}
+        onClose={handleForegroundBannerClose}
+      />
     </SafeAreaProvider>
   );
 }
