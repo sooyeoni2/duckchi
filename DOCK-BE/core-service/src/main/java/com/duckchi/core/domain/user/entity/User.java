@@ -85,4 +85,10 @@ public class User {
         this.profileImageUrl = profileImageUrl;
     }
 
+    //결제 비밀번호 삭제
+    public void deletePayPassword(){
+        this.payPassword = null;
+        this.payPasswordFailCnt = 0;
+    }
+
 }
