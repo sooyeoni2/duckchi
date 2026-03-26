@@ -199,31 +199,66 @@ public class ExpenseOcrServiceImpl implements ExpenseOcrService {
     }
 
     private LocalDateTime extractPaidAt(OcrResponse.Result result) {
-        if (result.getPaymentInfo() == null) {
-            return null;
-        }
-
-        String dateDigits = extractDigits(extractText(result.getPaymentInfo().getDate()));
-        String timeDigits = extractDigits(extractText(result.getPaymentInfo().getTime()));
-
-        if (dateDigits.length() != 8) {
-            return null;
-        }
-
-        if (timeDigits.length() < 4) {
+        OcrResponse.PaymentInfo paymentInfo = result.getPaymentInfo();
+        if (paymentInfo == null) {
             return null;
         }
 
         try {
-            int year = Integer.parseInt(dateDigits.substring(0, 4));
-            int month = Integer.parseInt(dateDigits.substring(4, 6));
-            int day = Integer.parseInt(dateDigits.substring(6, 8));
-            int hour = Integer.parseInt(timeDigits.substring(0, 2));
-            int minute = Integer.parseInt(timeDigits.substring(2, 4));
-            int second = timeDigits.length() >= 6 ? Integer.parseInt(timeDigits.substring(4, 6)) : 0;
+            Integer year = null, month = null, day = null;
+            Integer hour = null, minute = null, second = 0; // 초는 기본값 0
+
+            // 1. 날짜 추출 (Formatted 데이터 우선)
+            OcrResponse.DateInfo dateInfo = paymentInfo.getDate();
+            if (dateInfo != null && dateInfo.getFormatted() != null) {
+                OcrResponse.FormattedDate fd = dateInfo.getFormatted();
+                year = parsePositiveInt(fd.getYear());
+                month = parsePositiveInt(fd.getMonth());
+                day = parsePositiveInt(fd.getDay());
+            }
+
+            // 2. 시간 추출 (Formatted 데이터 우선)
+            OcrResponse.TimeInfo timeInfo = paymentInfo.getTime();
+            if (timeInfo != null && timeInfo.getFormatted() != null) {
+                OcrResponse.FormattedTime ft = timeInfo.getFormatted();
+                hour = parseNonNegativeInt(ft.getHour());
+                minute = parseNonNegativeInt(ft.getMinute());
+                Integer parsedSecond = parseNonNegativeInt(ft.getSecond());
+                if (parsedSecond != null) second = parsedSecond;
+            }
+
+            // 3. 날짜 Fallback (텍스트 파싱)
+            if (year == null || month == null || day == null) {
+                String dateText = dateInfo != null ? dateInfo.getText() : null;
+                String dateDigits = extractDigits(dateText);
+                if (dateDigits.length() == 8) {
+                    year = Integer.parseInt(dateDigits.substring(0, 4));
+                    month = Integer.parseInt(dateDigits.substring(4, 6));
+                    day = Integer.parseInt(dateDigits.substring(6, 8));
+                }
+            }
+
+            // 4. 시간 Fallback (텍스트 파싱)
+            if (hour == null || minute == null) {
+                String timeText = timeInfo != null ? timeInfo.getText() : null;
+                String timeDigits = extractDigits(timeText);
+                if (timeDigits.length() >= 4) {
+                    hour = Integer.parseInt(timeDigits.substring(0, 2));
+                    minute = Integer.parseInt(timeDigits.substring(2, 4));
+                    if (timeDigits.length() >= 6) {
+                        second = Integer.parseInt(timeDigits.substring(4, 6));
+                    }
+                }
+            }
+
+            // [사용자 피드백 반영] 날짜나 시간 정보가 하나라도 부족하면 null 반환 (부정확한 데이터 방지)
+            if (year == null || month == null || day == null || hour == null || minute == null) {
+                return null;
+            }
+
             return LocalDateTime.of(year, month, day, hour, minute, second);
         } catch (Exception e) {
-            log.info("OCR 결제 일시 파싱에 실패했습니다. date={}, time={}", dateDigits, timeDigits);
+            log.info("OCR 결제 일시 파싱 중 예외 발생: {}", e.getMessage());
             return null;
         }
     }
@@ -244,7 +279,12 @@ public class ExpenseOcrServiceImpl implements ExpenseOcrService {
         if (priceInfo == null || priceInfo.getPrice() == null) {
             return null;
         }
-        return priceInfo.getPrice().getText();
+        OcrResponse.PriceDetails details = priceInfo.getPrice();
+        // formatted value가 있으면 우선 사용 (콤마 등이 제거된 순수 숫자일 확률 높음)
+        if (details.getFormatted() != null && StringUtils.hasText(details.getFormatted().getValue())) {
+            return details.getFormatted().getValue();
+        }
+        return details.getText();
     }
 
     private String extractDigits(String value) {
@@ -264,6 +304,20 @@ public class ExpenseOcrServiceImpl implements ExpenseOcrService {
         try {
             int parsed = Integer.parseInt(digits);
             return parsed > 0 ? parsed : null;
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private Integer parseNonNegativeInt(String value) {
+        String digits = extractDigits(value);
+        if (!StringUtils.hasText(digits)) {
+            return null;
+        }
+
+        try {
+            int parsed = Integer.parseInt(digits);
+            return parsed >= 0 ? parsed : null;
         } catch (NumberFormatException e) {
             return null;
         }
