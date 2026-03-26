@@ -34,6 +34,9 @@ import { RoomRankingTabScreen } from './screens/RoomRankingTabScreen';
 import type { SettlementDetailState } from './screens/RoomSettlementDetailScreen';
 import { RoomSettlementTabScreen } from './screens/RoomSettlementTabScreen';
 import { RoomSettlementTransferScreen } from './screens/RoomSettlementTransferScreen';
+import { useRoomActionViewModel } from '../viewmodels/useRoomActionViewModel';
+import { RoomActionConfirmBottomSheet } from './components/RoomActionConfirmBottomSheet';
+import type { RoomActionType } from './components/RoomActionConfirmBottomSheet';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const s = SCREEN_WIDTH / 412;
@@ -81,6 +84,45 @@ export function RoomScreen() {
   const room =
     rooms.find((item) => item.roomId === route.params.roomId) ??
     meetingRoomMockData[0];
+
+  const {
+    state: actionState,
+    startRoom: requestStartRoom,
+    endRoom: requestEndRoom,
+  } = useRoomActionViewModel(route.params.roomId);
+
+  const [activeActionType, setActiveActionType] = useState<RoomActionType | null>(null);
+  const [isActionModalVisible, setIsActionModalVisible] = useState(false);
+
+  const openActionModal = (type: RoomActionType) => {
+    setActiveActionType(type);
+    setIsActionModalVisible(true);
+  };
+
+  const closeActionModal = () => {
+    setIsActionModalVisible(false);
+  };
+
+  const handleActionConfirm = async () => {
+    if (!activeActionType) return;
+
+    let success = false;
+    if (activeActionType === 'START') {
+      // 방의 기존 카테고리를 기본값으로 사용하여 시작한다.
+      success = await requestStartRoom({ 
+        category: room.category || '기타',
+        description: room.description
+      });
+    } else if (activeActionType === 'END') {
+      success = await requestEndRoom();
+    }
+
+    if (success) {
+      closeActionModal();
+      // 성공 시 정산 목록 등을 최신화한다.
+      void handleSettlementRefresh();
+    }
+  };
 
   const expectedAmount = settlementOverviewData.expectedAmount;
   const participatedPayments = settlementOverviewData.participatedPayments;
@@ -246,6 +288,17 @@ export function RoomScreen() {
         actions={
           showRoomActions
             ? [
+                room?.status === 'STARTED' && (
+                  <TouchableOpacity
+                    key="end-session"
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={styles.actionButton}
+                    activeOpacity={0.8}
+                    onPress={() => openActionModal('END')}
+                  >
+                    <Text style={styles.actionButtonText}>종료하기</Text>
+                  </TouchableOpacity>
+                ),
                 <TouchableOpacity
                   key="more"
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -261,7 +314,7 @@ export function RoomScreen() {
                     color={AppColorStyles.black}
                   />
                 </TouchableOpacity>,
-              ]
+              ].filter(Boolean) as React.ReactNode[]
             : undefined
         }
       />
@@ -311,8 +364,10 @@ export function RoomScreen() {
       {selectedRoomTab === 'PAYMENT' ? (
         <RoomPaymentTabScreen
           roomId={route.params.roomId}
+          roomStatus={room?.status}
           paymentTabRef={paymentTabRef}
           onLayoutChange={setPaymentLayoutState}
+          onStartRoom={() => openActionModal('START')}
         />
       ) : selectedRoomTab === 'SETTLEMENT' ? (
         <RoomSettlementTabScreen
@@ -328,13 +383,25 @@ export function RoomScreen() {
           totalAmount={settlementOverviewData.totalAmount}
           participatedPayments={participatedPayments}
           settlementRequests={settlementRequests}
+          roomStatus={room?.status}
           onRefresh={handleSettlementRefresh}
           onOpenSettlementDetail={handleOpenSettlementDetail}
           onOpenTransfer={() => setViewMode('TRANSFER')}
           onRetrySettlementDetail={handleRetrySettlementDetail}
+          onStartRoom={() => openActionModal('START')}
         />
       ) : (
         <RoomRankingTabScreen />
+      )}
+
+      {activeActionType && (
+        <RoomActionConfirmBottomSheet
+          isVisible={isActionModalVisible}
+          type={activeActionType}
+          isProcessing={actionState.isProcessing}
+          onClose={closeActionModal}
+          onConfirm={handleActionConfirm}
+        />
       )}
     </SafeAreaView>
   );
@@ -357,6 +424,20 @@ const styles = StyleSheet.create({
     height: 36 * s,
     alignItems: 'center',
     justifyContent: 'center',
+    marginLeft: 4 * s,
+  },
+  actionButton: {
+    paddingHorizontal: 12 * s,
+    paddingVertical: 6 * s,
+    backgroundColor: AppColorStyles.divider,
+    borderRadius: 8 * s,
+    marginRight: 4 * s,
+  },
+  actionButtonText: {
+    ...KBODiaGothicTextStyle.medium({
+      fontSize: 14 * s,
+      color: AppColorStyles.textSecondary,
+    }),
   },
   roomTabContainer: {
     position: 'relative',

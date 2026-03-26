@@ -6,6 +6,7 @@ import {
   type SettlementDetailState,
 } from './RoomSettlementDetailScreen';
 import { RoomSettlementOverviewScreen } from './RoomSettlementOverviewScreen';
+import { RoomSessionPlaceholder } from '../components/RoomSessionPlaceholder';
 
 interface RoomSettlementTabScreenProps {
   isSettlementDetailOpen: boolean;
@@ -16,10 +17,12 @@ interface RoomSettlementTabScreenProps {
   totalAmount: number;
   participatedPayments: RoomSettlementRow[];
   settlementRequests: RoomSettlementRow[];
+  roomStatus?: 'STARTED' | 'ENDED';
   onRefresh: () => Promise<void>;
   onOpenSettlementDetail: (expenseId: number) => void;
   onOpenTransfer: () => void;
   onRetrySettlementDetail: (expenseId: number) => void;
+  onStartRoom: () => void;
 }
 
 export function RoomSettlementTabScreen({
@@ -31,11 +34,24 @@ export function RoomSettlementTabScreen({
   totalAmount,
   participatedPayments,
   settlementRequests,
+  roomStatus,
   onRefresh,
   onOpenSettlementDetail,
   onOpenTransfer,
   onRetrySettlementDetail,
+  onStartRoom,
 }: RoomSettlementTabScreenProps) {
+  if (roomStatus === 'ENDED') {
+    return (
+      <RoomSessionPlaceholder
+        title="모임이 아직 시작되지 않았습니다"
+        description="정산 현황을 확인하려면 모임을 시작해 주세요."
+        buttonLabel="모임 시작하기"
+        onPress={onStartRoom}
+      />
+    );
+  }
+
   if (isSettlementDetailOpen) {
     return (
       <RoomSettlementDetailScreen
