@@ -12,6 +12,7 @@ import {
   ensureDefaultNotificationChannel,
   logNotificationDebugState,
   requestNotificationDisplayPermission,
+  syncNotificationToken,
   type NotificationMessage,
 } from '@core/notifications';
 import {
@@ -138,6 +139,31 @@ function App() {
       // 알림 표시 실패는 앱 흐름을 막지 않는다.
     });
   }, []);
+
+  useEffect(() => {
+    if (!authReady || !isLoggedIn) {
+      return;
+    }
+
+    const syncWithReason = async (reason: string, refreshedToken?: string) => {
+      try {
+        await syncNotificationToken(refreshedToken);
+        console.log('[FCM SYNC] completed', { reason });
+      } catch (error) {
+        console.warn('[FCM SYNC] failed', { reason, error });
+      }
+    };
+
+    syncWithReason('login_or_auth_restore').catch(() => undefined);
+
+    const unsubscribeTokenRefresh = messaging().onTokenRefresh((refreshedToken) => {
+      syncWithReason('on_token_refresh', refreshedToken).catch(() => undefined);
+    });
+
+    return () => {
+      unsubscribeTokenRefresh();
+    };
+  }, [authReady, isLoggedIn]);
 
   useEffect(() => {
     let cleanupNotifications: (() => void) | undefined;

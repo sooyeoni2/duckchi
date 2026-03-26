@@ -51,7 +51,7 @@ public class NotificationMessageServiceImpl implements NotificationMessageServic
             String messageId = firebaseMessaging.send(message);
             log.info("FCM 테스트 알림 발송 성공. messageId={}", messageId);
         } catch (FirebaseMessagingException ex) {
-            log.error("FCM 테스트 알림 발송 실패. token={}", token, ex);
+            log.error("FCM 테스트 알림 발송 실패.", ex);
             throw new CustomException(ErrorCode.NOTIFICATION_TEST_SEND_FAILED);
         }
     }
@@ -206,7 +206,7 @@ public class NotificationMessageServiceImpl implements NotificationMessageServic
                 throw new CustomException(ErrorCode.NOTIFICATION_TOKEN_INVALID);
             }
 
-            log.error("{} 발송 실패. token={}", logLabel, token, ex);
+            log.error("{} 발송 실패.", logLabel, ex);
             throw new CustomException(ErrorCode.NOTIFICATION_TEST_SEND_FAILED);
         }
     }
