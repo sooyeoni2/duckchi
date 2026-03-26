@@ -55,6 +55,19 @@ const getPaymentListDestination = (
   },
 });
 
+const getRoomPaymentDestination = (
+  roomId: number,
+): NotificationNavigationTarget => ({
+  kind: 'room',
+  rootScreen: 'App',
+  tabScreen: 'Room',
+  nestedScreen: 'RoomDetail',
+  params: {
+    roomId,
+    initialTab: 'PAYMENT',
+  },
+});
+
 const getRoomDetailDestination = (
   roomId: number,
 ): NotificationNavigationTarget => ({
@@ -89,7 +102,7 @@ export const mapNotificationToRoute = (
     case 'SETTLEMENT_REQUEST_ONE_CLICK_TRANSFER':
       return getTransferDestination(notification.roomId);
     case 'SETTLEMENT_COMPLETED':
-      return getPaymentListDestination(notification.roomId);
+      return getRoomPaymentDestination(notification.roomId);
     case 'ROOM_LIFECYCLE':
       return getRoomDetailDestination(notification.roomId);
     case 'N_BBANG_RESULT':
@@ -138,7 +151,7 @@ export const getNotificationActions = (
         {
           id: 'OPEN_ROOM_DETAIL',
           label: '?ëº¤ì”¤',
-          target: getPaymentListDestination(notification.roomId),
+          target: getRoomPaymentDestination(notification.roomId),
         },
       ];
     case 'ROOM_LIFECYCLE':

@@ -93,6 +93,7 @@ export type NotificationNavigationTarget =
       params: {
         roomId: number;
         showTransfer?: boolean;
+        initialTab?: 'PAYMENT' | 'SETTLEMENT' | 'RANKING';
       };
     }
   | {
