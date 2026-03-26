@@ -93,6 +93,17 @@ export async function fetchMyExpensesApi(roomId: number | string) {
 
 /**
  * --------------------------------------------------------------------------
+ * PAY-05: 모임 전체 결제안 목록 조회
+ * --------------------------------------------------------------------------
+ */
+export async function fetchRoomExpensesApi(roomId: number | string) {
+  const effectiveId = getEffectiveRoomId(roomId);
+  const response = await axiosClient.get(ENDPOINTS.payment.expenses(effectiveId));
+  return validateAndUnwrap(response, z.array(expenseSummarySchema));
+}
+
+/**
+ * --------------------------------------------------------------------------
  * PAY-05: 결제안 상세 조회
  * --------------------------------------------------------------------------
  */
@@ -142,6 +153,22 @@ export async function fetchExpenseParticipantsApi(roomId: number | string) {
     userTag: z.string().optional().nullable(),
     profileImageUrl: z.string().optional().nullable(),
   })));
+}
+
+/**
+ * --------------------------------------------------------------------------
+ * SET-01: 정산 요청 발송
+ * --------------------------------------------------------------------------
+ */
+export async function requestSettlementsApi(expenseIds: number[]) {
+  const response = await axiosClient.post(ENDPOINTS.settlement.request, {
+    requestedExpenseIds: expenseIds,
+  });
+
+  const responseData = response.data;
+  if (responseData?.success !== true) {
+    throw new Error(responseData?.msg ?? '정산 요청에 실패했습니다.');
+  }
 }
 
 /**

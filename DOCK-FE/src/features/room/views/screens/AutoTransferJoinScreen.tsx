@@ -21,9 +21,11 @@ const AutoTransferJoinScreen: React.FC = () => {
   const route = useRoute<AutoTransferJoinScreenRouteProp>();
   const roomId = route.params?.roomId || -1;
   const roomName = route.params?.roomName || '모임방';
+  const inviteToken = route.params?.inviteToken;
 
-  const { state, setRoomInfo, agreeAndJoin, skipAndJoin } = useAutoTransferJoinViewModel(roomId);
+  const { state, setRoomInfo, validateInviteBeforeJoin, agreeAndJoin, skipAndJoin } = useAutoTransferJoinViewModel(roomId);
   const [sheetVisible, setSheetVisible] = useState(false);
+  const [isInviteValidating, setIsInviteValidating] = useState(Boolean(inviteToken));
   
   const inviteLink = getMeetingRoomInviteLinkMock(roomId);
 
@@ -31,18 +33,64 @@ const AutoTransferJoinScreen: React.FC = () => {
     setRoomInfo(roomName);
   }, [roomName, setRoomInfo]);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const validateInvite = async () => {
+      if (!inviteToken) {
+        setIsInviteValidating(false);
+        return;
+      }
+
+      setIsInviteValidating(true);
+      const result = await validateInviteBeforeJoin(inviteToken);
+
+      if (!isMounted) {
+        return;
+      }
+
+      if (result === 'already-participant') {
+        // 왜: 이미 참여한 사용자는 동의 페이지를 다시 거치지 않고 즉시 모임 상세로 보내야 UX가 끊기지 않는다.
+        Alert.alert('안내', '이미 참여 중인 모임입니다.');
+        navigation.replace('RoomDetail', { roomId });
+        return;
+      }
+
+      if (result === 'invalid') {
+        navigation.replace('RoomList');
+        return;
+      }
+
+      setIsInviteValidating(false);
+    };
+
+    void validateInvite();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [inviteToken, navigation, roomId, validateInviteBeforeJoin]);
+
   const handleAgree = async () => {
-    if (state.isProcessing) return;
-    const success = await agreeAndJoin();
-    if (success) {
+    if (state.isProcessing || isInviteValidating) return;
+    const result = await agreeAndJoin(inviteToken);
+    if (result === 'invite-joined' || result === 'already-participant') {
+      navigation.replace('RoomDetail', { roomId });
+      return;
+    }
+    if (result === 'consent-only') {
       setSheetVisible(true);
     }
   };
 
   const handleSkip = async () => {
-    if (state.isProcessing) return;
-    const success = await skipAndJoin();
-    if (success) {
+    if (state.isProcessing || isInviteValidating) return;
+    const result = await skipAndJoin(inviteToken);
+    if (result === 'invite-joined' || result === 'already-participant') {
+      navigation.replace('RoomDetail', { roomId });
+      return;
+    }
+    if (result === 'consent-only') {
       setSheetVisible(true);
     }
   };
@@ -71,6 +119,9 @@ const AutoTransferJoinScreen: React.FC = () => {
           <Text style={styles.cardTopLabel}>정산 동의 요청</Text>
           <Text style={styles.roomNameLabel}>{state.roomTitle}</Text>
           <Text style={styles.creatorLabel}>{state.creatorName}님이 만든 모임</Text>
+          {isInviteValidating ? (
+            <Text style={styles.validationNotice}>초대 링크를 확인하고 있어요...</Text>
+          ) : null}
         </View>
 
         <View style={styles.grayCard}>
@@ -92,11 +143,11 @@ const AutoTransferJoinScreen: React.FC = () => {
         <FilledButton
           text="동의 후 모임 참여"
           onPress={handleAgree}
-          isLoading={state.isProcessing}
+          isLoading={state.isProcessing || isInviteValidating}
         />
         <TouchableOpacity
           onPress={handleSkip}
-          disabled={state.isProcessing}
+          disabled={state.isProcessing || isInviteValidating}
           style={styles.skipButton}
           activeOpacity={0.7}
         >
@@ -156,6 +207,11 @@ const styles = StyleSheet.create({
   creatorLabel: {
     ...KBODiaGothicTextStyle.medium({ fontSize: 14 }),
     color: AppColorStyles.textSecondary,
+  },
+  validationNotice: {
+    ...KBODiaGothicTextStyle.medium({ fontSize: 12 }),
+    color: AppColorStyles.gray1,
+    marginTop: 8,
   },
   grayCard: {
     backgroundColor: '#F5F5F5',

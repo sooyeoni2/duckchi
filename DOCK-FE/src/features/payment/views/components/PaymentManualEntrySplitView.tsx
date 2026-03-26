@@ -18,6 +18,7 @@ import { PaymentAnimatedTouchable } from './PaymentAnimatedTouchable';
 interface PaymentManualEntrySplitViewProps {
   state: PaymentManualEntryState;
   splitAmountTotal: number;
+  isSubmitting: boolean;
   onRetry: () => void;
   onParticipantAmountChange: (userId: number, text: string) => void;
   onSubmit: () => void;
@@ -36,6 +37,7 @@ const toAmountInputValue = (amount: number): string =>
 export function PaymentManualEntrySplitView({
   state,
   splitAmountTotal,
+  isSubmitting,
   onRetry,
   onParticipantAmountChange,
   onSubmit,
@@ -95,7 +97,8 @@ export function PaymentManualEntrySplitView({
   );
   const isSubmitDisabled =
     selectedParticipants.length === 0 ||
-    splitAmountTotal !== state.draft.totalAmount;
+    splitAmountTotal !== state.draft.totalAmount ||
+    isSubmitting;
 
   return (
     <View>
@@ -256,14 +259,18 @@ export function PaymentManualEntrySplitView({
           isSubmitDisabled && styles.primaryButtonDisabled,
         ]}
       >
-        <Text
-          style={KBODiaGothicTextStyle.bold({
-            fontSize: 20,
-            color: AppColorStyles.black,
-          })}
-        >
-          장바구니에 담기
-        </Text>
+        {isSubmitting ? (
+          <ActivityIndicator size="small" color={AppColorStyles.black} />
+        ) : (
+          <Text
+            style={KBODiaGothicTextStyle.bold({
+              fontSize: 20,
+              color: AppColorStyles.black,
+            })}
+          >
+            장바구니에 담기
+          </Text>
+        )}
       </PaymentAnimatedTouchable>
     </View>
   );

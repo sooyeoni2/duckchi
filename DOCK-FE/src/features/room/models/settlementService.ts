@@ -24,8 +24,10 @@ interface RoomMySetItemDto {
   requesterUserName: string;
   setUserCount: number;
   payableAmount: number;
-  isCompleted: boolean;
+  isCompleted?: boolean;
+  status?: string;
   requestedAt: string;
+  completedAt?: string | null;
 }
 
 interface RoomMySetResponseDto {
@@ -38,15 +40,19 @@ interface RoomMySetResponseDto {
 const toDeadlineIso = (requestedAt: string): string =>
   new Date(new Date(requestedAt).getTime() + DEADLINE_HOURS * 60 * 60 * 1000).toISOString();
 
+const isCompletedSettlement = (dto: RoomMySetItemDto): boolean =>
+  dto.isCompleted === true || dto.status === 'COMPLETED';
+
 const toSettlementItem = (dto: RoomMySetItemDto): SettlementItem => ({
   id: dto.settlementId,
   storeName: dto.title,
   requesterName: dto.requesterUserName,
   amount: dto.payableAmount,
-  status: dto.isCompleted ? 'COMPLETED' : 'IN_PROGRESS',
+  status: isCompletedSettlement(dto) ? 'COMPLETED' : 'IN_PROGRESS',
   dueAt: toDeadlineIso(dto.requestedAt),
-  paidAt: dto.isCompleted ? dto.requestedAt : undefined,
-  paidCount: dto.isCompleted ? dto.setUserCount : 0,
+  // 완료 시각 필드가 없을 수 있어 요청 시각으로 폴백해 UI 완료 탭 시간 표기를 유지한다.
+  paidAt: isCompletedSettlement(dto) ? dto.completedAt ?? dto.requestedAt : undefined,
+  paidCount: isCompletedSettlement(dto) ? dto.setUserCount : 0,
   totalCount: dto.setUserCount,
 });
 

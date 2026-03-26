@@ -46,9 +46,6 @@ export function RoomSettlementOverviewScreen({
   onOpenTransfer,
   onOpenSettlementDetail,
 }: RoomSettlementOverviewScreenProps) {
-  // 예상 금액이 0원 이하면 실제 송금 대상이 없으므로 CTA를 비활성화한다.
-  const isTransferDisabled = expectedAmount <= 0;
-
   return (
     <ScrollView
       style={styles.scrollArea}
@@ -69,22 +66,11 @@ export function RoomSettlementOverviewScreen({
           <Text style={styles.expectedHint}>금액은 변경할 수 있어요.</Text>
           <TouchableOpacity
             // 사용자가 누르는 실제 CTA(정산하기)에 직접 이동 핸들러를 연결한다.
-            onPress={isTransferDisabled ? undefined : onOpenTransfer}
-            disabled={isTransferDisabled}
+            onPress={onOpenTransfer}
             activeOpacity={0.85}
-            style={[
-              styles.expectedActionBadge,
-              isTransferDisabled && styles.expectedActionBadgeDisabled,
-            ]}
+            style={styles.expectedActionBadge}
           >
-            <Text
-              style={[
-                styles.expectedAction,
-                isTransferDisabled && styles.expectedActionDisabled,
-              ]}
-            >
-              정산하기
-            </Text>
+            <Text style={styles.expectedAction}>정산하기</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -191,18 +177,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10 * s,
     paddingVertical: 5 * s,
   },
-  expectedActionBadgeDisabled: {
-    backgroundColor: AppColorStyles.gray4,
-  },
   expectedAction: {
     ...KBODiaGothicTextStyle.medium({
       fontSize: 12 * s,
       lineHeight: 14 * s,
       color: AppColorStyles.black,
     }),
-  },
-  expectedActionDisabled: {
-    color: AppColorStyles.gray2,
   },
   sectionCard: {
     backgroundColor: AppColorStyles.surface,

@@ -1,5 +1,13 @@
 import { axiosClient as axiosInstance } from '@core/network/axiosClient';
 
+interface ApiEnvelope<T> {
+  success?: boolean;
+  data?: T;
+  msg?: string;
+  message?: string;
+  errorCode?: string;
+}
+
 /**
  * 모임방 생성 (ROOM-01)
  * POST /api/v1/rooms
@@ -41,6 +49,53 @@ export const updateAutoTransferAgree = async (roomId: number): Promise<void> => 
  */
 export const updateAutoDebitConsent = async (roomId: number, status: 'AGREED' | 'DECLINED'): Promise<void> => {
   await axiosInstance.patch(`/api/v1/rooms/${roomId}/auto-debit/consents?status=${status}`);
+};
+
+export interface ValidateInviteLinkResponse {
+  valid: boolean;
+  roomId: number;
+  roomName: string;
+  alreadyParticipant: boolean;
+}
+
+/**
+ * 초대 링크 검증 (ROOM-03)
+ * GET /api/v1/rooms/invites/{inviteToken}
+ */
+export const validateInviteLink = async (
+  inviteToken: string,
+): Promise<ValidateInviteLinkResponse> => {
+  const response = await axiosInstance.get<ApiEnvelope<ValidateInviteLinkResponse>>(
+    `/api/v1/rooms/invites/${inviteToken}`,
+  );
+  return (response.data?.data ??
+    {
+      valid: false,
+      roomId: -1,
+      roomName: '',
+      alreadyParticipant: false,
+    }) as ValidateInviteLinkResponse;
+};
+
+export interface JoinRoomByInviteResponse {
+  roomId: number;
+  userId: number;
+  isAdmin: boolean;
+  isAgreed: boolean;
+  joinedAt: string;
+}
+
+/**
+ * 초대 링크 기반 모임 참가 확정 (ROOM-19)
+ * POST /api/v1/rooms/invites/{inviteToken}/join
+ */
+export const joinRoomByInviteToken = async (
+  inviteToken: string,
+): Promise<JoinRoomByInviteResponse> => {
+  const response = await axiosInstance.post<ApiEnvelope<JoinRoomByInviteResponse>>(
+    `/api/v1/rooms/invites/${inviteToken}/join`,
+  );
+  return (response.data?.data ?? {}) as JoinRoomByInviteResponse;
 };
 
 /**
