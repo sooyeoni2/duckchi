@@ -44,6 +44,7 @@ import { PayPasswordConfirmScreen } from './src/features/bank/views/PayPasswordC
 import { PayPasswordInputScreen } from './src/features/bank/views/PayPasswordInputScreen';
 import { PayPasswordSetupScreen } from './src/features/bank/views/PayPasswordSetupScreen';
 import { OnboardingScreen } from './src/features/onboarding/OnboardingScreen';
+import { GlobalToast } from './src/shared/components/GlobalToast';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -422,6 +423,7 @@ function App() {
         onClose={handleForegroundBannerClose}
         onActionPress={handleForegroundBannerActionPress}
       />
+      <GlobalToast />
     </SafeAreaProvider>
   );
 }
