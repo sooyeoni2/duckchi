@@ -124,6 +124,9 @@ class InviteLinkServiceImplTest {
         ValidateInviteLinkResponse result = inviteLinkService.validateInviteLink("valid-token", null);
 
         assertTrue(result.isValid());
+        assertEquals(101L, result.getRoomId());
+        assertEquals("테스트방", result.getRoomName());
+        assertFalse(result.isAlreadyParticipant());
     }
 
     @Test
@@ -150,17 +153,19 @@ class InviteLinkServiceImplTest {
     }
 
     @Test
-    void validateInviteLink_alreadyParticipant_throwsConflict() {
+    void validateInviteLink_alreadyParticipant_returnsFlagTrue() {
         Room room = createRoom(101L);
         InviteLink inviteLink = InviteLink.create(room, "valid-token", LocalDateTime.now().plusDays(1));
 
         when(inviteLinkRepository.findByToken("valid-token")).thenReturn(Optional.of(inviteLink));
         when(roomParticipantRepository.existsByRoom_IdAndUserId(101L, 7L)).thenReturn(true);
 
-        CustomException ex = assertThrows(CustomException.class,
-                () -> inviteLinkService.validateInviteLink("valid-token", 7L));
+        ValidateInviteLinkResponse result = inviteLinkService.validateInviteLink("valid-token", 7L);
 
-        assertEquals(ErrorCode.ROOM_ALREADY_PARTICIPANT, ex.getErrorCode());
+        assertTrue(result.isValid());
+        assertEquals(101L, result.getRoomId());
+        assertEquals("테스트방", result.getRoomName());
+        assertTrue(result.isAlreadyParticipant());
     }
 
     @Test

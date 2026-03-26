@@ -25,7 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class InviteLinkServiceImpl implements InviteLinkService {
 
     private static final int EXPIRE_DAYS = 3;
-    private static final String DEFAULT_INVITE_BASE_URL = "https://app.example.com/invite";
+    private static final String DEFAULT_INVITE_BASE_URL = "duckchi://invite";
     private static final int TOKEN_RETRY_LIMIT = 5;
     private static final int MAX_TOKEN_LENGTH = 64;
 
@@ -90,13 +90,16 @@ public class InviteLinkServiceImpl implements InviteLinkService {
             throw new CustomException(ErrorCode.ROOM_INVALID_INVITE_LINK);
         }
 
-        // 비로그인 사용자의 프리뷰 진입은 허용하되, 로그인 컨텍스트에서는 중복 참여를 사전에 차단한다.
-        if (currentUserId != null
-                && roomParticipantRepository.existsByRoom_IdAndUserId(inviteLink.getRoom().getId(), currentUserId)) {
-            throw new CustomException(ErrorCode.ROOM_ALREADY_PARTICIPANT);
-        }
+        boolean alreadyParticipant = currentUserId != null
+                && roomParticipantRepository.existsByRoom_IdAndUserId(inviteLink.getRoom().getId(), currentUserId);
 
-        return ValidateInviteLinkResponse.of(true);
+        // 이미 참여자인 경우도 링크 자체는 유효하므로 예외 대신 플래그로 내려 FE가 즉시 방 진입을 결정하게 한다.
+        return ValidateInviteLinkResponse.of(
+                true,
+                inviteLink.getRoom().getId(),
+                inviteLink.getRoom().getName(),
+                alreadyParticipant
+        );
     }
 
 
