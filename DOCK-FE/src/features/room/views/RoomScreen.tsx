@@ -102,7 +102,6 @@ export function RoomScreen() {
     }
 
     setSelectedRoomTab(requestedInitialTab);
-    setRoomTabHistory([]);
 
     if (requestedInitialTab !== 'PAYMENT') {
       setPaymentLayoutState(defaultPaymentContentLayoutState);
