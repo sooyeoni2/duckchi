@@ -26,11 +26,11 @@ export function SettlementCard({ item, onPressTransfer }: SettlementCardProps) {
   const disabled = isCompleted;
 
   return (
-    <View style={styles.cardContainer}>
+    <View style={[styles.cardContainer, isCompleted && styles.completedCardContainer]}>
       <Text style={styles.timeLabel}>{item.timeLabel}</Text>
       <Text style={[styles.timeText, { color: toneColor[item.tone] }]}>{item.timeText}</Text>
 
-      <View style={styles.innerCard}>
+      <View style={[styles.innerCard, isCompleted && styles.completedInnerCard]}>
         <View style={styles.metaSection}>
           <Text style={[styles.storeName, isCompleted && styles.completedMainText]}>{item.storeName}</Text>
           <Text style={[styles.requesterName, isCompleted && styles.completedSubText]}>{item.requesterName} 요청</Text>
@@ -70,6 +70,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: AppColorStyles.divider,
   },
+  completedCardContainer: {
+    backgroundColor: '#FAFAFA',
+  },
   timeLabel: {
     marginLeft: 16 * s,
     ...KBODiaGothicTextStyle.medium({ fontSize: 13 * s, color: AppColorStyles.textHint, lineHeight: 13 * s }),
@@ -97,6 +100,12 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
+  completedInnerCard: {
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
+    backgroundColor: '#FCFCFC',
+  },
   metaSection: {
     flex: 1,
     marginRight: 10 * s,
@@ -117,10 +126,10 @@ const styles = StyleSheet.create({
     ...KBODiaGothicTextStyle.bold({ fontSize: 22 * s, color: AppColorStyles.black, lineHeight: 22 * s }),
   },
   completedMainText: {
-    color: AppColorStyles.textHint,
+    color: AppColorStyles.gray2,
   },
   completedSubText: {
-    color: AppColorStyles.textHint,
+    color: AppColorStyles.gray3,
   },
   transferButton: {
     paddingHorizontal: 12 * s,

@@ -2,7 +2,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useFonts } from 'expo-font';
 import React, { useEffect } from 'react';
-import { Alert, StatusBar } from 'react-native';
+import { Alert, Linking, StatusBar } from 'react-native';
 import messaging from '@react-native-firebase/messaging';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { loadTokenFromStorage, useAuthStore } from './src/features/auth/models/authStore';
@@ -13,6 +13,7 @@ import { AuthNavigator } from './src/core/navigation/AuthNavigator';
 import { navigationRef } from './src/core/navigation/navigationRef';
 import { RootStackParamList } from './src/core/navigation/types';
 import { OnboardingScreen } from './src/features/onboarding/OnboardingScreen';
+import { validateInviteLink } from './src/features/room/models/roomService';
 
 import { BankAccountSetupScreen } from './src/features/bank/views/BankAccountSetupScreen';
 import { BankAccountVerifyScreen } from './src/features/bank/views/BankAccountVerifyScreen';
@@ -23,11 +24,37 @@ import { PayPasswordInputScreen } from './src/features/bank/views/PayPasswordInp
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
+const parseInviteTokenFromUrl = (url: string): string | null => {
+  const target = url.trim();
+  if (!target) {
+    return null;
+  }
+
+  const directMatch = target.match(/^duckchi:\/\/invite\/([^/?#]+)/i);
+  if (directMatch?.[1]) {
+    return decodeURIComponent(directMatch[1]);
+  }
+
+  const webMatch = target.match(/\/invite\/([^/?#]+)/i);
+  if (webMatch?.[1]) {
+    return decodeURIComponent(webMatch[1]);
+  }
+
+  return null;
+};
+
+const toApiErrorMessage = (error: any, fallback: string): string =>
+  error?.response?.data?.msg ??
+  error?.response?.data?.message ??
+  fallback;
+
 function App() {
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
   const setAuth = useAuthStore((s) => s.setAuth);
   const updateAccessToken = useAuthStore((s) => s.updateAccessToken);
   const [authReady, setAuthReady] = React.useState(false);
+  const [isNavigationReady, setIsNavigationReady] = React.useState(false);
+  const [pendingInviteToken, setPendingInviteToken] = React.useState<string | null>(null);
   const [fontsLoaded, fontError] = useFonts({
     'KBO Dia Gothic Light': require('./src/assets/fonts/KBO Dia Gothic Light.otf'),
     'KBO Dia Gothic Medium': require('./src/assets/fonts/KBO Dia Gothic Medium.otf'),
@@ -74,13 +101,115 @@ function App() {
     return unsubscribe;
   }, []);
 
+  const enqueueInviteTokenFromUrl = React.useCallback((url: string | null) => {
+    if (!url) {
+      return;
+    }
+    const token = parseInviteTokenFromUrl(url);
+    if (token) {
+      setPendingInviteToken(token);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!authReady) {
+      return;
+    }
+
+    let isMounted = true;
+
+    const resolveInitialUrl = async () => {
+      const url = await Linking.getInitialURL();
+      if (!isMounted) {
+        return;
+      }
+      enqueueInviteTokenFromUrl(url);
+    };
+
+    void resolveInitialUrl();
+
+    const subscription = Linking.addEventListener('url', (event) => {
+      enqueueInviteTokenFromUrl(event.url);
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.remove();
+    };
+  }, [authReady, enqueueInviteTokenFromUrl]);
+
+  useEffect(() => {
+    if (!authReady || !isNavigationReady || !pendingInviteToken || !isLoggedIn) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const processInviteEntry = async () => {
+      try {
+        const preview = await validateInviteLink(pendingInviteToken);
+
+        if (cancelled) {
+          return;
+        }
+
+        if (preview.valid !== true || preview.roomId <= 0) {
+          Alert.alert('초대 링크 오류', '유효하지 않은 초대 링크입니다.');
+          return;
+        }
+
+        if (preview.alreadyParticipant) {
+          // 왜: 이미 참여자면 동의 화면을 다시 거치지 않고 바로 모임 상세로 보내는 것이 요구사항에 맞다.
+          navigationRef.navigate('App', {
+            screen: 'Room',
+            params: {
+              screen: 'RoomDetail',
+              params: { roomId: preview.roomId },
+            },
+          });
+          return;
+        }
+
+        navigationRef.navigate('App', {
+          screen: 'Room',
+          params: {
+            screen: 'AutoTransferJoin',
+            params: {
+              roomId: preview.roomId,
+              roomName: preview.roomName,
+              inviteToken: pendingInviteToken,
+            },
+          },
+        });
+      } catch (error: any) {
+        if (cancelled) {
+          return;
+        }
+        Alert.alert(
+          '초대 링크 오류',
+          toApiErrorMessage(error, '초대 링크를 확인할 수 없습니다.'),
+        );
+      } finally {
+        if (!cancelled) {
+          setPendingInviteToken(null);
+        }
+      }
+    };
+
+    void processInviteEntry();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authReady, isLoggedIn, isNavigationReady, pendingInviteToken]);
+
   if (!fontsLoaded && !fontError) return null;
   if (!authReady) return null;
 
   return (
     <SafeAreaProvider>
       <StatusBar barStyle="dark-content" backgroundColor="#F2F3F5" />
-      <NavigationContainer ref={navigationRef}>
+      <NavigationContainer ref={navigationRef} onReady={() => setIsNavigationReady(true)}>
         <Stack.Navigator
           screenOptions={{ headerShown: false, animation: 'none' }}
           initialRouteName="Onboarding"

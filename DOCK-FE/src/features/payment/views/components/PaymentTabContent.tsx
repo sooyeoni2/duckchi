@@ -16,7 +16,12 @@ import {
   defaultPaymentContentLayoutState,
   type PaymentContentLayoutState,
 } from '../../models/paymentContentLayout';
-import { getExpenseDetail } from '../../models/paymentService';
+import {
+  createExpense,
+  getExpenseDetail,
+  getRoomSessionIdForExpenseCreation,
+  requestSettlements,
+} from '../../models/paymentService';
 import type {
   ExpenseInputType,
   MyExpenseDetail,
@@ -74,6 +79,10 @@ function getAccountHistoryIdFromExpenseId(expenseId: number): string {
   return `account-history-${expenseId}`;
 }
 
+function isRoomSessionLookupError(message: string): boolean {
+  return message.includes('ROOM_NOT_FOUND') || message.includes('ROOM-404');
+}
+
 function buildLayoutState(scene: PaymentScene): PaymentContentLayoutState {
   if (scene.kind === 'overview') {
     return defaultPaymentContentLayoutState;
@@ -117,7 +126,6 @@ function buildLayoutState(scene: PaymentScene): PaymentContentLayoutState {
     showRoomActions: false,
   };
 }
-
 export const PaymentTabContent = React.forwardRef<
   PaymentTabContentHandle,
   PaymentTabContentProps
@@ -126,6 +134,8 @@ export const PaymentTabContent = React.forwardRef<
   const [selectedExpenseIds, setSelectedExpenseIds] = React.useState<number[]>([]);
   const [feedbackMessage, setFeedbackMessage] =
     React.useState<FeedbackMessage | null>(null);
+  const [isRequestingSettlements, setIsRequestingSettlements] = React.useState(false);
+  const [isManualSubmitting, setIsManualSubmitting] = React.useState(false);
   const [detailState, setDetailState] = React.useState<PaymentDetailState>({
     status: 'idle',
   });
@@ -135,7 +145,6 @@ export const PaymentTabContent = React.forwardRef<
     state,
     loadExpenses,
     refresh,
-    markExpensesRequested,
     removeExpense,
   } = usePaymentListViewModel(roomId);
   const {
@@ -204,7 +213,7 @@ export const PaymentTabContent = React.forwardRef<
           message:
             error instanceof Error
               ? error.message
-              : '상세 내역을 불러오지 못했습니다.',
+              : '?怨멸쉭 ??곷열???븍뜄???? 筌륁궢六??щ빍??',
         });
       });
 
@@ -516,6 +525,10 @@ export const PaymentTabContent = React.forwardRef<
   ]);
 
   const handleManualSubmit = React.useCallback(() => {
+    if (isManualSubmitting) {
+      return;
+    }
+
     if (manualState.status !== 'loaded') {
       return;
     }
@@ -533,14 +546,79 @@ export const PaymentTabContent = React.forwardRef<
       return;
     }
 
-    showFeedback(
-      '장바구니 담기 완료',
-      `${manualState.draft.title} 항목을 직접 입력 정산으로 담았습니다.`,
+    const selectedParticipants = manualState.draft.participants.filter(
+      (participant) => participant.isSelected,
     );
+
+    const roomSessionIdFromList =
+      state.status === 'loaded'
+        ? state.expenses.find(
+            (expense) => expense.roomSessionId != null && expense.roomSessionId > 0,
+          )?.roomSessionId ?? null
+        : null;
+
+    void (async () => {
+      setIsManualSubmitting(true);
+      try {
+        // roomId와 roomSessionId는 다를 수 있으므로 세션 ID를 우선 탐색한다.
+        let roomSessionId =
+          manualState.draft.roomSessionId > 0
+            ? manualState.draft.roomSessionId
+            : roomSessionIdFromList;
+
+        if (roomSessionId == null || roomSessionId <= 0) {
+          roomSessionId = await getRoomSessionIdForExpenseCreation(roomId);
+        }
+
+        if (roomSessionId == null || roomSessionId <= 0) {
+          // 일부 환경은 roomId와 roomSessionId를 동일 값으로 운용하므로 최종 fallback을 둔다.
+          roomSessionId = roomId;
+        }
+
+        await createExpense(roomId, {
+          roomSessionId,
+          inputType: 'MANUAL',
+          title: manualState.draft.title.trim(),
+          totalAmount: manualState.draft.totalAmount,
+          paidAt: new Date().toISOString(),
+          participants: selectedParticipants.map((participant) => ({
+            userId: participant.userId,
+            splitAmount: participant.splitAmount,
+          })),
+        });
+
+        await loadExpenses();
+        setScene({ kind: 'overview' });
+        showFeedback(
+          '정산 요청 추가 완료',
+          `${manualState.draft.title} 항목을 결제 목록에 등록했습니다.`,
+        );
+      } catch (error) {
+        const fallbackMessage = '직접 입력 정산 요청 등록에 실패했습니다.';
+        const errorMessage =
+          error instanceof Error ? error.message : fallbackMessage;
+
+        if (isRoomSessionLookupError(errorMessage)) {
+          showFeedback(
+            '등록 실패',
+            '현재 모임의 활성 회차 정보를 찾지 못했습니다. 회차 시작 상태를 확인한 뒤 다시 시도해 주세요.',
+          );
+          return;
+        }
+
+        showFeedback('등록 실패', errorMessage);
+      } finally {
+        setIsManualSubmitting(false);
+      }
+    })();
   }, [
+    loadExpenses,
+    isManualSubmitting,
     manualSelectedParticipantCount,
     manualSplitAmountTotal,
     manualState,
+    roomId,
+    state,
     showFeedback,
   ]);
 
@@ -603,6 +681,10 @@ export const PaymentTabContent = React.forwardRef<
   }, [detailState, removeExpense, showFeedback]);
 
   const handleRequestPress = React.useCallback(() => {
+    if (isRequestingSettlements) {
+      return;
+    }
+
     if (selectedExpenseIds.length === 0) {
       showFeedback(
         '요청 항목 확인',
@@ -611,13 +693,26 @@ export const PaymentTabContent = React.forwardRef<
       return;
     }
 
-    markExpensesRequested(selectedExpenseIds);
-    setSelectedExpenseIds([]);
-    showFeedback(
-      '정산 요청 완료',
-      `${selectedExpenseIds.length}개의 항목을 요청된 상태로 변경했습니다.`,
-    );
-  }, [markExpensesRequested, selectedExpenseIds, showFeedback]);
+    void (async () => {
+      setIsRequestingSettlements(true);
+      try {
+        await requestSettlements(selectedExpenseIds);
+        await loadExpenses();
+        setSelectedExpenseIds([]);
+        showFeedback(
+          '정산 요청 완료',
+          `${selectedExpenseIds.length}개의 항목을 정산 요청했습니다.`,
+        );
+      } catch (error) {
+        showFeedback(
+          '정산 요청 실패',
+          error instanceof Error ? error.message : '정산 요청 중 오류가 발생했습니다.',
+        );
+      } finally {
+        setIsRequestingSettlements(false);
+      }
+    })();
+  }, [isRequestingSettlements, loadExpenses, selectedExpenseIds, showFeedback]);
 
   const renderLoadingCard = (message: string) => (
     <View style={styles.sceneCenterCard}>
@@ -772,6 +867,7 @@ export const PaymentTabContent = React.forwardRef<
         <PaymentManualEntrySplitView
           state={manualState}
           splitAmountTotal={manualSplitAmountTotal}
+          isSubmitting={isManualSubmitting}
           onRetry={() => {
             void loadManualDraft();
           }}
