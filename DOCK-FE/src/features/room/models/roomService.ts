@@ -51,6 +51,26 @@ export const updateAutoDebitConsent = async (roomId: number, status: 'AGREED' | 
   await axiosInstance.patch(`/api/v1/rooms/${roomId}/auto-debit/consents?status=${status}`);
 };
 
+export interface CreateInviteLinkResponse {
+  roomId: number;
+  inviteLink: string;
+  inviteToken: string;
+  status: string;
+  expiresAt: string;
+  regenerated: boolean;
+}
+
+/**
+ * 초대 링크 생성 (ROOM-02)
+ * POST /api/v1/rooms/invites/{roomId}/link
+ */
+export const createInviteLink = async (roomId: number): Promise<CreateInviteLinkResponse> => {
+  const response = await axiosInstance.post<ApiEnvelope<CreateInviteLinkResponse>>(
+    `/api/v1/rooms/invites/${roomId}/link`,
+  );
+  return (response.data?.data ?? {}) as CreateInviteLinkResponse;
+};
+
 export interface ValidateInviteLinkResponse {
   valid: boolean;
   roomId: number;

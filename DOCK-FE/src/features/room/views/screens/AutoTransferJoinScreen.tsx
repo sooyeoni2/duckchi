@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Clipboard } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -10,7 +10,6 @@ import { CustomAppBar } from '@shared/components/app_bar/CustomAppBar';
 import { FilledButton } from '@shared/components/buttons/FilledButton';
 import { useAutoTransferJoinViewModel } from '../../viewmodels/useAutoTransferJoinViewModel';
 import { MeetingRoomLinkSheet } from '../../components/MeetingRoomLinkSheet';
-import { getMeetingRoomInviteLinkMock } from '../../models/roomMockData';
 import type { RoomStackParamList } from '@core/navigation/types';
 
 type AutoTransferJoinScreenRouteProp = RouteProp<RoomStackParamList, 'AutoTransferJoin'>;
@@ -23,11 +22,9 @@ const AutoTransferJoinScreen: React.FC = () => {
   const roomName = route.params?.roomName || '모임방';
   const inviteToken = route.params?.inviteToken;
 
-  const { state, setRoomInfo, validateInviteBeforeJoin, agreeAndJoin, skipAndJoin } = useAutoTransferJoinViewModel(roomId);
+  const { state, setRoomInfo, validateInviteBeforeJoin, agreeAndJoin, skipAndJoin, fetchInviteLink } = useAutoTransferJoinViewModel(roomId);
   const [sheetVisible, setSheetVisible] = useState(false);
   const [isInviteValidating, setIsInviteValidating] = useState(Boolean(inviteToken));
-  
-  const inviteLink = getMeetingRoomInviteLinkMock(roomId);
 
   useEffect(() => {
     setRoomInfo(roomName);
@@ -52,19 +49,19 @@ const AutoTransferJoinScreen: React.FC = () => {
       if (result === 'already-participant') {
         // 왜: 이미 참여한 사용자는 동의 페이지를 다시 거치지 않고 즉시 모임 상세로 보내야 UX가 끊기지 않는다.
         Alert.alert('안내', '이미 참여 중인 모임입니다.');
-        navigation.replace('RoomDetail', { roomId });
+        (navigation as any).replace('RoomDetail', { roomId });
         return;
       }
 
       if (result === 'invalid') {
-        navigation.replace('RoomList');
+        (navigation as any).replace('RoomList');
         return;
       }
 
       setIsInviteValidating(false);
     };
 
-    void validateInvite();
+    validateInvite();
 
     return () => {
       isMounted = false;
@@ -79,6 +76,7 @@ const AutoTransferJoinScreen: React.FC = () => {
       return;
     }
     if (result === 'consent-only') {
+      await fetchInviteLink();
       setSheetVisible(true);
     }
   };
@@ -91,17 +89,19 @@ const AutoTransferJoinScreen: React.FC = () => {
       return;
     }
     if (result === 'consent-only') {
+      await fetchInviteLink();
       setSheetVisible(true);
     }
   };
 
   const handleCopyLink = () => {
+    Clipboard.setString(state.inviteLink);
     Alert.alert('초대 링크', '링크가 복사되었습니다.');
   };
 
   const handleCloseSheet = () => {
     setSheetVisible(false);
-    navigation.navigate('RoomList');
+    (navigation as any).navigate('RoomList');
   };
 
   return (
@@ -157,7 +157,7 @@ const AutoTransferJoinScreen: React.FC = () => {
 
       <MeetingRoomLinkSheet
         visible={sheetVisible}
-        inviteLink={inviteLink}
+        inviteLink={state.inviteLink}
         onCopyLink={handleCopyLink}
         onLater={handleCloseSheet}
       />
@@ -180,7 +180,7 @@ const styles = StyleSheet.create({
     color: AppColorStyles.black,
     marginBottom: 24,
     textAlign: 'center',
-  },
+  } as any,
   mainCard: {
     padding: 24,
     backgroundColor: AppColorStyles.surface,
@@ -198,21 +198,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF8E1',
     borderRadius: 20,
     marginBottom: 12,
-  },
+  } as any,
   roomNameLabel: {
     ...KBODiaGothicTextStyle.bold({ fontSize: 24 }),
     color: AppColorStyles.black,
     marginBottom: 6,
-  },
+  } as any,
   creatorLabel: {
     ...KBODiaGothicTextStyle.medium({ fontSize: 14 }),
     color: AppColorStyles.textSecondary,
-  },
+  } as any,
   validationNotice: {
     ...KBODiaGothicTextStyle.medium({ fontSize: 12 }),
     color: AppColorStyles.gray1,
     marginTop: 8,
-  },
+  } as any,
   grayCard: {
     backgroundColor: '#F5F5F5',
     padding: 24,
@@ -223,11 +223,11 @@ const styles = StyleSheet.create({
     ...KBODiaGothicTextStyle.bold({ fontSize: 18 }),
     color: AppColorStyles.black,
     marginBottom: 12,
-  },
+  } as any,
   bulletItem: {
     ...KBODiaGothicTextStyle.medium({ fontSize: 15, lineHeight: 26 }),
     color: AppColorStyles.textSecondary,
-  },
+  } as any,
   limitCard: {
     padding: 24,
     backgroundColor: AppColorStyles.surface,
@@ -241,11 +241,11 @@ const styles = StyleSheet.create({
   limitLabel: {
     ...KBODiaGothicTextStyle.medium({ fontSize: 15 }),
     color: AppColorStyles.black,
-  },
+  } as any,
   limitAmount: {
     ...KBODiaGothicTextStyle.bold({ fontSize: 20 }),
     color: AppColorStyles.black,
-  },
+  } as any,
   bottomContainer: {
     paddingVertical: 12,
     paddingHorizontal: 20,
@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
     ...KBODiaGothicTextStyle.medium({ fontSize: 16 }),
     color: AppColorStyles.textSecondary,
     textDecorationLine: 'underline',
-  },
+  } as any,
 });
 
 export default AutoTransferJoinScreen;

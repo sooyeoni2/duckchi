@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { create } from 'zustand';
 import { RoomActionType } from '../views/components/RoomActionConfirmBottomSheet';
-import { getAutoDebitConsent } from '../models/roomService';
+import { getAutoDebitConsent, createInviteLink } from '../models/roomService';
 import { useRoomStore } from '../models/roomStore';
 
 export interface RoomDetailState {
@@ -17,6 +17,7 @@ export interface RoomDetailState {
 interface RoomMoreOptionsState {
   roomInfo: RoomDetailState;
   isInviteModalVisible: boolean;
+  inviteLink: string;
   activeActionType: RoomActionType | null;
   isActionModalVisible: boolean;
 }
@@ -37,6 +38,7 @@ const initialState: RoomMoreOptionsState = {
     totalPay: 0,
   },
   isInviteModalVisible: false,
+  inviteLink: '',
   activeActionType: null,
   isActionModalVisible: false,
 };
@@ -52,11 +54,12 @@ export const useRoomMoreOptionsViewModel = (roomId: number) => {
   const fetchRoomInfo = useCallback(async () => {
     if (!roomId) return;
     try {
-      const currentRoomInfo = useRoomMoreOptionsStore.getState().state.roomInfo;
-      updateState({ roomInfo: { ...currentRoomInfo, isLoading: true } });
+      const { state: currentState } = useRoomMoreOptionsStore.getState();
+      updateState({ roomInfo: { ...currentState.roomInfo, isLoading: true } });
       const consentRes = await getAutoDebitConsent(roomId);
       
-      const currentRooms = (useRoomStore as any).getState().rooms;
+      const currentStore = useRoomStore.getState() as any;
+      const currentRooms = currentStore.rooms;
       const currentRoomFromStore = (currentRooms as any[]).find((r: any) => r.roomId === roomId);
 
       updateState({
@@ -72,14 +75,20 @@ export const useRoomMoreOptionsViewModel = (roomId: number) => {
       });
     } catch (e) {
       console.error('Failed to fetch room info in more options', e);
-      const currentRoomInfo = useRoomMoreOptionsStore.getState().state.roomInfo;
-      updateState({ roomInfo: { ...currentRoomInfo, isLoading: false } });
+      const { state: currentState } = useRoomMoreOptionsStore.getState();
+      updateState({ roomInfo: { ...currentState.roomInfo, isLoading: false } });
     }
   }, [roomId, updateState]);
 
-  const openInviteModal = useCallback(() => {
-    updateState({ isInviteModalVisible: true });
-  }, [updateState]);
+  const openInviteModal = useCallback(async () => {
+    try {
+      const response = await createInviteLink(roomId);
+      updateState({ inviteLink: response.inviteLink, isInviteModalVisible: true });
+    } catch (e) {
+      console.error('Failed to fetch invite link in more options', e);
+      // Fallback or alert? The user specified real API, so we should try to get it.
+    }
+  }, [roomId, updateState]);
 
   const closeInviteModal = useCallback(() => {
     updateState({ isInviteModalVisible: false });
