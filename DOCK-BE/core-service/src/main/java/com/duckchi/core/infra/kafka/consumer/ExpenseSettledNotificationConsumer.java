@@ -45,7 +45,7 @@ public class ExpenseSettledNotificationConsumer {
 
             for (UserFcmToken token : tokens) {
                 try {
-                    notificationMessageService.sendExpenseSettledMessage(token.getFcmToken(), event.getExpenseTitle());
+                    notificationMessageService.sendExpenseSettledMessage(token.getFcmToken(), event);
                 } catch (Exception e) {
                     log.error("알림 발송 실패. userId={}, expenseId={}",
                             token.getUserId(), event.getExpenseId(), e);

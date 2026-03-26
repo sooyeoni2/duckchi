@@ -1,5 +1,6 @@
 package com.duckchi.core.domain.notification.service;
 
+import com.duckchi.core.domain.notification.dto.event.ExpenseSettledNotificationEvent;
 import com.duckchi.core.domain.notification.dto.event.SettlementRequestNotificationEvent;
 import com.duckchi.core.global.error.CustomException;
 import com.duckchi.core.global.error.ErrorCode;
@@ -69,6 +70,8 @@ public class NotificationMessageServiceImpl implements NotificationMessageServic
         //넣을 데이터 조립
         Map<String,String> data = new HashMap<>();
         data.put("isAgreed","true"); //자동이체 동의 여부
+        data.put("type","SETTLEMENT_REQUEST");// type(프론트 분기용)
+        data.put("roomId",String.valueOf(event.getRoomId()));//roomId(프론트 라우팅용)
         data.put("settlementIds",settlementIdsJson); //settlementId 목록
 
         //항목명 꺼내오기
@@ -97,7 +100,11 @@ public class NotificationMessageServiceImpl implements NotificationMessageServic
     //정산 요청 알림 - 자동이체 미동의자
     @Override
     public void sendSettlementRequestOneclickMessage(String token, SettlementRequestNotificationEvent event) {
-
+        //넣을 데이터 조립
+        Map<String,String> data = new HashMap<>();
+        data.put("isAgreed","false"); //자동이체 동의 여부
+        data.put("type","SETTLEMENT_REQUEST");// type(프론트 분기용)
+        data.put("roomId",String.valueOf(event.getRoomId()));//roomId(프론트 라우팅용)
         //항목명 꺼내오기
         String expenseThumbNails = event.getSettlements().values().stream()
                 .findFirst()
@@ -115,7 +122,7 @@ public class NotificationMessageServiceImpl implements NotificationMessageServic
                         .setTitle(event.getRoomName()+"에서의 "+SETTLEMENT_REQUEST_TITLE)
                         .setBody(expenseThumbNails+"에 대한 정산을 완료해주세요."+event.getTotalAmount())
                         .build())
-                        .putData("isAgreed","false") //자동이체 동의 여부
+                .putAllData(data)
                 .build();
 
         send(message, token, "정산 요청 알림 - 자동이체 미동의자");
@@ -123,13 +130,17 @@ public class NotificationMessageServiceImpl implements NotificationMessageServic
 
     //정산 완료 알림
     @Override
-    public void sendExpenseSettledMessage(String token, String expenseTitle) {
+    public void sendExpenseSettledMessage(String token, ExpenseSettledNotificationEvent event) {
         Message message = Message.builder()
                 .setToken(token)
                 .setNotification(Notification.builder()
                         .setTitle(EXPENSE_SETTLED_TITLE)
-                        .setBody(expenseTitle + " 에 대한 정산이 완료되었어요.")
+                        .setBody(event.getExpenseTitle() + " 에 대한 정산이 완료되었어요.")
                         .build())
+                .putData("expenseId",String.valueOf(event.getExpenseId()))
+                .putData("type","SETTLEMENT_COMPLETED")
+                .putData("roomId",String.valueOf(event.getRoomId()))
+                .putData("payerUserId",String.valueOf(event.getPayerUserId()))
                 .build();
 
         send(message, token, "정산 완료 알림");
@@ -137,26 +148,32 @@ public class NotificationMessageServiceImpl implements NotificationMessageServic
 
     //모임방 시작 알림
     @Override
-    public void sendRoomStartedMessage(String token, String roomName) {
+    public void sendRoomStartedMessage(String token, String roomName, Long roomId) {
         Message message = Message.builder()
                 .setToken(token)
                 .setNotification(Notification.builder()
                         .setTitle(ROOM_STARTED_TITLE)
                         .setBody(roomName + " 모임이 시작되었어요.")
                         .build())
+                .putData("roomId",String.valueOf(roomId))
+                .putData("type","ROOM_LIFECYCLE")
+                .putData("eventType","ROOM_STARTED")
                 .build();
 
         send(message, token, "모임 시작 알림");
     }
     //모임방 종료 알림
     @Override
-    public void sendRoomEndedMessage(String token, String roomName) {
+    public void sendRoomEndedMessage(String token, String roomName,Long roomId) {
         Message message = Message.builder()
                 .setToken(token)
                 .setNotification(Notification.builder()
                         .setTitle(ROOM_ENDED_TITLE)
                         .setBody(roomName + " 모임이 종료되었어요.")
                         .build())
+                .putData("roomId",String.valueOf(roomId))
+                .putData("type","ROOM_LIFECYCLE")
+                .putData("eventType","ROOM_ENDED")
                 .build();
 
         send(message, token, "모임 종료 알림");

@@ -214,6 +214,7 @@ public class SettlementTransferExecutor {
         ExpenseSettledNotificationEvent event = ExpenseSettledNotificationEvent.builder()
                 .expenseId(expense.getId())
                 .expenseTitle(expense.getTitle())
+                .roomId(expense.getRoomId())
                 .payerUserId(expense.getPayerUserId())
                 .occurredAt(LocalDateTime.now())
                 .build();
