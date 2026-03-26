@@ -3,7 +3,6 @@ package com.duckchi.pay.domain.expense.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
@@ -11,12 +10,10 @@ import static org.mockito.Mockito.when;
 
 import com.duckchi.pay.domain.expense.dto.external.UserFinanceProfileResponse;
 import com.duckchi.pay.domain.expense.dto.external.UserProfileSnapshotResponse;
-import com.duckchi.pay.domain.expense.dto.request.AccountHistoryRequest;
 import com.duckchi.pay.domain.expense.dto.request.ExpenseUpsertRequest;
 import com.duckchi.pay.domain.expense.dto.response.AccountHistoryResponse;
 import com.duckchi.pay.domain.expense.dto.response.ExpenseDetailResponse;
 import com.duckchi.pay.domain.expense.dto.response.ExpenseParticipantOptionResponse;
-import com.duckchi.pay.domain.expense.dto.response.ExpenseResponse;
 import com.duckchi.pay.domain.expense.entity.Expense;
 import com.duckchi.pay.domain.expense.mapper.ExpenseMapper;
 import com.duckchi.pay.domain.expense.repository.ExpenseRepository;
@@ -32,7 +29,6 @@ import com.duckchi.pay.infra.client.CoreClient;
 import com.duckchi.pay.infra.finance.FinanceClient;
 import com.duckchi.pay.infra.finance.dto.response.TransactionHistoryResponse;
 import jakarta.persistence.EntityManager;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,7 +39,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.cache.CacheManager;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
@@ -77,9 +72,6 @@ class ExpenseServiceTest {
     private ExpenseMapper expenseMapper;
 
     @Mock
-    private CacheManager cacheManager;
-
-    @Mock
     private EntityManager entityManager;
 
     @BeforeEach
@@ -92,8 +84,7 @@ class ExpenseServiceTest {
     @DisplayName("코어 서비스 금융 프로필 기준으로 계좌 내역을 조회함")
     void getAccountHistorySuccess() {
         TransactionHistoryResponse.TransactionDetail detail = new TransactionHistoryResponse.TransactionDetail(
-                "1", "20260312", "143000", "D", "withdrawal", "987-654-321", "50000", "100000", "덕치정육식당", ""
-        );
+                "1", "20260312", "143000", "2", "출금", "987-654-321", "50000", "100000", "덕치정육식당", "덕치정육식당");
         TransactionHistoryResponse.TransactionResultBody body = new TransactionHistoryResponse.TransactionResultBody(
                 "1", List.of(detail)
         );
@@ -109,11 +100,7 @@ class ExpenseServiceTest {
         );
         when(financeClient.fetchTransactionHistory(any())).thenReturn(mockResponse);
 
-        AccountHistoryRequest request = AccountHistoryRequest.builder()
-                .accountNo("1234567890123456")
-                .build();
-
-        List<AccountHistoryResponse> result = expenseService.getAccountHistory(TEST_USER_ID, request);
+        List<AccountHistoryResponse> result = expenseService.getAccountHistory(TEST_USER_ID);
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getTransactionMemo()).isEqualTo("덕치정육식당");

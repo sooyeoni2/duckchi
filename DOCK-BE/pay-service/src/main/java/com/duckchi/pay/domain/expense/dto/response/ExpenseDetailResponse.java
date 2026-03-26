@@ -40,6 +40,9 @@ public class ExpenseDetailResponse {
     @Schema(description = "입력 방식", example = "ACCOUNT_HISTORY", allowableValues = {"MANUAL", "ACCOUNT_HISTORY", "OCR"})
     private String inputType;
 
+    @Schema(description = "결제안 상태", example = "PENDING", allowableValues = {"PENDING", "REQUESTED", "SETTLED"})
+    private String status;
+
     @Schema(description = "전체 참여자 분담 요약 목록")
     private List<ParticipantDetail> participants;
 

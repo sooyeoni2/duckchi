@@ -40,6 +40,7 @@ public class ExpenseMapper {
                 .payerUserName(expense.getPayerUserName())
                 .payerUserId(expense.getPayerUserId())
                 .inputType(expense.getInputType())
+                .status(expense.getStatus())
                 .participants(expense.getParticipants().stream()
                         .map(participant -> ExpenseDetailResponse.ParticipantDetail.builder()
                                 .userId(participant.getUserId())

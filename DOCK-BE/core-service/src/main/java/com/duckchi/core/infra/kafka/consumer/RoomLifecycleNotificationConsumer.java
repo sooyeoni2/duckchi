@@ -61,12 +61,12 @@ public class RoomLifecycleNotificationConsumer {
 
     private void sendByEventType(RoomLifecycleNotificationEvent event, String token) {
         if (ROOM_STARTED.equals(event.getEventType())) {
-            notificationMessageService.sendRoomStartedMessage(token, event.getRoomName());
+            notificationMessageService.sendRoomStartedMessage(token, event.getRoomName(),event.getRoomId());
             return;
         }
 
         if (ROOM_ENDED.equals(event.getEventType())) {
-            notificationMessageService.sendRoomEndedMessage(token, event.getRoomName());
+            notificationMessageService.sendRoomEndedMessage(token, event.getRoomName(),event.getRoomId());
             return;
         }
 

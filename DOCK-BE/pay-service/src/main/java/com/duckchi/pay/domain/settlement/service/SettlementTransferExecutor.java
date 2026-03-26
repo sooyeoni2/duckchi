@@ -35,6 +35,7 @@ public class SettlementTransferExecutor {
 
     private static final String FINANCE_TRANSFER_API = "updateDemandDepositAccountTransfer";
     private static final String FINANCE_SUCCESS_CODE = "H0000";
+    private static final String FINANCE_INSUFFICIENT_BALANCE_CODE = "A1014";
     private static final String SETTLEMENT_PENDING_STATUS = "PENDING";
 
     private final SettlementRepository settlementRepository;
@@ -148,12 +149,19 @@ public class SettlementTransferExecutor {
         }
 
         FinanceResponseHeader header = response.header();
-        if (!FINANCE_SUCCESS_CODE.equals(header.getResponseCode())) {
-            String message = StringUtils.hasText(header.getResponseMessage())
-                    ? header.getResponseMessage()
-                    : ErrorCode.FINANCE_API_ERROR.getMsg();
-            throw new CustomException(message, ErrorCode.FINANCE_API_ERROR);
+        if (FINANCE_SUCCESS_CODE.equals(header.getResponseCode())) {
+            return;
         }
+
+        // SSAFY A1014는 사용자가 즉시 조치 가능한 잔액 부족 상황이므로 일반 외부 장애와 분리해 전달한다.
+        if (FINANCE_INSUFFICIENT_BALANCE_CODE.equals(header.getResponseCode())) {
+            throw new CustomException(ErrorCode.SETTLEMENT_INSUFFICIENT_BALANCE);
+        }
+
+        String message = StringUtils.hasText(header.getResponseMessage())
+                ? header.getResponseMessage()
+                : ErrorCode.FINANCE_API_ERROR.getMsg();
+        throw new CustomException(message, ErrorCode.FINANCE_API_ERROR);
     }
 
     /**
@@ -215,6 +223,7 @@ public class SettlementTransferExecutor {
         ExpenseSettledNotificationEvent event = ExpenseSettledNotificationEvent.builder()
                 .expenseId(expense.getId())
                 .expenseTitle(expense.getTitle())
+                .roomId(expense.getRoomId())
                 .payerUserId(expense.getPayerUserId())
                 .occurredAt(LocalDateTime.now())
                 .build();

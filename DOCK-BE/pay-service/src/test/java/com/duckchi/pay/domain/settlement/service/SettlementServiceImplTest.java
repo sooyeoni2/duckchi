@@ -112,6 +112,15 @@ class SettlementServiceImplTest {
         when(settlementRepository.existsByExpenseIdIn(List.of(200L))).thenReturn(false);
         when(expenseParticipantRepository.findByExpense_IdInForUpdate(List.of(200L))).thenReturn(List.of(requester, payer));
         when(roomRepository.findAllById(any())).thenReturn(List.of(room));
+        org.mockito.Mockito.doAnswer(invocation -> {
+                    List<Settlement> entities = invocation.getArgument(0);
+                    for (int i = 0; i < entities.size(); i++) {
+                        ReflectionTestUtils.setField(entities.get(i), "id", (long) (i + 1));
+                    }
+                    return entities;
+                })
+                .when(settlementRepository)
+                .saveAll(any());
 
         settlementService.requestSettlements(1L, new SettlementRequestCreateRequest(List.of(200L)));
 
@@ -323,6 +332,51 @@ class SettlementServiceImplTest {
 
         assertEquals(ErrorCode.SETTLEMENT_TRANSFER_PARTIAL, ex.getErrorCode());
         assertEquals(List.of(20L), ex.getData());
+    }
+
+    @Test
+    void transferSettlements_whenIncludesInsufficientBalanceFailure_throwsInsufficientBalanceFirst() {
+        Settlement settlement10 = createSettlement(10L, 1L, "PENDING");
+        Settlement settlement20 = createSettlement(20L, 1L, "PENDING");
+        Settlement settlement30 = createSettlement(30L, 1L, "PENDING");
+
+        when(settlementRepository.findAllByIdIn(List.of(30L, 10L, 20L)))
+                .thenReturn(List.of(settlement10, settlement20, settlement30));
+        org.mockito.Mockito.doAnswer(invocation -> {
+                    Long settlementId = invocation.getArgument(1, Long.class);
+                    if (Long.valueOf(20L).equals(settlementId)) {
+                        throw new CustomException(ErrorCode.SETTLEMENT_INSUFFICIENT_BALANCE);
+                    }
+                    if (Long.valueOf(30L).equals(settlementId)) {
+                        throw new CustomException(ErrorCode.FINANCE_API_ERROR);
+                    }
+                    return null;
+                })
+                .when(settlementTransferExecutor)
+                .transferOne(eq(1L), org.mockito.ArgumentMatchers.anyLong());
+
+        CustomException ex = assertThrows(CustomException.class,
+                () -> settlementService.transferSettlements(1L, new SettlementTransferRequest(List.of(30L, 10L, 20L))));
+
+        assertEquals(ErrorCode.SETTLEMENT_INSUFFICIENT_BALANCE, ex.getErrorCode());
+        assertEquals(List.of(20L, 30L), ex.getData());
+    }
+
+    @Test
+    void transferSettlements_whenAllFailuresAreInsufficientBalance_throwsInsufficientBalance() {
+        Settlement settlement10 = createSettlement(10L, 1L, "PENDING");
+        Settlement settlement20 = createSettlement(20L, 1L, "PENDING");
+
+        when(settlementRepository.findAllByIdIn(List.of(10L, 20L))).thenReturn(List.of(settlement10, settlement20));
+        org.mockito.Mockito.doThrow(new CustomException(ErrorCode.SETTLEMENT_INSUFFICIENT_BALANCE))
+                .when(settlementTransferExecutor)
+                .transferOne(eq(1L), org.mockito.ArgumentMatchers.anyLong());
+
+        CustomException ex = assertThrows(CustomException.class,
+                () -> settlementService.transferSettlements(1L, new SettlementTransferRequest(List.of(10L, 20L))));
+
+        assertEquals(ErrorCode.SETTLEMENT_INSUFFICIENT_BALANCE, ex.getErrorCode());
+        assertEquals(List.of(10L, 20L), ex.getData());
     }
 
     @Test
