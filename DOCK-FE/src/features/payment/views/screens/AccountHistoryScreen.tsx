@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { usePaymentAccountHistoryViewModel } from '../../viewmodels/usePaymentAccountHistoryViewModel';
-import { AccountHistoryItem } from '../../models/paymentTypes';
+import { AccountHistoryItem } from '../../models/types/paymentTypes';
 
 /**
  * 🏦 계좌 거래 내역 선택 화면

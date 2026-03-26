@@ -43,6 +43,9 @@ export const ENDPOINTS = {
       `/api/v1/rooms/${roomId}/auto-debit/consents`,
   },
   insight: {
+    monthlyCategories: '/api/v1/analytics/monthly/categories',
+    monthlySummary: '/api/v1/analytics/monthly/summary',
+    monthlyRoomsRanking: '/api/v1/analytics/monthly/rooms-ranking',
     trends: '/api/v1/analytics/trends',
   },
 };

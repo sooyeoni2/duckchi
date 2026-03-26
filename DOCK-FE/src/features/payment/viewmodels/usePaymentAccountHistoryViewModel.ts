@@ -2,12 +2,12 @@ import React from 'react';
 import {
   getAccountHistories,
   getAccountHistoryEntryDraft,
-} from '../models/paymentService';
+} from '../models/services/paymentService';
 import type {
   AccountHistoryEntryDraft,
   AccountHistoryItem,
   ManualEntryParticipant,
-} from '../models/paymentTypes';
+} from '../models/types/paymentTypes';
 
 export type PaymentAccountHistoryState =
   | { status: 'idle' }
@@ -118,13 +118,13 @@ export function usePaymentAccountHistoryViewModel(roomId: number) {
         }
 
         setDraftState({
+          ...draft,
           status: 'editing',
           historyId,
-          ...draft,
           title: history.transactionMemo,
           totalAmount: history.amount,
           transactionMemo: history.transactionMemo,
-          transactionAt: history.transactionAt,
+          transactionAt: history.transactionAt ?? '',
         });
       } catch (error) {
         setDraftState({
@@ -149,10 +149,16 @@ export function usePaymentAccountHistoryViewModel(roomId: number) {
         p.userId === userId ? { ...p, isSelected: !p.isSelected } : p,
       );
 
-      return distributeEqually({
+      const nextDraft = distributeEqually({
         ...prev,
         participants: nextParticipants,
       });
+
+      return {
+        ...nextDraft,
+        status: 'editing',
+        historyId: prev.historyId,
+      };
     });
   };
 
@@ -172,7 +178,12 @@ export function usePaymentAccountHistoryViewModel(roomId: number) {
   const splitEqually = () => {
     setDraftState((prev) => {
       if (prev.status !== 'editing') return prev;
-      return distributeEqually(prev);
+      const nextDraft = distributeEqually(prev);
+      return {
+        ...nextDraft,
+        status: 'editing',
+        historyId: prev.historyId,
+      };
     });
   };
 

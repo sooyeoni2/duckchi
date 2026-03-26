@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useAuthStore } from '@features/auth/models/authStore';
-import { createExpense, analyzeReceipt, fetchExpenseParticipantsApi } from '../../models/paymentService';
+import { createExpense, analyzeReceipt, fetchExpenseParticipantsApi } from '../../models/services/paymentService';
 import { usePaymentCalculation } from '../../viewmodels/hooks/usePaymentCalculation';
 import AmountInput from '../components/common/AmountInput';
 import MemberSelector from '../components/common/MemberSelector';
@@ -62,7 +62,7 @@ const PaymentRegistrationScreen = () => {
       
       // 초기 진입 시 결제자(본인)는 기본 선택
       if (user) {
-        const me = members.find(m => m.userId === user.userId);
+        const me = members.find((m: any) => m.userId === user.userId);
         if (me) {
           updateParticipantsList([{
             userId: me.userId,
