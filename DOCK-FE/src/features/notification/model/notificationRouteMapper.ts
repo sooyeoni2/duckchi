@@ -1,5 +1,3 @@
-// 파싱된 알림을 어떤 화면으로 보낼지 결정 
-
 import type {
   AppNotification,
   NotificationAction,
@@ -55,6 +53,31 @@ const getPaymentListDestination = (
   },
 });
 
+const getSettlementTransferActionDestination = (
+  roomId: number,
+  settlementIds: number[],
+): NotificationNavigationTarget => ({
+  kind: 'room',
+  rootScreen: 'App',
+  tabScreen: 'Room',
+  nestedScreen: 'SettlementTransferAction',
+  params: {
+    roomId,
+    settlementIds,
+  },
+});
+
+const getSettlementRequestDestination = (
+  roomId: number,
+  isAgreed: boolean,
+): NotificationNavigationTarget => {
+  if (isAgreed) {
+    return getSettlementRequestListDestination(roomId);
+  }
+
+  return getTransferDestination(roomId);
+};
+
 const getRoomPaymentDestination = (
   roomId: number,
 ): NotificationNavigationTarget => ({
@@ -86,11 +109,12 @@ const getHomeDestination = (): NotificationNavigationTarget => ({
   tabScreen: 'Home',
 });
 
-// 알림 타입을 현재 앱 라우트 구조에 맞는 이동 정보로 변환한다.
 export const mapNotificationToRoute = (
   notification: AppNotification,
 ): NotificationNavigationTarget | null => {
   switch (notification.type) {
+    case 'SETTLEMENT_REQUEST':
+      return getSettlementRequestDestination(notification.roomId, notification.isAgreed);
     case 'SETTLEMENT_REQUEST_REMINDER':
       if (notification.targetScreen === 'AUTO_TRANSFER_AGREE') {
         return getAutoTransferAgreeDestination(notification.roomId);
@@ -112,21 +136,46 @@ export const mapNotificationToRoute = (
   }
 };
 
-// foreground 얼럿에서는 알림 타입에 따라 바로 실행 가능한 버튼 목록을 내려준다.
 export const getNotificationActions = (
   notification: AppNotification,
 ): NotificationAction[] => {
   switch (notification.type) {
+    case 'SETTLEMENT_REQUEST':
+      if (notification.isAgreed && (notification.settlementIds?.length ?? 0) > 0) {
+        return [
+          {
+            id: 'ACCEPT_AUTO_TRANSFER',
+            label: '수락',
+            target: getSettlementTransferActionDestination(
+              notification.roomId,
+              notification.settlementIds ?? [],
+            ),
+          },
+          {
+            id: 'VIEW_SETTLEMENT_DETAILS',
+            label: '내역',
+            target: getTransferDestination(notification.roomId),
+          },
+        ];
+      }
+
+      return [
+        {
+          id: 'OPEN_DEFAULT_DESTINATION',
+          label: '열기',
+          target: getSettlementRequestDestination(notification.roomId, notification.isAgreed),
+        },
+      ];
     case 'SETTLEMENT_REQUEST_AUTO_TRANSFER':
       return [
         {
           id: 'ACCEPT_AUTO_TRANSFER',
-          label: '수락',
+          label: '승인',
           target: getSettlementRequestListDestination(notification.roomId),
         },
         {
           id: 'VIEW_SETTLEMENT_DETAILS',
-          label: '내역',
+          label: '상세보기',
           target: getTransferDestination(notification.roomId),
         },
       ];
@@ -134,7 +183,7 @@ export const getNotificationActions = (
       return [
         {
           id: 'OPEN_DEFAULT_DESTINATION',
-          label: '이동',
+          label: '열기',
           target: mapNotificationToRoute(notification) ?? getTransferDestination(notification.roomId),
         },
       ];
@@ -142,7 +191,7 @@ export const getNotificationActions = (
       return [
         {
           id: 'OPEN_DEFAULT_DESTINATION',
-          label: '이동',
+          label: '열기',
           target: getTransferDestination(notification.roomId),
         },
       ];
@@ -150,7 +199,7 @@ export const getNotificationActions = (
       return [
         {
           id: 'OPEN_ROOM_DETAIL',
-          label: '?ëº¤ì”¤',
+          label: '정산내역 보기',
           target: getRoomPaymentDestination(notification.roomId),
         },
       ];
@@ -158,7 +207,7 @@ export const getNotificationActions = (
       return [
         {
           id: 'OPEN_ROOM_DETAIL',
-          label: '확인',
+          label: '모임 보기',
           target: getRoomDetailDestination(notification.roomId),
         },
       ];
@@ -166,7 +215,7 @@ export const getNotificationActions = (
       return [
         {
           id: 'OPEN_DEFAULT_DESTINATION',
-          label: '확인',
+          label: '모임 보기',
           target: getHomeDestination(),
         },
       ];

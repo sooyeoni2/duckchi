@@ -1,6 +1,5 @@
 package com.duckchi.core.infra.kafka.consumer;
 
-import com.duckchi.core.domain.notification.dto.event.RoomLifecycleNotificationEvent;
 import com.duckchi.core.domain.notification.dto.event.SettlementRequestNotificationEvent;
 import com.duckchi.core.domain.notification.entity.UserFcmToken;
 import com.duckchi.core.domain.notification.repository.UserFcmTokenRepository;
@@ -29,14 +28,12 @@ public class SettlementRequestNotificationConsumer {
     )
     public void consume(String payload, Acknowledgment ack){
         SettlementRequestNotificationEvent event = deserialize(payload);
-        log.info("정산 요청 이벤트 수신 . receiverId={}",
+        log.info("정산 요청 이벤트 수신. receiverId={}",
                 event.getReceiverId());
 
         try {
-            //알림 보낼 기기 토큰 추출(receiverId로)
             List<UserFcmToken> tokens = userFcmTokenRepository
                     .findAllByUserIdAndIsActiveTrueAndNotificationEnabledTrue(event.getReceiverId());
-
 
             for (UserFcmToken token : tokens) {
                 try {
@@ -54,15 +51,13 @@ public class SettlementRequestNotificationConsumer {
         }
     }
 
-    //자동이체 동의 여부에 따라 보내기
     private void sendByIsAgreed(SettlementRequestNotificationEvent event, String token){
-        if(event.isAgreed()) { //자동이체 동의 시
+        if(event.isAgreed()) {
             notificationMessageService.sendSettlementRequestAutoMessage(token,event);
             return;
         }
-        //자동이체 미동의시
+
         notificationMessageService.sendSettlementRequestOneclickMessage(token,event);
-        return;
     }
 
     private SettlementRequestNotificationEvent deserialize(String payload) {
@@ -73,3 +68,4 @@ public class SettlementRequestNotificationConsumer {
         }
     }
 }
+

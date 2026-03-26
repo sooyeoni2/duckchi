@@ -67,13 +67,6 @@ public class NotificationMessageServiceImpl implements NotificationMessageServic
         } catch (JsonProcessingException e) {
             throw new IllegalArgumentException("settlements에서 Id를 추출하는데 실패했습니다.", e);
         }
-        //넣을 데이터 조립
-        Map<String,String> data = new HashMap<>();
-        data.put("isAgreed","true"); //자동이체 동의 여부
-        data.put("type","SETTLEMENT_REQUEST");// type(프론트 분기용)
-        data.put("roomId",String.valueOf(event.getRoomId()));//roomId(프론트 라우팅용)
-        data.put("settlementIds",settlementIdsJson); //settlementId 목록
-
         //항목명 꺼내오기
         String expenseThumbNails = event.getSettlements().values().stream()
                 .findFirst()
@@ -84,13 +77,18 @@ public class NotificationMessageServiceImpl implements NotificationMessageServic
                             : firstTitle;
                 })
                 .orElse("0건");
+        //넣을 데이터 조립
+        Map<String,String> data = new HashMap<>();
+        data.put("isAgreed","true"); //자동이체 동의 여부
+        data.put("type","SETTLEMENT_REQUEST");// type(프론트 분기용)
+        data.put("roomId",String.valueOf(event.getRoomId()));//roomId(프론트 라우팅용)
+        data.put("settlementIds",settlementIdsJson); //settlementId 목록
+        data.put("title",event.getRequesterUserName()+"님이 보낸 "+SETTLEMENT_REQUEST_TITLE);
+        data.put("body",expenseThumbNails+"에 대한 정산을 완료해주세요. : "+event.getTotalAmount()+"원");
+
 
         Message message = Message.builder()
                 .setToken(token)
-                .setNotification(Notification.builder()
-                        .setTitle(event.getRoomName()+"에서의 "+SETTLEMENT_REQUEST_TITLE)
-                        .setBody(expenseThumbNails+"에 대한 정산을 완료해주세요."+event.getTotalAmount())
-                        .build())
                 .putAllData(data)
                 .build();
 
@@ -100,11 +98,7 @@ public class NotificationMessageServiceImpl implements NotificationMessageServic
     //정산 요청 알림 - 자동이체 미동의자
     @Override
     public void sendSettlementRequestOneclickMessage(String token, SettlementRequestNotificationEvent event) {
-        //넣을 데이터 조립
-        Map<String,String> data = new HashMap<>();
-        data.put("isAgreed","false"); //자동이체 동의 여부
-        data.put("type","SETTLEMENT_REQUEST");// type(프론트 분기용)
-        data.put("roomId",String.valueOf(event.getRoomId()));//roomId(프론트 라우팅용)
+
         //항목명 꺼내오기
         String expenseThumbNails = event.getSettlements().values().stream()
                 .findFirst()
@@ -116,12 +110,16 @@ public class NotificationMessageServiceImpl implements NotificationMessageServic
                 })
                 .orElse("0건");
 
+        //넣을 데이터 조립
+        Map<String,String> data = new HashMap<>();
+        data.put("isAgreed","false"); //자동이체 동의 여부
+        data.put("type","SETTLEMENT_REQUEST");// type(프론트 분기용)
+        data.put("roomId",String.valueOf(event.getRoomId()));//roomId(프론트 라우팅용)
+        data.put("title",event.getRequesterUserName()+"님이 보낸 "+SETTLEMENT_REQUEST_TITLE);
+        data.put("body",expenseThumbNails+"에 대한 정산을 완료해주세요. : "+event.getTotalAmount()+"원");
+
         Message message = Message.builder()
                 .setToken(token)
-                .setNotification(Notification.builder()
-                        .setTitle(event.getRoomName()+"에서의 "+SETTLEMENT_REQUEST_TITLE)
-                        .setBody(expenseThumbNails+"에 대한 정산을 완료해주세요."+event.getTotalAmount())
-                        .build())
                 .putAllData(data)
                 .build();
 
