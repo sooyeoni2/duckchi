@@ -119,9 +119,9 @@ export const getExpenseDetail = async (
  * 계좌 거래 내역 조회 서비스 (PAY-01)
  * --------------------------------------------------------------------------
  */
-export const getAccountHistories = async (accountNo?: string): Promise<AccountHistoryItem[]> => {
+export const getAccountHistories = async (): Promise<AccountHistoryItem[]> => {
   try {
-    const dtos = await fetchAccountHistoriesApi(accountNo);
+    const dtos = await fetchAccountHistoriesApi();
     return dtos.map((dto, index) => toAccountHistoryItem(dto, index));
   } catch (error) {
     throw new Error(getPaymentErrorMessage(error, '계좌 내역을 불러오지 못했습니다.'));

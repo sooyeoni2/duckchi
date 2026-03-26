@@ -9,7 +9,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { useAccountHistoryViewModel } from '../../viewmodels/useAccountHistoryViewModel';
+import { usePaymentAccountHistoryViewModel } from '../../viewmodels/usePaymentAccountHistoryViewModel';
 import { AccountHistoryItem } from '../../models/paymentTypes';
 
 /**
@@ -20,7 +20,7 @@ const AccountHistoryScreen = () => {
   const route = useRoute<any>();
   const { roomId, roomSessionId } = route.params;
 
-  const { isLoading, histories, error, refresh } = useAccountHistoryViewModel();
+  const { historyState, refresh } = usePaymentAccountHistoryViewModel(roomId);
 
   /**
    * ✅ 거래 내역 항목 선택 시 등록 화면으로 이동
@@ -33,7 +33,7 @@ const AccountHistoryScreen = () => {
       initialData: {
         title: item.transactionMemo,
         totalAmount: item.amount,
-        paidAt: item.date.toISOString(),
+        paidAt: item.transactionAt, // 원본 날짜 문자열 사용
       },
     });
   }, [navigation, roomId, roomSessionId]);
@@ -55,6 +55,10 @@ const AccountHistoryScreen = () => {
       </Text>
     </TouchableOpacity>
   );
+
+  const isLoading = historyState.status === 'loading';
+  const histories = historyState.status === 'loaded' ? historyState.histories : [];
+  const error = historyState.status === 'error' ? historyState.message : null;
 
   if (isLoading && histories.length === 0) {
     return (
@@ -93,7 +97,9 @@ const AccountHistoryScreen = () => {
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>조회된 거래 내역이 없습니다.</Text>
+            <Text style={styles.emptyText}>
+              {historyState.status === 'empty' ? '조회된 거래 내역이 없습니다.' : ''}
+            </Text>
           </View>
         }
       />

@@ -42,8 +42,8 @@ async function validateAndUnwrap<T extends z.ZodTypeAny>(
  * PAY-01: 계좌 거래 내역 조회
  * --------------------------------------------------------------------------
  */
-export async function fetchAccountHistoriesApi(accountNo?: string) {
-  const response = await axiosClient.post(ENDPOINTS.payment.accountHistory, { accountNo });
+export async function fetchAccountHistoriesApi() {
+  const response = await axiosClient.get(ENDPOINTS.payment.accountHistory);
   return validateAndUnwrap(response, z.array(accountHistorySchema));
 }
 
@@ -62,7 +62,7 @@ export async function fetchOcrAnalysisApi(imageUrl: string) {
  * 🛠 [임시 테스트용] 실제 방 연결 전까지 roomId를 1로 고정
  */
 function getEffectiveRoomId(roomId: number | string): number {
-  return 1; // 어떤 방을 누르든 1번 방으로 고정
+  return 1; // 어떤 방을 누르든 백엔드에는 1번 방으로 요청
 }
 
 /**

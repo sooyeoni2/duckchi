@@ -9,7 +9,7 @@ import {
   SafeAreaView,
   Alert,
 } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { usePaymentListViewModel } from '../../viewmodels/usePaymentListViewModel';
 import { MyExpenseItem } from '../../models/paymentTypes';
@@ -31,6 +31,13 @@ const PaymentListScreen = () => {
   const isLoading = state.status === 'loading';
   const expenses = filteredExpenses;
   const refresh = loadExpenses;
+
+  // 🔄 화면이 다시 보일 때마다 목록 갱신 (등록/수정/삭제 반영)
+  useFocusEffect(
+    useCallback(() => {
+      loadExpenses();
+    }, [loadExpenses])
+  );
 
   /**
    * 📸 영수증 스캔 진입
@@ -76,7 +83,10 @@ const PaymentListScreen = () => {
     return (
       <TouchableOpacity
         activeOpacity={0.8}
-        onPress={() => {/* TODO: 상세 페이지 이동 */}}
+        onPress={() => navigation.navigate('PaymentExpenseDetail', { 
+          roomId, 
+          expenseId: item.expenseId 
+        })}
       >
         <ExpenseHistoryCard expense={item} />
       </TouchableOpacity>

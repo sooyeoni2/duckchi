@@ -9,9 +9,6 @@ import type {
   ManualEntryParticipant,
 } from '../models/paymentTypes';
 
-/**
- * 계좌 내역 flow의 조회 상태.
- */
 export type PaymentAccountHistoryState =
   | { status: 'idle' }
   | { status: 'loading' }
@@ -19,34 +16,24 @@ export type PaymentAccountHistoryState =
   | { status: 'empty' }
   | { status: 'error'; message: string };
 
-/**
- * 계좌 내역 기반 정산 초안 상태.
- */
 export type PaymentAccountHistoryDraftState =
   | { status: 'idle' }
   | { status: 'loading'; historyId: string }
-  | { status: 'loaded'; draft: AccountHistoryEntryDraft }
-  | { status: 'error'; historyId: string; message: string };
+  | { status: 'editing'; historyId: string } & AccountHistoryEntryDraft
+  | { status: 'error'; message: string };
 
-const parseAmount = (text: string): number => {
-  const digitsOnly = text.replace(/[^0-9]/g, '');
-  return digitsOnly.length > 0 ? Number(digitsOnly) : 0;
-};
-
-const distributeAmountEvenly = (
+/**
+ * 1/N 계산 유틸리티 (수동 입력 ViewModel과 로직 공유 가능하도록 설계)
+ */
+export const distributeEqually = (
   draft: AccountHistoryEntryDraft,
 ): AccountHistoryEntryDraft => {
-  const selectedParticipants = draft.participants.filter(
-    (p: ManualEntryParticipant) => p.isSelected,
-  );
+  const selectedParticipants = draft.participants.filter((p) => p.isSelected);
 
   if (selectedParticipants.length === 0) {
     return {
       ...draft,
-      participants: draft.participants.map((p: ManualEntryParticipant) => ({
-        ...p,
-        splitAmount: 0,
-      })),
+      participants: draft.participants.map((p) => ({ ...p, splitAmount: 0 })),
     };
   }
 
@@ -90,8 +77,7 @@ export function usePaymentAccountHistoryViewModel(roomId: number) {
     setHistoryState({ status: 'loading' });
 
     try {
-      // API 호출 시 roomId는 string이어야 하므로 변환 (API 명세 준수)
-      const histories = await getAccountHistories(roomId.toString());
+      const histories = await getAccountHistories();
 
       if (histories.length === 0) {
         setHistoryState({ status: 'empty' });
@@ -111,150 +97,103 @@ export function usePaymentAccountHistoryViewModel(roomId: number) {
             : '계좌 내역을 불러오지 못했습니다.',
       });
     }
-  }, [roomId]);
+  }, []);
+
+  React.useEffect(() => {
+    loadHistories();
+  }, [loadHistories]);
 
   const openDraft = React.useCallback(
     async (historyId: string) => {
       setDraftState({ status: 'loading', historyId });
 
       try {
-        const draft = await getAccountHistoryEntryDraft(roomId.toString());
-        // historyId를 draft에 강제 주입 (View 레이어 호환성)
-        const enrichedDraft = { ...draft, historyId };
-        
+        const draft = await getAccountHistoryEntryDraft(roomId);
+        const history = (
+          historyState.status === 'loaded' ? historyState.histories : []
+        ).find((h) => h.historyId === historyId);
+
+        if (!history) {
+          throw new Error('거래 내역을 찾을 수 없습니다.');
+        }
+
         setDraftState({
-          status: 'loaded',
-          draft: enrichedDraft,
+          status: 'editing',
+          historyId,
+          ...draft,
+          title: history.transactionMemo,
+          totalAmount: history.amount,
+          transactionMemo: history.transactionMemo,
+          transactionAt: history.transactionAt,
         });
       } catch (error) {
         setDraftState({
           status: 'error',
-          historyId,
           message:
-            error instanceof Error
-              ? error.message
-              : '정산 등록 폼을 불러오지 못했습니다.',
+            error instanceof Error ? error.message : '초안 생성에 실패했습니다.',
         });
       }
     },
-    [roomId],
+    [historyState, roomId],
   );
 
-  const updateTitle = React.useCallback((title: string) => {
-    setDraftState((previousState) => {
-      if (previousState.status !== 'loaded') {
-        return previousState;
-      }
+  const selectHistory = (historyId: string) => {
+    openDraft(historyId);
+  };
 
-      return {
-        status: 'loaded',
-        draft: {
-          ...previousState.draft,
-          title,
-        },
-      };
-    });
-  }, []);
+  const toggleParticipant = (userId: number) => {
+    setDraftState((prev) => {
+      if (prev.status !== 'editing') return prev;
 
-  const toggleParticipant = React.useCallback((userId: number) => {
-    setDraftState((previousState) => {
-      if (previousState.status !== 'loaded') {
-        return previousState;
-      }
+      const nextParticipants = prev.participants.map((p) =>
+        p.userId === userId ? { ...p, isSelected: !p.isSelected } : p,
+      );
 
-      return {
-        status: 'loaded',
-        draft: {
-          ...previousState.draft,
-          participants: previousState.draft.participants.map((p: ManualEntryParticipant) =>
-            p.userId === userId
-              ? {
-                  ...p,
-                  isSelected: !p.isSelected,
-                  splitAmount: p.isSelected ? 0 : p.splitAmount,
-                }
-              : p,
-          ),
-        },
-      };
-    });
-  }, []);
-
-  const prepareSplitStep = React.useCallback(() => {
-    if (draftState.status !== 'loaded') {
-      return false;
-    }
-
-    if (
-      draftState.draft.title.trim().length === 0 ||
-      draftState.draft.totalAmount <= 0 ||
-      draftState.draft.participants.every((p: ManualEntryParticipant) => !p.isSelected)
-    ) {
-      return false;
-    }
-
-    setDraftState({
-      status: 'loaded',
-      draft: distributeAmountEvenly(draftState.draft),
-    });
-
-    return true;
-  }, [draftState]);
-
-  const updateParticipantSplitAmount = React.useCallback(
-    (userId: number, text: string) => {
-      setDraftState((previousState) => {
-        if (previousState.status !== 'loaded') {
-          return previousState;
-        }
-
-        return {
-          status: 'loaded',
-          draft: {
-            ...previousState.draft,
-            participants: previousState.draft.participants.map((p: ManualEntryParticipant) =>
-              p.userId === userId
-                ? {
-                    ...p,
-                    splitAmount: parseAmount(text),
-                  }
-                : p,
-            ),
-          },
-        };
+      return distributeEqually({
+        ...prev,
+        participants: nextParticipants,
       });
-    },
-    [],
-  );
+    });
+  };
 
-  const resetDraft = React.useCallback(() => {
+  const updateAmount = (userId: number, amount: number) => {
+    setDraftState((prev) => {
+      if (prev.status !== 'editing') return prev;
+
+      return {
+        ...prev,
+        participants: prev.participants.map((p) =>
+          p.userId === userId ? { ...p, splitAmount: amount } : p,
+        ),
+      };
+    });
+  };
+
+  const splitEqually = () => {
+    setDraftState((prev) => {
+      if (prev.status !== 'editing') return prev;
+      return distributeEqually(prev);
+    });
+  };
+
+  const resetDraft = () => {
     setDraftState({ status: 'idle' });
-  }, []);
-
-  const selectedParticipants =
-    draftState.status === 'loaded'
-      ? draftState.draft.participants.filter((p: ManualEntryParticipant) => p.isSelected)
-      : [];
-
-  const selectedParticipantCount = selectedParticipants.length;
-  const splitAmountTotal = selectedParticipants.reduce(
-    (sum: number, p: ManualEntryParticipant) => sum + p.splitAmount,
-    0,
-  );
+  };
 
   return {
     historyState,
     draftState,
     loadHistories,
-    refreshHistories: loadHistories,
-    openDraft,
-    updateTitle,
+    refresh: () => loadHistories(),
+    refreshHistories: () => loadHistories(),
+    selectHistory,
     toggleParticipant,
-    prepareSplitStep,
-    updateParticipantSplitAmount,
+    updateAmount,
+    splitEqually,
     resetDraft,
-    selectedParticipants,
-    selectedParticipantCount,
-    splitAmountTotal,
+    updateTitle: (title: string) =>
+      setDraftState((prev) =>
+        prev.status === 'editing' ? { ...prev, title } : prev,
+      ),
   };
 }

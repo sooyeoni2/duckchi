@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   StyleSheet,
   View,
@@ -39,13 +39,18 @@ const PaymentRegistrationScreen = () => {
     setTotalAmount,
     participants,
     difference,
-    isReadyToSubmit,
+    isReadyToSubmit: isCalculationReady,
     splitEqually,
     updateParticipantAmount,
     updateParticipantsList,
   } = usePaymentCalculation({
     payerId: user?.userId || 0,
   });
+
+  // 📝 전체 제출 준비 완료 여부 (계산 완료 + 제목 입력)
+  const isReadyToSubmit = useMemo(() => {
+    return isCalculationReady && title.trim().length > 0;
+  }, [isCalculationReady, title]);
 
   /**
    * 👥 정산 가능 멤버 목록 로드
@@ -154,10 +159,13 @@ const PaymentRegistrationScreen = () => {
   const handleSubmit = async () => {
     if (!isReadyToSubmit) return;
 
+    // 🛠 테스트용: roomSessionId가 없으면 1로 기본값 부여
+    const effectiveSessionId = roomSessionId || 1;
+
     setIsLoading(true);
     try {
       await createExpense(roomId, {
-        roomSessionId,
+        roomSessionId: effectiveSessionId,
         inputType,
         title,
         totalAmount,
@@ -172,7 +180,9 @@ const PaymentRegistrationScreen = () => {
       Alert.alert('성공', '결제안이 등록되었습니다.');
       navigation.goBack();
     } catch (error) {
-      Alert.alert('등록 실패', error instanceof Error ? error.message : '오류가 발생했습니다.');
+      const msg = error instanceof Error ? error.message : '등록 중 알 수 없는 오류가 발생했습니다.';
+      Alert.alert('등록 실패', msg);
+      console.error('[Expense Registration Failed]:', error);
     } finally {
       setIsLoading(false);
     }
