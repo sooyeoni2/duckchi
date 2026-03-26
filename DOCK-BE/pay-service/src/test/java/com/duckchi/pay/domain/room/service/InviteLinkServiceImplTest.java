@@ -57,6 +57,7 @@ class InviteLinkServiceImplTest {
         CreateInviteLinkResponse result = inviteLinkService.createInviteLink(101L, 7L);
 
         assertEquals("active-token", result.getInviteToken());
+        assertTrue(result.getInviteLink().startsWith("https://j14c102.p.ssafy.io/invite/"));
         assertEquals("ACTIVE", result.getStatus());
         assertFalse(result.isRegenerated());
         verify(inviteLinkRepository, never()).save(any(InviteLink.class));
@@ -78,8 +79,27 @@ class InviteLinkServiceImplTest {
         assertTrue(result.isRegenerated());
         assertEquals("ACTIVE", result.getStatus());
         assertNotEquals("expired-token", result.getInviteToken());
+        assertTrue(result.getInviteLink().startsWith("https://j14c102.p.ssafy.io/invite/"));
         assertTrue(result.getInviteLink().endsWith(result.getInviteToken()));
         verify(inviteLinkRepository).save(any(InviteLink.class));
+    }
+
+    @Test
+    void createInviteLink_success_usesApiBaseUrlWhenConfigured() {
+        Room room = createRoom(101L);
+        InviteLink activeLink = InviteLink.create(room, "active-token", LocalDateTime.now().plusDays(1));
+
+        ReflectionTestUtils.setField(inviteLinkService, "inviteLinkBaseUrl", "");
+        ReflectionTestUtils.setField(inviteLinkService, "apiBaseUrl", "https://invite.duckchi.com");
+
+        when(roomRepository.findByIdForUpdate(101L)).thenReturn(Optional.of(room));
+        when(roomParticipantRepository.existsByRoom_IdAndUserId(101L, 7L)).thenReturn(true);
+        when(inviteLinkRepository.findTopByRoom_IdOrderByCreatedAtDesc(101L)).thenReturn(Optional.of(activeLink));
+
+        CreateInviteLinkResponse result = inviteLinkService.createInviteLink(101L, 7L);
+
+        assertEquals("active-token", result.getInviteToken());
+        assertTrue(result.getInviteLink().startsWith("https://invite.duckchi.com/invite/"));
     }
 
     @Test
