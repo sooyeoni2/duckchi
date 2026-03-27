@@ -8,24 +8,28 @@ import { MeetingRoomRestartScreen } from './views/MeetingRoomRestartScreen';
 import { RoomListScreen } from './views/RoomListScreen';
 import RoomMoreOptionsScreen from './views/screens/RoomMoreOptionsScreen';
 import AutoTransferAgreeScreen from './views/screens/AutoTransferAgreeScreen';
+import AutoTransferJoinScreen from './views/screens/AutoTransferJoinScreen';
 import AdminDelegationScreen from './views/screens/AdminDelegationScreen';
 import RoomEditScreen from './views/screens/RoomEditScreen';
 import { SettlementRequestListScreen } from './views/screens/SettlementRequestListScreen';
+import SettlementTransferActionScreen from './views/screens/SettlementTransferActionScreen';
 
 const Stack = createNativeStackNavigator<RoomStackParamList>();
 
 export function RoomNavigator() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false, animation: 'none' }}>
-      <Stack.Screen name="RoomList" component={RoomListScreen} options={{ animation: 'none' }} />
+    <Stack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
+      <Stack.Screen name="RoomList" component={RoomListScreen} />
       <Stack.Screen name="RoomDetail" component={RoomScreen} />
       <Stack.Screen name="RoomCreate" component={MeetingRoomCreateScreen} />
       <Stack.Screen name="RoomRestart" component={MeetingRoomRestartScreen} />
       <Stack.Screen name="RoomMoreOptions" component={RoomMoreOptionsScreen} options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="AutoTransferAgree" component={AutoTransferAgreeScreen} options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="AutoTransferJoin" component={AutoTransferJoinScreen} options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="AdminDelegation" component={AdminDelegationScreen} options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="RoomEdit" component={RoomEditScreen} options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="SettlementRequestList" component={SettlementRequestListScreen} options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="SettlementTransferAction" component={SettlementTransferActionScreen} options={{ animation: 'slide_from_right' }} />
     </Stack.Navigator>
   );
 }

@@ -1,5 +1,5 @@
 import * as ImagePicker from 'expo-image-picker';
-import type { OcrImageSource } from './paymentTypes';
+import type { OcrImageSource } from './types/paymentTypes';
 
 export interface PickedReceiptImage {
   uri: string;
@@ -37,12 +37,12 @@ export async function pickReceiptImage(
     source === 'CAMERA'
       ? await ImagePicker.launchCameraAsync({
           mediaTypes: ImagePicker.MediaTypeOptions.Images,
-          allowsEditing: true,
+          allowsEditing: false,
           quality: 0.8,
         })
       : await ImagePicker.launchImageLibraryAsync({
           mediaTypes: ImagePicker.MediaTypeOptions.Images,
-          allowsEditing: true,
+          allowsEditing: false,
           quality: 0.8,
           selectionLimit: 1,
         });

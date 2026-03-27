@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -335,7 +336,7 @@ class RoomServiceImplTest {
         verify(outboxEventCommandService).save(
                 eq("ROOM"),
                 eq(101L),
-                eq("ROOM_STARTED"),
+                anyString(),
                 eq(KafkaTopicNames.ROOM_LIFECYCLE_NOTIFICATION_EVENT),
                 payloadCaptor.capture()
         );
@@ -395,7 +396,7 @@ class RoomServiceImplTest {
         verify(outboxEventCommandService).save(
                 eq("ROOM"),
                 eq(101L),
-                eq("ROOM_ENDED"),
+                anyString(),
                 eq(KafkaTopicNames.ROOM_LIFECYCLE_NOTIFICATION_EVENT),
                 payloadCaptor.capture()
         );

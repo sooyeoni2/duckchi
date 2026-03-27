@@ -15,7 +15,7 @@ import {
   PretendardTextStyle,
 } from '@core/theme/typography';
 
-import type { RoomSettlementRow } from '../../models/roomDetailMockData';
+import type { RoomSettlementRow } from '../../models/roomSettlementOverviewTypes';
 import { SettlementRowCard } from '../components/SettlementRowCard';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -28,10 +28,12 @@ interface RoomSettlementOverviewScreenProps {
   totalAmount: number;
   participatedPayments: RoomSettlementRow[];
   settlementRequests: RoomSettlementRow[];
+  errorMessage?: string;
   refreshing: boolean;
   onRefresh: () => Promise<void>;
   onOpenTransfer: () => void;
   onOpenSettlementDetail: (expenseId: number) => void;
+  onOpenSettlementRequestList: (item: RoomSettlementRow) => void;
 }
 
 export function RoomSettlementOverviewScreen({
@@ -39,10 +41,12 @@ export function RoomSettlementOverviewScreen({
   totalAmount,
   participatedPayments,
   settlementRequests,
+  errorMessage,
   refreshing,
   onRefresh,
   onOpenTransfer,
   onOpenSettlementDetail,
+  onOpenSettlementRequestList,
 }: RoomSettlementOverviewScreenProps) {
   return (
     <ScrollView
@@ -57,20 +61,27 @@ export function RoomSettlementOverviewScreen({
         />
       )}
     >
-      <TouchableOpacity
-        style={styles.expectedCard}
-        activeOpacity={0.85}
-        onPress={onOpenTransfer}
-      >
+      <View style={styles.expectedCard}>
         <Text style={styles.expectedLabel}>예상 금액</Text>
         <Text style={styles.expectedAmount}>{toWon(expectedAmount)}</Text>
         <View style={styles.expectedBottomRow}>
           <Text style={styles.expectedHint}>금액은 변경할 수 있어요.</Text>
-          <View style={styles.expectedActionBadge}>
+          <TouchableOpacity
+            // 사용자가 누르는 실제 CTA(정산하기)에 직접 이동 핸들러를 연결한다.
+            onPress={onOpenTransfer}
+            activeOpacity={0.85}
+            style={styles.expectedActionBadge}
+          >
             <Text style={styles.expectedAction}>정산하기</Text>
-          </View>
+          </TouchableOpacity>
         </View>
-      </TouchableOpacity>
+      </View>
+
+      {errorMessage != null && (
+        <View style={styles.errorBox}>
+          <Text style={styles.errorText}>{errorMessage}</Text>
+        </View>
+      )}
 
       <View style={[styles.sectionCard, styles.sectionCardSpacing]}>
         <Text style={styles.sectionTitle}>내가 참여한 결제</Text>
@@ -98,7 +109,8 @@ export function RoomSettlementOverviewScreen({
               key={item.id}
               item={item}
               isLast={index === settlementRequests.length - 1}
-              onPress={() => onOpenSettlementDetail(item.id)}
+              // 정산 요청 목록 카드는 클릭한 expense 기준으로 상세 목록을 열어야 한다.
+              onPress={() => onOpenSettlementRequestList(item)}
             />
           ))
         ) : (
@@ -186,6 +198,22 @@ const styles = StyleSheet.create({
   },
   sectionCardSpacing: {
     marginBottom: 8 * s,
+  },
+  errorBox: {
+    marginBottom: 8 * s,
+    borderRadius: 12 * s,
+    borderWidth: 1,
+    borderColor: AppColorStyles.divider,
+    backgroundColor: AppColorStyles.surface,
+    paddingVertical: 10 * s,
+    paddingHorizontal: 12 * s,
+  },
+  errorText: {
+    ...PretendardTextStyle.medium({
+      fontSize: 12 * s,
+      lineHeight: 18 * s,
+      color: AppColorStyles.textSecondary,
+    }),
   },
   sectionCardBottomSpacing: {
     marginBottom: 8 * s,

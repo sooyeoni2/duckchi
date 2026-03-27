@@ -16,8 +16,10 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -25,9 +27,15 @@ import org.springframework.transaction.annotation.Transactional;
 public class InviteLinkServiceImpl implements InviteLinkService {
 
     private static final int EXPIRE_DAYS = 3;
-    private static final String DEFAULT_INVITE_BASE_URL = "https://app.example.com/invite";
+    private static final String DEFAULT_INVITE_HOST_URL = "https://j14c102.p.ssafy.io";
     private static final int TOKEN_RETRY_LIMIT = 5;
     private static final int MAX_TOKEN_LENGTH = 64;
+
+    @Value("${invite.link.base-url:}")
+    private String inviteLinkBaseUrl;
+
+    @Value("${API_BASE_URL:}")
+    private String apiBaseUrl;
 
     private final RoomRepository roomRepository;
     private final RoomParticipantRepository roomParticipantRepository;
@@ -90,13 +98,16 @@ public class InviteLinkServiceImpl implements InviteLinkService {
             throw new CustomException(ErrorCode.ROOM_INVALID_INVITE_LINK);
         }
 
-        // 비로그인 사용자의 프리뷰 진입은 허용하되, 로그인 컨텍스트에서는 중복 참여를 사전에 차단한다.
-        if (currentUserId != null
-                && roomParticipantRepository.existsByRoom_IdAndUserId(inviteLink.getRoom().getId(), currentUserId)) {
-            throw new CustomException(ErrorCode.ROOM_ALREADY_PARTICIPANT);
-        }
+        boolean alreadyParticipant = currentUserId != null
+                && roomParticipantRepository.existsByRoom_IdAndUserId(inviteLink.getRoom().getId(), currentUserId);
 
-        return ValidateInviteLinkResponse.of(true);
+        // 이미 참여자인 경우도 링크 자체는 유효하므로 예외 대신 플래그로 내려 FE가 즉시 방 진입을 결정하게 한다.
+        return ValidateInviteLinkResponse.of(
+                true,
+                inviteLink.getRoom().getId(),
+                inviteLink.getRoom().getName(),
+                alreadyParticipant
+        );
     }
 
 
@@ -155,6 +166,26 @@ public class InviteLinkServiceImpl implements InviteLinkService {
     }
 
     private String buildInviteLink(String token) {
-        return DEFAULT_INVITE_BASE_URL + "/" + token;
+        String baseUrl = resolveInviteBaseUrl();
+        return baseUrl + "/" + token;
+    }
+
+    private String resolveInviteBaseUrl() {
+        if (StringUtils.hasText(inviteLinkBaseUrl)) {
+            // 왜: 운영에서 공유 도메인을 API 도메인과 분리할 수 있도록 명시 설정값을 최우선 사용한다.
+            return removeTrailingSlash(inviteLinkBaseUrl.trim());
+        }
+
+        if (StringUtils.hasText(apiBaseUrl)) {
+            // 왜: 사용자 요청처럼 API_BASE_URL에 정의된 앱 도메인을 재사용해 링크 도메인 불일치를 줄인다.
+            return removeTrailingSlash(apiBaseUrl.trim()) + "/invite";
+        }
+
+        // 왜: 환경변수 누락 시에도 초대 링크가 생성되도록 안전한 기본 운영 도메인을 fallback으로 둔다.
+        return DEFAULT_INVITE_HOST_URL + "/invite";
+    }
+
+    private String removeTrailingSlash(String value) {
+        return value.endsWith("/") ? value.substring(0, value.length() - 1) : value;
     }
 }

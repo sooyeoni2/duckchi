@@ -44,7 +44,7 @@ npx expo run:ios
 ## 기술 스택
 
 | 항목 | 버전 |
-|------|------|
+| :--- | :--- |
 | React Native | 0.81.5 |
 | Expo SDK | 54 |
 | TypeScript | ^5.8.3 |
@@ -85,4 +85,9 @@ src/
 ## 문서
 
 - [폴더 구조](fe_docs/folder.md)
-- [데이터 소스](fe_docs/data_source.md)
+- [네이밍 규칙](fe_docs/naming.md)
+- [Model 설계](fe_docs/model.md)
+- [ViewModel 설계](fe_docs/viewmodel.md)
+- [State 관리](fe_docs/state.md)
+- [Screen 구성](fe_docs/screen.md)
+- [Component 가이드](fe_docs/component.md)

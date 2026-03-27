@@ -1,7 +1,9 @@
+import type { NavigatorScreenParams } from '@react-navigation/native';
+
 export type RootStackParamList = {
   Onboarding: undefined;
   Auth: undefined;
-  App: undefined;
+  App: NavigatorScreenParams<AppTabParamList> | undefined;
   BankAccountSetup: { returnTo: 'App' | 'Settings' | 'NewUser'; lockedBankCode?: string };
   BankAccountVerify: {
     accountId: number;
@@ -26,18 +28,23 @@ export type ProfileStackParamList = {
   Settings: undefined;
   BankAccountRegister: undefined;
   TransferLimit: undefined;
+  TermsView: { type: 'terms' | 'privacy' };
+  PrivacyView: undefined;
 };
 
 export type RoomStackParamList = {
   RoomList: undefined;
-  RoomDetail: { roomId: number; showTransfer?: boolean };
+  RoomDetail: { roomId: number; showTransfer?: boolean; initialTab?: 'PAYMENT' | 'SETTLEMENT' | 'RANKING' };
+  SettlementTransferAction: { roomId: number; settlementIds: number[] };
+  PaymentList: { roomId: number; roomSessionId?: number };
   RoomCreate: undefined;
   RoomRestart: { roomId: number };
   RoomMoreOptions: { roomId: number };
   AutoTransferAgree: { roomId: number };
+  AutoTransferJoin: { roomId: number; roomName?: string; inviteToken?: string };
   AdminDelegation: { roomId: number };
   RoomEdit: { roomId: number };
-  SettlementRequestList: { roomId: number };
+  SettlementRequestList: { roomId: number; expenseId?: number; expenseTitle?: string };
 };
 
 export type AuthStackParamList = {
@@ -52,7 +59,7 @@ export type AuthStackParamList = {
 
 export type AppTabParamList = {
   Home: undefined;
-  Room: { screen: keyof RoomStackParamList } | undefined;
+  Room: NavigatorScreenParams<RoomStackParamList> | undefined;
   Report: undefined;
-  Profile: { screen: keyof ProfileStackParamList } | undefined;
+  Profile: NavigatorScreenParams<ProfileStackParamList> | undefined;
 };

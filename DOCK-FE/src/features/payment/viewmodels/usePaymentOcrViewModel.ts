@@ -3,7 +3,7 @@ import { pickReceiptImage } from '../models/paymentImagePicker';
 import {
   getExistingOcrDraft,
   recognizeReceiptImage,
-} from '../models/paymentOcrService';
+} from '../models/services/paymentOcrService';
 import type {
   OcrAssignMode,
   OcrFailureType,
@@ -12,11 +12,12 @@ import type {
   OcrLineItemDraft,
   OcrReceiptDraft,
   OcrReceiptSummary,
-} from '../models/paymentTypes';
+} from '../models/types/paymentTypes';
 
 export type PaymentOcrState =
   | { status: 'idle' }
   | { status: 'processing' }
+  | { status: 'preview'; imageUri: string; source: OcrImageSource }
   | { status: 'loaded'; draft: OcrReceiptDraft }
   | { status: 'failure'; failureType: OcrFailureType; summary?: OcrReceiptSummary }
   | { status: 'error'; message: string };
@@ -139,19 +140,32 @@ export function usePaymentOcrViewModel(roomId: number) {
     setAssignSheetState({ status: 'closed' });
   }, []);
 
-  const scanReceipt = React.useCallback(
-    async (source: OcrImageSource): Promise<'loaded' | 'failed' | 'cancelled'> => {
+  const pickImage = React.useCallback(
+    async (source: OcrImageSource): Promise<'picked' | 'cancelled'> => {
       try {
         const image = await pickReceiptImage(source);
+        if (image == null) return 'cancelled';
 
-        if (image == null) {
-          return 'cancelled';
-        }
+        setState({ status: 'preview', imageUri: image.uri, source });
+        return 'picked';
+      } catch (error) {
+        setState({
+          status: 'error',
+          message: error instanceof Error ? error.message : '이미지를 불러오지 못했습니다.',
+        });
+        return 'cancelled';
+      }
+    },
+    [],
+  );
 
+  const recognizeImage = React.useCallback(
+    async (imageUri: string, source: OcrImageSource): Promise<'loaded' | 'failed'> => {
+      try {
         setState({ status: 'processing' });
         setAssignSheetState({ status: 'closed' });
 
-        const result = await recognizeReceiptImage(roomId, image.uri, source);
+        const result = await recognizeReceiptImage(roomId, imageUri, source);
 
         if (result.kind === 'SUCCESS') {
           setState({
@@ -178,15 +192,26 @@ export function usePaymentOcrViewModel(roomId: number) {
       } catch (error) {
         setState({
           status: 'error',
-          message:
-            error instanceof Error
-              ? error.message
-              : '영수증 이미지를 불러오지 못했습니다.',
+          message: error instanceof Error ? error.message : '영수증 분석에 실패했습니다.',
         });
         return 'failed';
       }
     },
     [roomId],
+  );
+
+  const scanReceipt = React.useCallback(
+    async (source: OcrImageSource): Promise<'loaded' | 'failed' | 'cancelled'> => {
+      const pickResult = await pickImage(source);
+      if (pickResult === 'cancelled') return 'cancelled';
+      
+      // 구버전 호환용 (바로 인식 시작)
+      const currentImageUri = (state.status === 'preview' ? state.imageUri : null);
+      if (!currentImageUri) return 'cancelled';
+      
+      return recognizeImage(currentImageUri, source);
+    },
+    [pickImage, recognizeImage, state.status],
   );
 
   const loadExistingDraft = React.useCallback(
@@ -654,6 +679,8 @@ export function usePaymentOcrViewModel(roomId: number) {
     assignTargetItem,
     resetState,
     scanReceipt,
+    pickImage,
+    recognizeImage,
     loadExistingDraft,
     fallbackToTotalOnly,
     updateLineItemName,

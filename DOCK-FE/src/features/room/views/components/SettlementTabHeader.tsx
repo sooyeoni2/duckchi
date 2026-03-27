@@ -1,5 +1,13 @@
 import React from 'react';
-import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  Animated,
+  Dimensions,
+  Easing,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 import { AppColorStyles } from '@core/theme/colors';
 import { KBODiaGothicTextStyle } from '@core/theme/typography';
@@ -20,8 +28,43 @@ export function SettlementTabHeader({
   inProgressCount,
   onChangeTab,
 }: SettlementTabHeaderProps) {
+  const [containerWidth, setContainerWidth] = React.useState(0);
+  const indicatorX = React.useRef(new Animated.Value(0)).current;
+  const isIndicatorInitialized = React.useRef(false);
+  const selectedIndex = selectedTab === 'IN_PROGRESS' ? 0 : 1;
+  const indicatorWidth = containerWidth > 0 ? containerWidth / 2 : 0;
+
+  React.useEffect(() => {
+    if (indicatorWidth <= 0) {
+      return;
+    }
+
+    const targetX = selectedIndex * indicatorWidth;
+
+    if (!isIndicatorInitialized.current) {
+      indicatorX.setValue(targetX);
+      isIndicatorInitialized.current = true;
+      return;
+    }
+
+    Animated.timing(indicatorX, {
+      toValue: targetX,
+      duration: 220,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [indicatorWidth, indicatorX, selectedIndex]);
+
   return (
-    <View style={styles.container}>
+    <View
+      style={styles.container}
+      onLayout={(event) => {
+        const { width } = event.nativeEvent.layout;
+        if (width !== containerWidth) {
+          setContainerWidth(width);
+        }
+      }}
+    >
       <TouchableOpacity
         style={styles.tabButton}
         activeOpacity={0.8}
@@ -44,10 +87,13 @@ export function SettlementTabHeader({
 
       <View style={styles.lineTrack} />
 
-      <View
+      <Animated.View
         style={[
           styles.indicator,
-          selectedTab === 'IN_PROGRESS' ? styles.leftIndicator : styles.rightIndicator,
+          {
+            width: indicatorWidth,
+            transform: [{ translateX: indicatorX }],
+          },
         ]}
       />
     </View>
@@ -83,14 +129,7 @@ const styles = StyleSheet.create({
   indicator: {
     position: 'absolute',
     bottom: 0,
-    width: '50%',
     height: 5 * s,
     backgroundColor: AppColorStyles.black,
-  },
-  leftIndicator: {
-    left: 0,
-  },
-  rightIndicator: {
-    left: '50%',
   },
 });

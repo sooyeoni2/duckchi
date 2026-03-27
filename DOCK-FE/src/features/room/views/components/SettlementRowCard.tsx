@@ -11,7 +11,7 @@ import {
 
 import { AppColorStyles } from '@core/theme/colors';
 import { KBODiaGothicTextStyle } from '@core/theme/typography';
-import type { RoomSettlementRow } from '../../models/roomDetailMockData';
+import type { RoomSettlementRow } from '../../models/roomSettlementOverviewTypes';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const s = SCREEN_WIDTH / 412;

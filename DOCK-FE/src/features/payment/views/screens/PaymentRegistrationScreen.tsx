@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   StyleSheet,
   View,
@@ -11,12 +11,14 @@ import {
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useAuthStore } from '@features/auth/models/authStore';
-import { createExpense, analyzeReceipt, fetchExpenseParticipantsApi } from '../../models/paymentService';
+import { createExpense, fetchExpenseParticipantsApi } from '../../models/services/paymentService';
+import { recognizeReceiptImage } from '../../models/services/paymentOcrService';
 import { usePaymentCalculation } from '../../viewmodels/hooks/usePaymentCalculation';
 import AmountInput from '../components/common/AmountInput';
 import MemberSelector from '../components/common/MemberSelector';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { createProfileImageUploadUrl, uploadProfileImageToS3 } from '@features/auth/models/authService';
+import { useToastStore } from '../../../../shared/stores/useToastStore';
 
 /**
  * 📝 결제안 등록 화면 (OCR / 직접 입력 / 계좌 내역 공용)
@@ -39,13 +41,18 @@ const PaymentRegistrationScreen = () => {
     setTotalAmount,
     participants,
     difference,
-    isReadyToSubmit,
+    isReadyToSubmit: isCalculationReady,
     splitEqually,
     updateParticipantAmount,
     updateParticipantsList,
   } = usePaymentCalculation({
     payerId: user?.userId || 0,
   });
+
+  // 📝 전체 제출 준비 완료 여부 (계산 완료 + 제목 입력)
+  const isReadyToSubmit = useMemo(() => {
+    return isCalculationReady && title.trim().length > 0;
+  }, [isCalculationReady, title]);
 
   /**
    * 👥 정산 가능 멤버 목록 로드
@@ -57,7 +64,7 @@ const PaymentRegistrationScreen = () => {
       
       // 초기 진입 시 결제자(본인)는 기본 선택
       if (user) {
-        const me = members.find(m => m.userId === user.userId);
+        const me = members.find((m: any) => m.userId === user.userId);
         if (me) {
           updateParticipantsList([{
             userId: me.userId,
@@ -72,45 +79,31 @@ const PaymentRegistrationScreen = () => {
   }, [roomId, user, updateParticipantsList]);
 
   /**
-   * 🖼 이미지 최적화 및 OCR 분석 (포트폴리오 핵심 흐름)
+   * 🖼 이미지 최적화 및 OCR 분석 (개선된 파이프라인)
    */
   const processOcr = useCallback(async (imageUri: string) => {
     setIsLoading(true);
     try {
-      // 1. 리사이징 (너비 1500px, 화질 80%)
-      const resized = await ImageManipulator.manipulateAsync(
-        imageUri,
-        [{ resize: { width: 1500 } }],
-        { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
-      );
-
-      // 2. S3 업로드 (Presigned URL 획득 -> 업로드)
-      const uploadInfo = await createProfileImageUploadUrl({ 
-        fileName: `receipt_${Date.now()}.jpg`,
-        contentType: 'image/jpeg',
-      });
+      // 신규 OCR 전용 서비스 사용 (Multipart 전송 + 드래프트 생성 자동화)
+      const result = await recognizeReceiptImage(roomId, imageUri, 'LIBRARY');
       
-      await uploadProfileImageToS3(
-        uploadInfo.uploadUrl, 
-        resized.uri,
-        'image/jpeg'
-      );
-      const s3Url = uploadInfo.fileUrl;
-      setReceiptUrl(s3Url);
-
-      // 3. 백엔드 OCR 분석 호출 (URL 방식)
-      const ocrResult = await analyzeReceipt(s3Url);
-      
-      // 4. 결과 자동 대입
-      setTitle(ocrResult.title);
-      setTotalAmount(ocrResult.totalAmount);
-      // TODO: 품목 리스트(items)가 있을 경우 별도 UI 표시 로직 추가 가능
+      if (result.kind === 'SUCCESS') {
+        const { draft } = result;
+        setTitle(draft.storeName);
+        setTotalAmount(draft.totalAmount);
+        setReceiptUrl(draft.imageUri); // 로컬 URI 유지 (지연 업로드 시 S3로 변환됨)
+        
+        useToastStore.getState().showToast('영수증 분석이 완료되었습니다.', 'success');
+      } else {
+        useToastStore.getState().showToast('영수증을 읽을 수 없습니다. 직접 입력해 주세요.', 'warning');
+      }
     } catch (error) {
-      Alert.alert('OCR 분석 실패', error instanceof Error ? error.message : '영수증을 읽을 수 없습니다.');
+      console.error('[OCR Recognition Error]:', error);
+      useToastStore.getState().showToast('OCR 서버 통신 중 오류가 발생했습니다.', 'error');
     } finally {
       setIsLoading(false);
     }
-  }, [setTotalAmount]);
+  }, [roomId, setTotalAmount]);
 
   /**
    * 🔄 멤버 선택/해제 토글 로직
@@ -154,10 +147,13 @@ const PaymentRegistrationScreen = () => {
   const handleSubmit = async () => {
     if (!isReadyToSubmit) return;
 
+    // 🛠 테스트용: roomSessionId가 없으면 1로 기본값 부여
+    const effectiveSessionId = roomSessionId || 1;
+
     setIsLoading(true);
     try {
       await createExpense(roomId, {
-        roomSessionId,
+        roomSessionId: effectiveSessionId,
         inputType,
         title,
         totalAmount,
@@ -169,10 +165,12 @@ const PaymentRegistrationScreen = () => {
         }))
       });
 
-      Alert.alert('성공', '결제안이 등록되었습니다.');
+      useToastStore.getState().showToast('결제 정보가 성공적으로 등록되었습니다.', 'success');
       navigation.goBack();
     } catch (error) {
-      Alert.alert('등록 실패', error instanceof Error ? error.message : '오류가 발생했습니다.');
+      const msg = error instanceof Error ? error.message : '등록 중 알 수 없는 오류가 발생했습니다.';
+      useToastStore.getState().showToast(msg, 'error');
+      console.error('[Expense Registration Failed]:', error);
     } finally {
       setIsLoading(false);
     }

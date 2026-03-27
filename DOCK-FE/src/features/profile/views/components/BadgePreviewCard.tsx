@@ -57,7 +57,7 @@ export function BadgePreviewCard({ badges }: BadgePreviewCardProps) {
           <View key={row} style={styles.row}>
             {displayBadges.slice(row * 3, row * 3 + 3).map((badge) => (
               <BadgeItem
-                key={badge.id}
+                key={badge.code}
                 badge={badge}
               />
             ))}

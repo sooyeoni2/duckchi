@@ -116,9 +116,9 @@ export function SettingsScreen() {
             right={<Text style={styles.versionText}>v1.0.0</Text>}
           />
           <RowDivider />
-          <SettingsRow label="서비스 이용약관" onPress={() => {}} />
+          <SettingsRow label="서비스 이용약관" onPress={() => navigation.navigate('TermsView', { type: 'terms' })} />
           <RowDivider />
-          <SettingsRow label="개인정보 처리방침" onPress={() => {}} />
+          <SettingsRow label="개인정보 처리방침" onPress={() => navigation.navigate('PrivacyView')} />
           <RowDivider />
           <SettingsRow label="오픈소스 라이선스" onPress={() => {}} />
         </View>
