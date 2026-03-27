@@ -18,8 +18,8 @@ const Stack = createNativeStackNavigator<RoomStackParamList>();
 
 export function RoomNavigator() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false, animation: 'none' }}>
-      <Stack.Screen name="RoomList" component={RoomListScreen} options={{ animation: 'none' }} />
+    <Stack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
+      <Stack.Screen name="RoomList" component={RoomListScreen} />
       <Stack.Screen name="RoomDetail" component={RoomScreen} />
       <Stack.Screen name="RoomCreate" component={MeetingRoomCreateScreen} />
       <Stack.Screen name="RoomRestart" component={MeetingRoomRestartScreen} />

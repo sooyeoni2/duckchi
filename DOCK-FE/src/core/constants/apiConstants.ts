@@ -44,6 +44,9 @@ export const ENDPOINTS = {
   },
   settlement: {
     request: '/api/v1/settlements/request',
+    transfer: '/api/v1/settlements/transfer',
+    manualTransfer: '/api/v1/settlements/transfer/manual',
+    pendingSettlements: '/api/v1/settlements/pending-settlements',
   },
   insight: {
     monthlySummary: '/api/v1/analytics/monthly/summary',

@@ -18,6 +18,7 @@ interface RoomSettlementTabScreenProps {
   settlementRequests: RoomSettlementRow[];
   onRefresh: () => Promise<void>;
   onOpenSettlementDetail: (expenseId: number) => void;
+  onOpenSettlementRequestList: (item: RoomSettlementRow) => void;
   onOpenTransfer: () => void;
   onRetrySettlementDetail: (expenseId: number) => void;
 }
@@ -33,6 +34,7 @@ export function RoomSettlementTabScreen({
   settlementRequests,
   onRefresh,
   onOpenSettlementDetail,
+  onOpenSettlementRequestList,
   onOpenTransfer,
   onRetrySettlementDetail,
 }: RoomSettlementTabScreenProps) {
@@ -56,6 +58,7 @@ export function RoomSettlementTabScreen({
       onRefresh={onRefresh}
       onOpenTransfer={onOpenTransfer}
       onOpenSettlementDetail={onOpenSettlementDetail}
+      onOpenSettlementRequestList={onOpenSettlementRequestList}
     />
   );
 }

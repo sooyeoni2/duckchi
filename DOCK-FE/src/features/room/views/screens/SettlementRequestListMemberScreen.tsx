@@ -21,8 +21,12 @@ export function SettlementRequestListMemberScreen({
       isTreasurer={false}
       selectedPendingId={viewModel.selectedPendingId}
       canDirectComplete={false}
+      isLoading={viewModel.isLoading}
+      isDirectCompleting={false}
+      errorMessage={viewModel.errorMessage}
       onBackPress={onBackPress}
       onTogglePendingParticipant={viewModel.togglePendingParticipant}
+      onRetry={viewModel.reload}
     />
   );
 }

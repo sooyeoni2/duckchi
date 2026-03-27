@@ -19,13 +19,58 @@ if (fs.existsSync(envPath)) {
 
 const appJson = require('./app.json');
 
+const getHostFromUrl = rawUrl => {
+  if (!rawUrl) return null;
+  try {
+    return new URL(rawUrl).hostname;
+  } catch {
+    return null;
+  }
+};
+
+const isLocalHost = host =>
+  host === 'localhost' ||
+  host === '127.0.0.1' ||
+  host === '10.0.2.2';
+
+const resolveAppLinkHost = () => {
+  const fromApiBase = getHostFromUrl(process.env.API_BASE_URL);
+  if (fromApiBase && !isLocalHost(fromApiBase)) {
+    // 왜: 공유 링크 도메인을 API_BASE_URL과 맞추면 운영 도메인 변경 시 앱링크 설정도 자동으로 동기화된다.
+    return fromApiBase;
+  }
+
+  return process.env.INVITE_LINK_HOST || 'j14c102.p.ssafy.io';
+};
+
+const appLinkHost = resolveAppLinkHost();
+
 module.exports = {
   expo: {
     ...appJson.expo,
     android: {
       ...appJson.expo.android,
-        usesCleartextTraffic: true,
+      usesCleartextTraffic: true,
       googleServicesFile: './android/app/google-services.json',
+      intentFilters: [
+        {
+          action: 'VIEW',
+          data: [
+            {
+              // 왜: 메신저/브라우저에서 받은 https 초대 링크를 앱으로 직접 라우팅하기 위해 앱링크 필터를 등록한다.
+              scheme: 'https',
+              host: appLinkHost,
+              pathPrefix: '/invite',
+            },
+          ],
+          category: ['BROWSABLE', 'DEFAULT'],
+          autoVerify: true,
+        },
+      ],
+    },
+    ios: {
+      ...appJson.expo.ios,
+      associatedDomains: [`applinks:${appLinkHost}`],
     },
     plugins: [
       '@react-native-firebase/app',
@@ -33,6 +78,7 @@ module.exports = {
     ],
     extra: {
       apiBaseUrl: process.env.API_BASE_URL ?? 'http://10.0.2.2:8080',
+      inviteBaseUrl: process.env.INVITE_LINK_BASE_URL ?? `https://${appLinkHost}/invite`,
       kakaoClientId: process.env.KAKAO_CLIENT_ID,
       kakaoRedirectUri: process.env.KAKAO_REDIRECT_URI,
       eas: {

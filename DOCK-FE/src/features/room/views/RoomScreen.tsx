@@ -4,7 +4,9 @@ import type { RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
 import {
+  Animated,
   Dimensions,
+  Easing,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -27,6 +29,7 @@ import { getExpenseDetail } from '../../payment/models/services/paymentService';
 import { PaymentEntryMethodTabs } from '../../payment/views/components/entry/PaymentEntryMethodTabs';
 import type { PaymentTabContentHandle } from '../../payment/views/components/entry/PaymentTabContent';
 import { meetingRoomMockData } from '../models/roomMockData';
+import type { RoomSettlementRow } from '../models/roomSettlementOverviewTypes';
 import { useRoomStore } from '../models/roomStore';
 import { useRoomSettlementOverviewViewModel } from '../viewmodels/useRoomSettlementOverviewViewModel';
 import { RoomPaymentTabScreen } from './screens/RoomPaymentTabScreen';
@@ -85,9 +88,16 @@ export function RoomScreen() {
   const expectedAmount = settlementOverviewData.expectedAmount;
   const participatedPayments = settlementOverviewData.participatedPayments;
   const settlementRequests = settlementOverviewData.settlementRequests;
-  const selectedRoomTabIndex = ROOM_TABS.findIndex(
+  const selectedRoomTabIndex = Math.max(0, ROOM_TABS.findIndex(
     (tab) => tab.key === selectedRoomTab,
-  );
+  ));
+  const [roomTabContainerWidth, setRoomTabContainerWidth] = useState(0);
+  const roomTabIndicatorX = React.useRef(new Animated.Value(0)).current;
+  const hasInitializedTabIndicator = React.useRef(false);
+  const roomTabIndicatorWidth =
+    roomTabContainerWidth > 0
+      ? roomTabContainerWidth / ROOM_TABS.length
+      : 0;
   const isSettlementDetailOpen = settlementDetailState.status !== 'idle';
 
   React.useEffect(() => {
@@ -126,6 +136,27 @@ export function RoomScreen() {
     // 알림 라우팅으로 전달된 showTransfer는 1회성으로 소비한다.
     navigation.setParams({ showTransfer: undefined });
   }, [navigation, route.params.showTransfer]);
+
+  React.useEffect(() => {
+    if (roomTabIndicatorWidth <= 0) {
+      return;
+    }
+
+    const targetX = selectedRoomTabIndex * roomTabIndicatorWidth;
+
+    if (!hasInitializedTabIndicator.current) {
+      roomTabIndicatorX.setValue(targetX);
+      hasInitializedTabIndicator.current = true;
+      return;
+    }
+
+    Animated.timing(roomTabIndicatorX, {
+      toValue: targetX,
+      duration: 220,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [roomTabIndicatorWidth, roomTabIndicatorX, selectedRoomTabIndex]);
 
   React.useEffect(() => {
     if (settlementDetailState.status !== 'loading') {
@@ -196,6 +227,17 @@ export function RoomScreen() {
       expenseId,
     });
   }, []);
+
+  const handleOpenSettlementRequestList = React.useCallback(
+    (item: RoomSettlementRow) => {
+      navigation.navigate('SettlementRequestList', {
+        roomId: route.params.roomId,
+        expenseId: item.id,
+        expenseTitle: item.title,
+      });
+    },
+    [navigation, route.params.roomId],
+  );
 
   const handleBack = React.useCallback(() => {
     if (
@@ -285,7 +327,15 @@ export function RoomScreen() {
       ) : (selectedRoomTab !== 'PAYMENT' ||
           paymentLayoutState.topTabMode === 'ROOM') &&
         !shouldUseSettlementDetailAppBar ? (
-        <View style={styles.roomTabContainer}>
+        <View
+          style={styles.roomTabContainer}
+          onLayout={(event) => {
+            const { width } = event.nativeEvent.layout;
+            if (width !== roomTabContainerWidth) {
+              setRoomTabContainerWidth(width);
+            }
+          }}
+        >
           {ROOM_TABS.map((tab) => (
             <TouchableOpacity
               key={tab.key}
@@ -306,12 +356,12 @@ export function RoomScreen() {
           ))}
 
           <View style={styles.roomTabTrack} />
-          <View
+          <Animated.View
             style={[
               styles.roomTabIndicator,
               {
-                width: `${100 / ROOM_TABS.length}%`,
-                left: `${(100 / ROOM_TABS.length) * selectedRoomTabIndex}%`,
+                width: roomTabIndicatorWidth,
+                transform: [{ translateX: roomTabIndicatorX }],
               },
             ]}
           />
@@ -340,6 +390,7 @@ export function RoomScreen() {
           settlementRequests={settlementRequests}
           onRefresh={handleSettlementRefresh}
           onOpenSettlementDetail={handleOpenSettlementDetail}
+          onOpenSettlementRequestList={handleOpenSettlementRequestList}
           onOpenTransfer={() => setViewMode('TRANSFER')}
           onRetrySettlementDetail={handleRetrySettlementDetail}
         />

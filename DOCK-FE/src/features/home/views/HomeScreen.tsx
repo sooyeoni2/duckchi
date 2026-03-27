@@ -3,6 +3,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import {
   ActivityIndicator,
+  Animated,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -24,6 +25,9 @@ import { PendingSettlementSection } from './components/PendingSettlementSection'
 
 export function HomeScreen() {
   const navigation = useNavigation<BottomTabNavigationProp<AppTabParamList, 'Home'>>();
+  const headerFade = React.useRef(new Animated.Value(0)).current;
+  const pendingFade = React.useRef(new Animated.Value(0)).current;
+  const trendFade = React.useRef(new Animated.Value(0)).current;
   const {
     state,
     isRefreshing,
@@ -48,6 +52,34 @@ export function HomeScreen() {
         ? state.data
         : null;
 
+  React.useEffect(() => {
+    if (dashboardData == null) {
+      return;
+    }
+
+    headerFade.setValue(0);
+    pendingFade.setValue(0);
+    trendFade.setValue(0);
+
+    Animated.stagger(90, [
+      Animated.timing(headerFade, {
+        toValue: 1,
+        duration: 260,
+        useNativeDriver: true,
+      }),
+      Animated.timing(pendingFade, {
+        toValue: 1,
+        duration: 260,
+        useNativeDriver: true,
+      }),
+      Animated.timing(trendFade, {
+        toValue: 1,
+        duration: 260,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [dashboardData, headerFade, pendingFade, trendFade]);
+
   if (dashboardData == null) {
     return (
       <View style={styles.centered}>
@@ -58,6 +90,17 @@ export function HomeScreen() {
 
   const fallbackSections =
     state.status === 'loaded' ? state.fallbackSections : [];
+  const getFadeUpStyle = (animatedValue: Animated.Value) => ({
+    opacity: animatedValue,
+    transform: [
+      {
+        translateY: animatedValue.interpolate({
+          inputRange: [0, 1],
+          outputRange: [14, 0],
+        }),
+      },
+    ],
+  });
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -72,7 +115,9 @@ export function HomeScreen() {
         }
         contentContainerStyle={styles.contentContainer}
       >
-        <HomeHeaderSection profile={dashboardData.profile} />
+        <Animated.View style={getFadeUpStyle(headerFade)}>
+          <HomeHeaderSection profile={dashboardData.profile} />
+        </Animated.View>
 
         <View style={styles.divider} />
 
@@ -95,14 +140,18 @@ export function HomeScreen() {
           </Text>
         )}
 
-        <PendingSettlementSection
-          items={dashboardData.pendingSettlements}
-          onPressTransfer={(item) => handleOpenRoomSettlement(item.roomId)}
-        />
+        <Animated.View style={getFadeUpStyle(pendingFade)}>
+          <PendingSettlementSection
+            items={dashboardData.pendingSettlements}
+            onPressTransfer={(item) => handleOpenRoomSettlement(item.roomId)}
+          />
+        </Animated.View>
 
         <View style={styles.divider} />
 
-        <MonthlyTrendSection trends={dashboardData.monthlyTrends} />
+        <Animated.View style={getFadeUpStyle(trendFade)}>
+          <MonthlyTrendSection trends={dashboardData.monthlyTrends} />
+        </Animated.View>
       </ScrollView>
     </SafeAreaView>
   );
