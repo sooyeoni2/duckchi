@@ -52,6 +52,7 @@ export const ENDPOINTS = {
     monthlySummary: '/api/v1/analytics/monthly/summary',
     monthlyCategories: '/api/v1/analytics/monthly/categories',
     monthlyRoomsRanking: '/api/v1/analytics/monthly/rooms-ranking',
+    monthlyRoomsFrequency: '/api/v1/analytics/monthly/rooms-frequency',
     trends: '/api/v1/analytics/trends',
   },
 };
