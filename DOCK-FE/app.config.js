@@ -36,7 +36,7 @@ const isLocalHost = host =>
 const resolveAppLinkHost = () => {
   const fromApiBase = getHostFromUrl(process.env.API_BASE_URL);
   if (fromApiBase && !isLocalHost(fromApiBase)) {
-    // 왜: 공유 링크 도메인을 API_BASE_URL과 맞추면 운영 도메인 변경 시 앱링크 설정도 자동으로 동기화된다.
+    // 왜: 메신저/브라우저에서 받은 https 초대 링크를 앱으로 직접 라우팅하기 위해 앱링크 필터를 등록한다.
     return fromApiBase;
   }
 
@@ -51,13 +51,13 @@ module.exports = {
     android: {
       ...appJson.expo.android,
       usesCleartextTraffic: true,
-      googleServicesFile: './android/app/google-services.json',
+      googleServicesFile: './google-services.json',
       intentFilters: [
         {
           action: 'VIEW',
           data: [
             {
-              // 왜: 메신저/브라우저에서 받은 https 초대 링크를 앱으로 직접 라우팅하기 위해 앱링크 필터를 등록한다.
+               // 왜: 메신저/브라우저에서 받은 https 초대 링크를 앱으로 직접 라우팅하기 위해 앱링크 필터를 등록한다.
               scheme: 'https',
               host: appLinkHost,
               pathPrefix: '/invite',
@@ -87,3 +87,4 @@ module.exports = {
     },
   },
 };
+
