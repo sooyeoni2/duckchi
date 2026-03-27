@@ -22,6 +22,7 @@ export const categorySpendResponseSchema = z.object({
   category: z.string(),
   amount: z.number(),
   percentage: z.number(),
+  count: z.number(),
 });
 
 export type CategorySpendResponse = z.infer<typeof categorySpendResponseSchema>;
@@ -52,6 +53,19 @@ export const roomSpendResponseSchema = z.object({
 });
 
 export type RoomSpendResponse = z.infer<typeof roomSpendResponseSchema>;
+
+/**
+ * --------------------------------------------------------------------------
+ * 4-2. AN-05: 방별 빈도 랭킹 DTO (RoomFrequencyResponse)
+ * --------------------------------------------------------------------------
+ */
+export const roomFrequencyResponseSchema = z.object({
+  roomId: z.number(),
+  roomName: z.string(),
+  count: z.number(),
+});
+
+export type RoomFrequencyResponse = z.infer<typeof roomFrequencyResponseSchema>;
 
 /**
  * --------------------------------------------------------------------------
