@@ -5,6 +5,7 @@ import {
   fetchExpenseDetailApi,
   fetchExpenseParticipantsApi,
   fetchMyExpensesApi,
+  fetchOcrAnalysisMultipartApi,
   fetchRoomExpensesApi,
   getPaymentErrorMessage,
   requestSettlementsApi,
@@ -158,6 +159,21 @@ export const getAccountHistories = async (): Promise<AccountHistoryItem[]> => {
     return dtos.map((dto: any, index: any) => toAccountHistoryItem(dto, index));
   } catch (error) {
     throw new Error(getPaymentErrorMessage(error, '계좌 내역을 불러오지 못했습니다.'));
+  }
+};
+
+/**
+ * --------------------------------------------------------------------------
+ * OCR 영수증 분석 서비스 (PAY-03)
+ * --------------------------------------------------------------------------
+ */
+export const analyzeReceipt = async (imageUri: string) => {
+  try {
+    return await fetchOcrAnalysisMultipartApi(imageUri);
+  } catch (error) {
+    throw new Error(
+      getPaymentErrorMessage(error, '영수증 OCR 분석에 실패했습니다.'),
+    );
   }
 };
 

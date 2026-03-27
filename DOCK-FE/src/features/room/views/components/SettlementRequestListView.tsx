@@ -1,6 +1,8 @@
 import { MaterialCommunityIcons as MaterialDesignIcons } from '@expo/vector-icons';
 import React from 'react';
 import {
+  Animated,
+  Easing,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -15,6 +17,7 @@ import { KBODiaGothicTextStyle, PretendardTextStyle } from '@core/theme/typograp
 import { CustomAppBar } from '@shared/components/app_bar/CustomAppBar';
 import { FilledButton } from '@shared/components/buttons/FilledButton';
 import { OutlineButton } from '@shared/components/buttons/OutlineButton';
+import { ShimmerBlock } from '@shared/components/feedback/ShimmerBlock';
 
 import type {
   SettlementParticipantItem,
@@ -57,6 +60,29 @@ export function SettlementRequestListView({
   const { width } = useWindowDimensions();
   const contentWidth = Math.min(width, 430);
   const s = contentWidth / BASE_WIDTH;
+  const participantEntryAnimsRef = React.useRef<Animated.Value[]>([]);
+
+  React.useEffect(() => {
+    if (isLoading || participants.length === 0) {
+      return;
+    }
+
+    participantEntryAnimsRef.current = participants.map(
+      (_, index) => participantEntryAnimsRef.current[index] ?? new Animated.Value(0),
+    );
+    participantEntryAnimsRef.current.forEach((anim) => anim.setValue(0));
+
+    Animated.stagger(
+      35,
+      participantEntryAnimsRef.current.map((anim) =>
+        Animated.timing(anim, {
+          toValue: 1,
+          duration: 220,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        })),
+    ).start();
+  }, [isLoading, participants]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -152,17 +178,6 @@ export function SettlementRequestListView({
             </View>
           )}
 
-          {isLoading && (
-            <Text
-              style={[
-                styles.loadingText,
-                { marginTop: 12 * s, fontSize: 12 * s, lineHeight: 12 * s },
-              ]}
-            >
-              정산 요청 목록을 불러오는 중입니다.
-            </Text>
-          )}
-
           <View style={[styles.participantsHeaderRow, { marginTop: 28 * s }]}> 
             <Text
               style={[
@@ -198,19 +213,47 @@ export function SettlementRequestListView({
           </View>
 
           <View style={{ marginTop: 12 * s }}>
-            {participants.length > 0 ? (
-              participants.map((participant) => {
+            {isLoading ? (
+              Array.from({ length: 6 }).map((_, index) => (
+                <View key={`participant-skeleton-${index}`} style={[styles.participantRow, { paddingVertical: 7 * s }]}>
+                  <ShimmerBlock width={34 * s} height={34 * s} borderRadius={17 * s} />
+                  <View style={[styles.participantTextWrap, { gap: 6 * s }]}>
+                    <ShimmerBlock width={92 * s} height={14 * s} borderRadius={6 * s} />
+                    <ShimmerBlock width={66 * s} height={14 * s} borderRadius={6 * s} />
+                  </View>
+                  <View style={styles.participantStatusWrap}>
+                    <ShimmerBlock width={40 * s} height={14 * s} borderRadius={7 * s} />
+                  </View>
+                </View>
+              ))
+            ) : participants.length > 0 ? (
+              participants.map((participant, index) => {
                 const isPending = participant.status === 'PENDING';
                 const isSelectedPending =
                   isPending && selectedPendingId === participant.id;
                 const displayName = participant.isMe
                   ? `${participant.name} (나)`
                   : participant.name;
+                const anim = participantEntryAnimsRef.current[index] ?? new Animated.Value(1);
 
                 return (
-                  <View
+                  <Animated.View
                     key={participant.id}
-                    style={[styles.participantRow, { paddingVertical: 7 * s }]}
+                    style={[
+                      styles.participantRow,
+                      { paddingVertical: 7 * s },
+                      {
+                        opacity: anim,
+                        transform: [
+                          {
+                            translateY: anim.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: [10 * s, 0],
+                            }),
+                          },
+                        ],
+                      },
+                    ]}
                   >
                     <View
                       style={[
@@ -297,22 +340,20 @@ export function SettlementRequestListView({
                         </Text>
                       )}
                     </View>
-                  </View>
+                  </Animated.View>
                 );
               })
             ) : (
-              !isLoading && (
-                <View style={[styles.emptyBox, { borderRadius: 8 * s, paddingVertical: 14 * s }]}>
-                  <Text
-                    style={[
-                      styles.emptyText,
-                      { fontSize: 13 * s, lineHeight: 13 * s },
-                    ]}
-                  >
-                    정산 참여 내역이 없습니다.
-                  </Text>
-                </View>
-              )
+              <View style={[styles.emptyBox, { borderRadius: 8 * s, paddingVertical: 14 * s }]}>
+                <Text
+                  style={[
+                    styles.emptyText,
+                    { fontSize: 13 * s, lineHeight: 13 * s },
+                  ]}
+                >
+                  정산 참여 내역이 없습니다.
+                </Text>
+              </View>
             )}
           </View>
 

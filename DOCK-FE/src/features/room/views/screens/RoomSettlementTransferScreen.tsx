@@ -1,10 +1,11 @@
 import React, { useCallback } from 'react';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import {
-  ActivityIndicator,
   Alert,
+  Animated,
   Dimensions,
+  Easing,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -18,6 +19,7 @@ import { AppColorStyles } from '@core/theme/colors';
 import { KBODiaGothicTextStyle, PretendardTextStyle } from '@core/theme/typography';
 import { CustomAppBar } from '@shared/components/app_bar/CustomAppBar';
 import { FilledButton } from '@shared/components/buttons/FilledButton';
+import { ShimmerBlock } from '@shared/components/feedback/ShimmerBlock';
 
 import { usePaymentConfirmStore, type PaymentAction } from '../../models/paymentConfirmStore';
 import { useSettlementViewModel } from '../../viewmodels/useSettlementViewModel';
@@ -33,7 +35,10 @@ interface RoomSettlementTransferScreenProps {
   roomId: number;
 }
 
-export function RoomSettlementTransferScreen({ onBack, roomId }: RoomSettlementTransferScreenProps) {
+export function RoomSettlementTransferScreen({
+  onBack,
+  roomId,
+}: RoomSettlementTransferScreenProps) {
   const rootNavigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const {
     state,
@@ -51,6 +56,7 @@ export function RoomSettlementTransferScreen({ onBack, roomId }: RoomSettlementT
 
   const [refreshing, setRefreshing] = React.useState(false);
   const [isCheckingConsent, setIsCheckingConsent] = React.useState(false);
+  const itemEntryAnimsRef = React.useRef<Animated.Value[]>([]);
 
   const handleRefresh = React.useCallback(async () => {
     setRefreshing(true);
@@ -63,75 +69,162 @@ export function RoomSettlementTransferScreen({ onBack, roomId }: RoomSettlementT
     selectedTab === 'COMPLETED'
       ? '완료된 정산 내역이 없습니다.'
       : '진행중인 정산 내역이 없습니다.';
-  const consume = usePaymentConfirmStore((s) => s.consume);
-  const setPending = usePaymentConfirmStore((s) => s.setPending);
+  const consume = usePaymentConfirmStore((store) => store.consume);
+  const setPending = usePaymentConfirmStore((store) => store.setPending);
+  const settlementAnimKey = React.useMemo(
+    () => settlementItems.map((item) => `${item.id}:${item.status}`).join('|'),
+    [settlementItems],
+  );
 
-  const executeTransferAction = useCallback(async (action: PaymentAction) => {
-    try {
-      if (action.type === 'all') {
-        await transferAllPending();
-        return;
+  const executeTransferAction = useCallback(
+    async (action: PaymentAction) => {
+      try {
+        if (action.type === 'all') {
+          await transferAllPending();
+          return;
+        }
+        await transferSingle(action.id);
+      } catch (error) {
+        Alert.alert(
+          '송금 실패',
+          error instanceof Error
+            ? error.message
+            : '송금 처리 중 오류가 발생했습니다.',
+        );
       }
-      await transferSingle(action.id);
-    } catch (error) {
-      Alert.alert(
-        '송금 실패',
-        error instanceof Error ? error.message : '송금 처리 중 오류가 발생했습니다.',
-      );
-    }
-  }, [transferAllPending, transferSingle]);
+    },
+    [transferAllPending, transferSingle],
+  );
 
   useFocusEffect(
     useCallback(() => {
       const result = consume();
       if (result?.confirmed) {
-        void executeTransferAction(result.action);
+        executeTransferAction(result.action).catch(() => undefined);
       }
     }, [consume, executeTransferAction]),
   );
 
   useFocusEffect(
     useCallback(() => {
-      void refresh();
+      refresh().catch(() => undefined);
     }, [refresh]),
   );
 
-  const handleTransferAction = useCallback((action: PaymentAction) => {
-    if (isTransferring || isCheckingConsent) {
+  const handleTransferAction = useCallback(
+    (action: PaymentAction) => {
+      if (isTransferring || isCheckingConsent) {
+        return;
+      }
+
+      const run = async () => {
+        setIsCheckingConsent(true);
+        try {
+          const isAgreed = await checkAutoDebitAgreed();
+
+          // 버튼 클릭 시점에 서버 GET으로 동의 여부를 확정하고 분기한다.
+          if (isAgreed) {
+            await executeTransferAction(action);
+            return;
+          }
+
+          setPending(action);
+          rootNavigation.navigate('PayPasswordInput');
+        } finally {
+          setIsCheckingConsent(false);
+        }
+      };
+
+      run().catch(() => undefined);
+    },
+    [
+      checkAutoDebitAgreed,
+      executeTransferAction,
+      isCheckingConsent,
+      isTransferring,
+      rootNavigation,
+      setPending,
+    ],
+  );
+
+  React.useEffect(() => {
+    if (state.status !== 'loaded') {
       return;
     }
 
-    void (async () => {
-      setIsCheckingConsent(true);
-      try {
-        const isAgreed = await checkAutoDebitAgreed();
+    itemEntryAnimsRef.current = settlementItems.map(
+      (_, index) => itemEntryAnimsRef.current[index] ?? new Animated.Value(0),
+    );
+    itemEntryAnimsRef.current.forEach((anim) => anim.setValue(0));
 
-        // 버튼 클릭 시점에 서버 GET으로 동의 여부를 확정하고 분기한다.
-        if (isAgreed) {
-          await executeTransferAction(action);
-          return;
-        }
-
-        setPending(action);
-        rootNavigation.navigate('PayPasswordInput');
-      } finally {
-        setIsCheckingConsent(false);
-      }
-    })();
-  }, [
-    checkAutoDebitAgreed,
-    executeTransferAction,
-    isCheckingConsent,
-    isTransferring,
-    rootNavigation,
-    setPending,
-  ]);
+    Animated.stagger(
+      50,
+      itemEntryAnimsRef.current.map((anim) =>
+        Animated.timing(anim, {
+          toValue: 1,
+          duration: 230,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        })),
+    ).start();
+  }, [selectedTab, settlementAnimKey, settlementItems, state.status]);
 
   if (state.status === 'idle' || state.status === 'loading') {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color={AppColorStyles.yellow} />
-      </View>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <CustomAppBar
+          title="정산하기"
+          centerTitle={false}
+          showDivider
+          backgroundColor={AppColorStyles.background}
+          onBackPress={onBack}
+        />
+        <SettlementTabHeader
+          selectedTab="IN_PROGRESS"
+          inProgressCount={0}
+          onChangeTab={() => undefined}
+        />
+        <ScrollView
+          style={styles.scrollArea}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {Array.from({ length: 3 }).map((_, index) => (
+            <View key={`settlement-skeleton-${index}`} style={styles.loadingCard}>
+              <ShimmerBlock width="28%" height={14 * s} borderRadius={6 * s} />
+              <ShimmerBlock
+                width="42%"
+                height={24 * s}
+                borderRadius={10 * s}
+                style={{ marginTop: 10 * s }}
+              />
+              <View style={styles.loadingInnerCard}>
+                <View>
+                  <ShimmerBlock width={120 * s} height={18 * s} borderRadius={8 * s} />
+                  <ShimmerBlock
+                    width={84 * s}
+                    height={13 * s}
+                    borderRadius={6 * s}
+                    style={{ marginTop: 8 * s }}
+                  />
+                </View>
+                <View style={styles.loadingInnerRightColumn}>
+                  <ShimmerBlock width={86 * s} height={20 * s} borderRadius={8 * s} />
+                  <ShimmerBlock
+                    width={72 * s}
+                    height={28 * s}
+                    borderRadius={10 * s}
+                    style={{ marginTop: 8 * s }}
+                  />
+                </View>
+              </View>
+            </View>
+          ))}
+          <View style={styles.loadingFooter}>
+            <ShimmerBlock width="100%" height={CTA_HEIGHT} borderRadius={14 * s} />
+          </View>
+        </ScrollView>
+      </SafeAreaView>
     );
   }
 
@@ -178,13 +271,31 @@ export function RoomSettlementTransferScreen({ onBack, roomId }: RoomSettlementT
           />
         }
       >
-        {settlementItems.map(item => (
-          <SettlementCard
-            key={item.id}
-            item={item}
-            onPressTransfer={() => handleTransferAction({ type: 'single', id: item.id })}
-          />
-        ))}
+        {settlementItems.map((item, index) => {
+          const anim = itemEntryAnimsRef.current[index] ?? new Animated.Value(1);
+          return (
+            <Animated.View
+              key={item.id}
+              style={{
+                opacity: anim,
+                transform: [
+                  {
+                    translateY: anim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [14 * s, 0],
+                    }),
+                  },
+                ],
+              }}
+            >
+              <SettlementCard
+                item={item}
+                onPressTransfer={() =>
+                  handleTransferAction({ type: 'single', id: item.id })}
+              />
+            </Animated.View>
+          );
+        })}
 
         {settlementItems.length === 0 && (
           <View style={styles.emptyBox}>
@@ -196,7 +307,11 @@ export function RoomSettlementTransferScreen({ onBack, roomId }: RoomSettlementT
           <View style={styles.footer}>
             <FilledButton
               text="전체 송금하기"
-              onPress={hasPending && !isTransferring && !isCheckingConsent ? () => handleTransferAction({ type: 'all' }) : undefined}
+              onPress={
+                hasPending && !isTransferring && !isCheckingConsent
+                  ? () => handleTransferAction({ type: 'all' })
+                  : undefined
+              }
               isLoading={isTransferring || isCheckingConsent}
               height={CTA_HEIGHT}
             />
@@ -222,7 +337,10 @@ const styles = StyleSheet.create({
   },
   errorMessage: {
     textAlign: 'center',
-    ...KBODiaGothicTextStyle.medium({ fontSize: 16 * s, color: AppColorStyles.gray1 }),
+    ...KBODiaGothicTextStyle.medium({
+      fontSize: 16 * s,
+      color: AppColorStyles.gray1,
+    }),
   },
   scrollArea: {
     flex: 1,
@@ -248,6 +366,35 @@ const styles = StyleSheet.create({
     }),
   },
   footer: {
+    marginTop: 20 * s,
+    paddingBottom: 12 * s,
+  },
+  loadingCard: {
+    backgroundColor: AppColorStyles.surface,
+    borderRadius: 18 * s,
+    paddingHorizontal: 16 * s,
+    paddingTop: 16 * s,
+    paddingBottom: 16 * s,
+    marginBottom: 8 * s,
+    borderWidth: 1,
+    borderColor: AppColorStyles.divider,
+  },
+  loadingInnerCard: {
+    marginTop: 10 * s,
+    height: 95 * s,
+    borderRadius: 14 * s,
+    borderWidth: 1,
+    borderColor: AppColorStyles.divider,
+    backgroundColor: AppColorStyles.white,
+    paddingHorizontal: 14 * s,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  loadingInnerRightColumn: {
+    alignItems: 'flex-end',
+  },
+  loadingFooter: {
     marginTop: 20 * s,
     paddingBottom: 12 * s,
   },
