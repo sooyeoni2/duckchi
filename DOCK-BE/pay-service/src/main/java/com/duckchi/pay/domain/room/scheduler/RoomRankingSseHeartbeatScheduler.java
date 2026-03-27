@@ -24,8 +24,12 @@ public class RoomRankingSseHeartbeatScheduler {
                             .name("heartbeat")
                             .data(Map.of("ts", LocalDateTime.now().toString())));
                 } catch (Exception e) {
-                    try { emitter.completeWithError(e); } catch (Exception ignored) {}
+                    try {
+                        emitter.complete(); // completeWithError(e) 대신 complete()
+                    } catch (Exception ignored) {
+                    }
                 }
+
             }
         }
     }
