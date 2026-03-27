@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppColorStyles } from '@core/theme/colors';
 import { KBODiaGothicTextStyle, PretendardTextStyle } from '@core/theme/typography';
+import { CustomAppBar } from '@shared/components/app_bar/CustomAppBar';
 
 import type { ReportCategoryData } from '../models/reportTypes';
 import { useReportViewModel } from '../viewmodels/useReportViewModel';
@@ -90,10 +91,13 @@ export function ReportScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>소비 리포트</Text>
-      </View>
-      <View style={styles.headerDivider} />
+      <CustomAppBar
+        title="소비 리포트"
+        centerTitle={false}
+        showBackButton={false}
+        showDivider
+        backgroundColor={AppColorStyles.background}
+      />
 
       <ScrollView
         style={styles.scroll}
@@ -348,23 +352,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: AppColorStyles.background,
   },
-  header: {
-    paddingHorizontal: 20 * s,
-    paddingTop: 12 * s,
-    paddingBottom: 10 * s,
-  },
-  headerTitle: {
-    ...KBODiaGothicTextStyle.bold({
-      fontSize: 30 * s,
-      lineHeight: 36 * s,
-      color: AppColorStyles.black,
-    }),
-  },
-  headerDivider: {
-    borderBottomWidth: 1,
-    borderBottomColor: AppColorStyles.gray3,
-    borderStyle: 'dashed',
-  },
   scroll: {
     flex: 1,
   },
@@ -389,8 +376,8 @@ const styles = StyleSheet.create({
   },
   monthLabel: {
     ...KBODiaGothicTextStyle.medium({
-      fontSize: 30 * s,
-      lineHeight: 34 * s,
+      fontSize: 20 * s,
+      lineHeight: 24 * s,
       color: AppColorStyles.black,
     }),
   },
@@ -444,23 +431,23 @@ const styles = StyleSheet.create({
     marginBottom: 8 * s,
   },
   cardSubLabel: {
-    ...PretendardTextStyle.medium({
-      fontSize: 13 * s,
-      lineHeight: 18 * s,
+    ...KBODiaGothicTextStyle.medium({
+      fontSize: 16 * s,
+      lineHeight: 16 * s,
       color: AppColorStyles.textHint,
     }),
   },
   totalSpendText: {
-    marginTop: 6 * s,
+    marginTop: 12 * s,
     ...KBODiaGothicTextStyle.bold({
-      fontSize: 35 * s,
-      lineHeight: 40 * s,
+      fontSize: 24 * s,
+      lineHeight: 24 * s,
       color: AppColorStyles.black,
     }),
   },
   compareChip: {
     alignSelf: 'flex-start',
-    marginTop: 10 * s,
+    marginTop: 16 * s,
     backgroundColor: '#F5F1DE',
     borderRadius: 10 * s,
     paddingHorizontal: 10 * s,
@@ -474,9 +461,10 @@ const styles = StyleSheet.create({
     }),
   },
   sectionTitle: {
+    marginBottom: 8 * s,
     ...KBODiaGothicTextStyle.medium({
-      fontSize: 20 * s,
-      lineHeight: 24 * s,
+      fontSize: 16 * s,
+      lineHeight: 16 * s,
       color: AppColorStyles.black,
     }),
   },
@@ -528,33 +516,33 @@ const styles = StyleSheet.create({
   },
   legendLabel: {
     width: 50 * s,
-    ...PretendardTextStyle.medium({
-      fontSize: 13 * s,
-      lineHeight: 18 * s,
-      color: AppColorStyles.textSecondary,
+    ...KBODiaGothicTextStyle.medium({
+      fontSize: 15 * s,
+      lineHeight: 15 * s,
+      color: AppColorStyles.textHint,
     }),
   },
   legendValue: {
     marginLeft: 4 * s,
     ...KBODiaGothicTextStyle.medium({
-      fontSize: 17 * s,
-      lineHeight: 20 * s,
-      color: AppColorStyles.black,
+      fontSize: 15 * s,
+      lineHeight: 15 * s,
+      color: AppColorStyles.textHint,
     }),
   },
   topTagCaption: {
     marginTop: 14 * s,
-    ...PretendardTextStyle.medium({
-      fontSize: 12 * s,
-      lineHeight: 16 * s,
+    ...KBODiaGothicTextStyle.medium({
+      fontSize: 13 * s,
+      lineHeight: 13 * s,
       color: AppColorStyles.textHint,
     }),
   },
   topTagValue: {
     marginTop: 4 * s,
     ...KBODiaGothicTextStyle.bold({
-      fontSize: 26 * s,
-      lineHeight: 30 * s,
+      fontSize: 24 * s,
+      lineHeight: 24 * s,
       color: AppColorStyles.black,
     }),
   },
@@ -577,15 +565,15 @@ const styles = StyleSheet.create({
   },
   detailName: {
     ...KBODiaGothicTextStyle.medium({
-      fontSize: 18 * s,
-      lineHeight: 20 * s,
+      fontSize: 16 * s,
+      lineHeight: 16 * s,
       color: AppColorStyles.black,
     }),
   },
   detailAmount: {
     ...KBODiaGothicTextStyle.bold({
-      fontSize: 20 * s,
-      lineHeight: 24 * s,
+      fontSize: 16 * s,
+      lineHeight: 16 * s,
       color: AppColorStyles.black,
     }),
   },
@@ -635,8 +623,8 @@ const styles = StyleSheet.create({
   },
   rankRoomName: {
     ...KBODiaGothicTextStyle.medium({
-      fontSize: 19 * s,
-      lineHeight: 22 * s,
+      fontSize: 16 * s,
+      lineHeight: 16 * s,
       color: AppColorStyles.black,
     }),
   },
@@ -649,8 +637,8 @@ const styles = StyleSheet.create({
   },
   rankValue: {
     ...KBODiaGothicTextStyle.bold({
-      fontSize: 24 * s,
-      lineHeight: 28 * s,
+      fontSize: 16 * s,
+      lineHeight: 16 * s,
       color: AppColorStyles.black,
     }),
   },
