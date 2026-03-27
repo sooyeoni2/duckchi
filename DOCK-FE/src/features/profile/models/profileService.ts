@@ -207,7 +207,7 @@ export const deleteAccount = async (accountId: number): Promise<void> => {
     };
     return;
   }
-  await axiosClient.post(`/api/v1/auth/bank-accounts/${accountId}/delete`);
+  await axiosClient.post(`/api/v1/bank-accounts/${accountId}/delete`);
 };
 
 export const mockAddAccount = (account: {

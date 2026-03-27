@@ -94,20 +94,39 @@ public class SpendingInsightService {
 
     /**
      * 방별 지출 통계 조회 로직.
-     * 방 ID로 통계 조회 후, 로그에서 가장 최근 방 이름을 찾아 매핑함.
+     * 방 ID로 통계 조회 후, Batch Fetching(IN Query)을 통해
+     * N+1 문제 없이 가장 최근 방 이름을 한 번에 매핑함.
      */
     @Transactional(readOnly = true)
     public List<RoomSpendResponse> getRoomStatistics(Long userId, String targetMonth) {
         List<UserMonthlySpend> roomSpends = userMonthlySpendRepository
                 .findAllByUserIdAndSpendMonthAndStatTypeOrderByTotalAmountDesc(userId, targetMonth, "ROOM");
 
+        if (roomSpends.isEmpty()) {
+            return List.of();
+        }
+
+        // 1. 통계에서 대상 roomId 목록 추출
+        List<Long> roomIds = roomSpends.stream()
+                .map(s -> Long.parseLong(s.getStatValue()))
+                .toList();
+
+        // 2. IN 쿼리로 대상 방들의 가장 최근 방 이름을 단 1번의 쿼리로 일괄 조회
+        List<Object[]> latestRoomNames = spendingLogRepository.findLatestRoomNamesByRoomIds(userId, roomIds);
+
+        // 3. (roomId -> roomName) 구조로 메모리에 Map 생성
+        Map<Long, String> roomNameMap = latestRoomNames.stream()
+                .collect(Collectors.toMap(
+                        row -> (Long) row[0],
+                        row -> (String) row[1],
+                        (existing, replacement) -> existing // 동시간대 중복 데이터 발생 시 기존 값 유지
+                ));
+
+        // 4. 통계 데이터와 방 이름 매핑하여 응답 조합
         return roomSpends.stream()
                 .map(s -> {
                     Long roomId = Long.parseLong(s.getStatValue());
-                    String roomName = spendingLogRepository
-                            .findFirstByUserIdAndRoomIdOrderByRecordedAtDesc(userId, roomId)
-                            .map(SpendingLog::getRoomName)
-                            .orElse("알 수 없는 방");
+                    String roomName = roomNameMap.getOrDefault(roomId, "알 수 없는 방");
                     return new RoomSpendResponse(roomId, roomName, s.getTotalAmount());
                 })
                 .toList();
@@ -156,20 +175,29 @@ public class SpendingInsightService {
     }
 
     /**
-     * 기존 통계가 있으면 더하고, 없으면 새로 생성함 (Upsert 로직)
+     * 기존 통계가 있으면 원자적 업데이트를 수행하고, 없으면 새로 생성함 (Upsert 로직 고도화)
+     * Native Query를 통해 갱신 분실(Lost Update) 문제를 원천 차단함.
      */
     private void updateMonthlySpend(Long userId, String spendMonth, String type, String value, Integer amount) {
-        UserMonthlySpend spend = userMonthlySpendRepository
-                .findByUserIdAndSpendMonthAndStatTypeAndStatValue(userId, spendMonth, type, value)
-                .orElseGet(() -> UserMonthlySpend.builder()
+        // 1. 먼저 원자적 업데이트 시도 (이미 레코드가 존재하는 경우)
+        int updatedCount = userMonthlySpendRepository.updateAmountAtomic(userId, spendMonth, type, value, amount);
+
+        // 2. 업데이트된 행이 0개라면 레코드가 없다는 의미이므로 새로 생성
+        if (updatedCount == 0) {
+            try {
+                UserMonthlySpend newSpend = UserMonthlySpend.builder()
                         .userId(userId)
                         .spendMonth(spendMonth)
                         .statType(type)
                         .statValue(value)
-                        .totalAmount(0)
-                        .build());
-
-        spend.addAmount(amount);
-        userMonthlySpendRepository.save(spend);
+                        .totalAmount(amount) // 최초 금액 설정
+                        .build();
+                userMonthlySpendRepository.save(newSpend);
+            } catch (Exception e) {
+                // 동시에 생성 시도가 발생해 UNIQUE 제약 조건 위반이 날 수 있음
+                // 이 경우 다시 한번 원자적 업데이트 시도
+                userMonthlySpendRepository.updateAmountAtomic(userId, spendMonth, type, value, amount);
+            }
+        }
     }
 }

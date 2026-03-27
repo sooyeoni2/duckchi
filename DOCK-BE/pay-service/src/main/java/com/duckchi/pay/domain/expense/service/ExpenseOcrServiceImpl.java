@@ -6,7 +6,9 @@ import com.duckchi.pay.global.error.ErrorCode;
 import com.duckchi.pay.infra.ocr.OcrClient;
 import com.duckchi.pay.infra.ocr.dto.OcrRequest;
 import com.duckchi.pay.infra.ocr.dto.OcrResponse;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -17,6 +19,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StopWatch;
 import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
 @Service
@@ -28,6 +31,7 @@ import org.springframework.util.StringUtils;
 public class ExpenseOcrServiceImpl implements ExpenseOcrService {
 
     private final OcrClient ocrClient;
+    private final ObjectMapper objectMapper;
 
     // 정규식 엔진의 반복 컴파일 오버헤드를 방지하기 위한 캐싱
     private static final Pattern DIGITS_PATTERN = Pattern.compile("\\D");
@@ -37,74 +41,78 @@ public class ExpenseOcrServiceImpl implements ExpenseOcrService {
 
     @Override
     /**
-     * 영수증 OCR 초안 생성 로직 (S3 URL 기반).
-     * S3에 업로드된 이미지 URL을 통해 OCR 분석 수행 후 결과를 정규화함.
+     * 영수증 OCR 초안 생성 로직 (Multipart 방식).
+     * 직접 전달된 이미지 파일을 업로드 없이 분석함.
      */
-    public ExpenseOcrDraftResponse analyzeReceipt(String imageUrl) {
-        if (!StringUtils.hasText(imageUrl)) {
+    public ExpenseOcrDraftResponse analyzeReceipt(MultipartFile image) {
+        if (image == null || image.isEmpty()) {
             throw new CustomException(ErrorCode.COMMON_INVALID_INPUT);
         }
 
-        StopWatch stopWatch = new StopWatch("OCR Analysis Pipeline");
-        OcrResponse response;
-
+        StopWatch stopWatch = new StopWatch("OCR Multipart Analysis");
         try {
-            stopWatch.start("Clova API Call");
-            response = ocrClient.callReceiptOcr(ocrSecret, buildRequestByUrl(imageUrl));
+            stopWatch.start("Clova API Multipart Call");
+            OcrResponse response = ocrClient.callReceiptOcrMultipart(ocrSecret, buildRequestMessage(image), image);
             stopWatch.stop();
-            log.info("OCR API Call Finished. Latency: {}ms", stopWatch.getLastTaskTimeMillis());
+            log.info("OCR Multipart Call Latency: {}ms", stopWatch.getTotalTimeMillis());
+            return toDraftResponse(response);
         } catch (CustomException e) {
             throw e;
         } catch (Exception e) {
-            log.error("네이버 클로바 OCR 호출에 실패했습니다.", e);
+            log.error("OCR Multipart 호출 실패", e);
             throw new CustomException(ErrorCode.OCR_API_ERROR);
         }
-
-        stopWatch.start("Data Normalization");
-        ExpenseOcrDraftResponse draft = toDraftResponse(response);
-        stopWatch.stop();
-
-        log.info("OCR Pipeline Completed. Total: {}ms, Normalization: {}ms", 
-                stopWatch.getTotalTimeMillis(), stopWatch.getLastTaskTimeMillis());
-
-        return draft;
     }
 
     @Override
     /**
-     * OCR 원본 응답 조회 로직 (S3 URL 기반).
+     * OCR 원본 응답 조회 로직 (Multipart 방식).
      */
-    public JsonNode analyzeReceiptRaw(String imageUrl) {
-        if (!StringUtils.hasText(imageUrl)) {
+    public JsonNode analyzeReceiptRaw(MultipartFile image) {
+        if (image == null || image.isEmpty()) {
             throw new CustomException(ErrorCode.COMMON_INVALID_INPUT);
         }
 
         try {
-            return ocrClient.callReceiptOcrRaw(ocrSecret, buildRequestByUrl(imageUrl));
+            return ocrClient.callReceiptOcrRawMultipart(ocrSecret, buildRequestMessage(image), image);
         } catch (CustomException e) {
             throw e;
         } catch (Exception e) {
-            log.error("OCR 원본 응답 조회에 실패했습니다.", e);
+            log.error("OCR Multipart 원본 응답 조회 실패", e);
             throw new CustomException(ErrorCode.OCR_API_ERROR);
         }
     }
 
     /**
-     * OCR 요청 DTO 생성 로직 (URL 기반).
+     * OCR 요청 메타데이터 JSON 생성 (Multipart용).
      */
-    private OcrRequest buildRequestByUrl(String imageUrl) {
-        return OcrRequest.builder()
-                .version("V2")
-                .requestId(UUID.randomUUID().toString())
-                .timestamp(System.currentTimeMillis())
-                .images(List.of(
-                        OcrRequest.ImageRequest.builder()
-                                .format(resolveImageFormatByUrl(imageUrl))
-                                .name("receipt_" + UUID.randomUUID().toString().substring(0, 8))
-                                .url(imageUrl)
-                                .build()
-                ))
-                .build();
+    private String buildRequestMessage(MultipartFile image) {
+        try {
+            OcrRequest request = OcrRequest.builder()
+                    .version("V2")
+                    .requestId(UUID.randomUUID().toString())
+                    .timestamp(System.currentTimeMillis())
+                    .images(List.of(
+                            OcrRequest.ImageRequest.builder()
+                                    .format(resolveImageFormat(image))
+                                    .name("receipt_" + UUID.randomUUID().toString().substring(0, 8))
+                                    .build()
+                    ))
+                    .build();
+            return objectMapper.writeValueAsString(request);
+        } catch (JsonProcessingException e) {
+            log.error("OCR 요청 메타데이터 생성 실패", e);
+            throw new CustomException(ErrorCode.OCR_API_ERROR);
+        }
+    }
+
+    private String resolveImageFormat(MultipartFile image) {
+        String filename = image.getOriginalFilename();
+        if (filename == null || !StringUtils.hasText(filename)) return "jpg";
+        String lower = filename.toLowerCase();
+        if (lower.endsWith(".png")) return "png";
+        if (lower.endsWith(".pdf")) return "pdf";
+        return "jpg";
     }
 
     /**
@@ -199,41 +207,63 @@ public class ExpenseOcrServiceImpl implements ExpenseOcrService {
     }
 
     private LocalDateTime extractPaidAt(OcrResponse.Result result) {
-        if (result.getPaymentInfo() == null) {
-            return null;
-        }
-
-        String dateDigits = extractDigits(extractText(result.getPaymentInfo().getDate()));
-        String timeDigits = extractDigits(extractText(result.getPaymentInfo().getTime()));
-
-        if (dateDigits.length() != 8) {
-            return null;
-        }
-
-        if (timeDigits.length() < 4) {
+        OcrResponse.PaymentInfo paymentInfo = result.getPaymentInfo();
+        if (paymentInfo == null) {
             return null;
         }
 
         try {
-            int year = Integer.parseInt(dateDigits.substring(0, 4));
-            int month = Integer.parseInt(dateDigits.substring(4, 6));
-            int day = Integer.parseInt(dateDigits.substring(6, 8));
-            int hour = Integer.parseInt(timeDigits.substring(0, 2));
-            int minute = Integer.parseInt(timeDigits.substring(2, 4));
-            int second = timeDigits.length() >= 6 ? Integer.parseInt(timeDigits.substring(4, 6)) : 0;
+            Integer year = null, month = null, day = null;
+            Integer hour = null, minute = null, second = 0;
+
+            OcrResponse.DateInfo dateInfo = paymentInfo.getDate();
+            if (dateInfo != null && dateInfo.getFormatted() != null) {
+                OcrResponse.FormattedDate fd = dateInfo.getFormatted();
+                year = parsePositiveInt(fd.getYear());
+                month = parsePositiveInt(fd.getMonth());
+                day = parsePositiveInt(fd.getDay());
+            }
+
+            OcrResponse.TimeInfo timeInfo = paymentInfo.getTime();
+            if (timeInfo != null && timeInfo.getFormatted() != null) {
+                OcrResponse.FormattedTime ft = timeInfo.getFormatted();
+                hour = parseNonNegativeInt(ft.getHour());
+                minute = parseNonNegativeInt(ft.getMinute());
+                Integer parsedSecond = parseNonNegativeInt(ft.getSecond());
+                if (parsedSecond != null) second = parsedSecond;
+            }
+
+            if (year == null || month == null || day == null) {
+                String dateText = dateInfo != null ? dateInfo.getText() : null;
+                String dateDigits = extractDigits(dateText);
+                if (dateDigits.length() == 8) {
+                    year = Integer.parseInt(dateDigits.substring(0, 4));
+                    month = Integer.parseInt(dateDigits.substring(4, 6));
+                    day = Integer.parseInt(dateDigits.substring(6, 8));
+                }
+            }
+
+            if (hour == null || minute == null) {
+                String timeText = timeInfo != null ? timeInfo.getText() : null;
+                String timeDigits = extractDigits(timeText);
+                if (timeDigits.length() >= 4) {
+                    hour = Integer.parseInt(timeDigits.substring(0, 2));
+                    minute = Integer.parseInt(timeDigits.substring(2, 4));
+                    if (timeDigits.length() >= 6) {
+                        second = Integer.parseInt(timeDigits.substring(4, 6));
+                    }
+                }
+            }
+
+            if (year == null || month == null || day == null || hour == null || minute == null) {
+                return null;
+            }
+
             return LocalDateTime.of(year, month, day, hour, minute, second);
         } catch (Exception e) {
-            log.info("OCR 결제 일시 파싱에 실패했습니다. date={}, time={}", dateDigits, timeDigits);
+            log.info("OCR 결제 일시 파싱 중 예외 발생: {}", e.getMessage());
             return null;
         }
-    }
-
-    private String resolveImageFormatByUrl(String imageUrl) {
-        if (!StringUtils.hasText(imageUrl)) return "jpg";
-        String lowerUrl = imageUrl.toLowerCase();
-        if (lowerUrl.endsWith(".png")) return "png";
-        if (lowerUrl.endsWith(".pdf")) return "pdf";
-        return "jpg";
     }
 
     private String extractText(OcrResponse.TextInfo textInfo) {
@@ -244,26 +274,35 @@ public class ExpenseOcrServiceImpl implements ExpenseOcrService {
         if (priceInfo == null || priceInfo.getPrice() == null) {
             return null;
         }
-        return priceInfo.getPrice().getText();
+        OcrResponse.PriceDetails details = priceInfo.getPrice();
+        if (details.getFormatted() != null && StringUtils.hasText(details.getFormatted().getValue())) {
+            return details.getFormatted().getValue();
+        }
+        return details.getText();
     }
 
     private String extractDigits(String value) {
-        if (!StringUtils.hasText(value)) {
-            return "";
-        }
-        // 컴파일된 패턴 재사용으로 성능 최적화
+        if (!StringUtils.hasText(value)) return "";
         return DIGITS_PATTERN.matcher(value).replaceAll("");
     }
 
     private Integer parsePositiveInt(String value) {
         String digits = extractDigits(value);
-        if (!StringUtils.hasText(digits)) {
-            return null;
-        }
-
+        if (!StringUtils.hasText(digits)) return null;
         try {
             int parsed = Integer.parseInt(digits);
             return parsed > 0 ? parsed : null;
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private Integer parseNonNegativeInt(String value) {
+        String digits = extractDigits(value);
+        if (!StringUtils.hasText(digits)) return null;
+        try {
+            int parsed = Integer.parseInt(digits);
+            return parsed >= 0 ? parsed : null;
         } catch (NumberFormatException e) {
             return null;
         }

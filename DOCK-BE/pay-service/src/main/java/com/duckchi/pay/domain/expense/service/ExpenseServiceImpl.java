@@ -4,7 +4,6 @@ import com.duckchi.pay.domain.badge.service.BadgeTriggerService;
 import com.duckchi.pay.domain.expense.dto.external.UserFinanceProfileResponse;
 import com.duckchi.pay.domain.expense.dto.external.UserProfileBatchRequest;
 import com.duckchi.pay.domain.expense.dto.external.UserProfileSnapshotResponse;
-import com.duckchi.pay.domain.expense.dto.request.AccountHistoryRequest;
 import com.duckchi.pay.domain.expense.dto.request.ExpenseUpsertRequest;
 import com.duckchi.pay.domain.expense.dto.response.AccountHistoryResponse;
 import com.duckchi.pay.domain.expense.dto.response.ExpenseDetailResponse;
@@ -39,8 +38,6 @@ import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StopWatch;
@@ -59,7 +56,6 @@ public class ExpenseServiceImpl implements ExpenseService {
 
     private final ExpenseValidator expenseValidator;
     private final ExpenseMapper expenseMapper;
-    private final CacheManager cacheManager;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -69,34 +65,14 @@ public class ExpenseServiceImpl implements ExpenseService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<AccountHistoryResponse> getAccountHistory(Long userId, AccountHistoryRequest request) {
+    public List<AccountHistoryResponse> getAccountHistory(Long userId) {
+        log.info("[DEBUG] getAccountHistory started for userId: {}", userId);
         StopWatch stopWatch = new StopWatch("Account History Pipeline");
-        boolean isRefresh = request != null && request.isRefresh();
         
-        // 1. 캐시 시도
-        Cache cache = cacheManager.getCache("accountHistory");
-        if (!isRefresh && cache != null) {
-            stopWatch.start("Cache Lookup");
-            Cache.ValueWrapper valueWrapper = cache.get(userId);
-            if (valueWrapper != null) {
-                @SuppressWarnings("unchecked")
-                List<AccountHistoryResponse> cachedData = (List<AccountHistoryResponse>) valueWrapper.get();
-                stopWatch.stop();
-                log.info("Cache HIT for userId: {}. Response Time: {}ms", userId, stopWatch.getTotalTimeMillis());
-                return cachedData;
-            }
-            stopWatch.stop();
-        }
-
-        // 2. 캐시 미스 또는 새로고침 요청 시 직접 조회
-        log.info("Cache MISS/REFRESH for userId: {}. Fetching from Finance API...", userId);
+        log.info("[DEBUG] Fetching from Finance API directly");
         stopWatch.start("Preparation");
         UserFinanceProfileResponse financeProfile = getUserFinanceProfile(userId);
-        if (request != null && StringUtils.hasText(request.getAccountNo()) 
-                && !financeProfile.getAccountNo().equals(request.getAccountNo())) {
-            throw new CustomException(ErrorCode.FINANCE_INVALID_ACCOUNT);
-        }
-
+        
         FinanceRequestHeader header = FinanceRequestHeader.createHeader(
                 "inquireTransactionHistoryList", "inquireTransactionHistoryList",
                 apiKey, financeProfile.getSsafyUserKey()
@@ -116,15 +92,18 @@ public class ExpenseServiceImpl implements ExpenseService {
         stopWatch.stop();
 
         try {
+            log.info("[DEBUG] Calling External Finance API...");
             stopWatch.start("External API Call");
             TransactionHistoryResponse response = financeClient.fetchTransactionHistory(externalRequest);
             stopWatch.stop();
 
             if (response == null || response.getRec() == null || response.getRec().getList() == null) {
+                log.info("[DEBUG] Finance API returned empty list.");
                 return List.of();
             }
 
-            stopWatch.start("Data Mapping & Cache Update");
+            log.info("[DEBUG] Mapping results... Count: {}", response.getRec().getList().size());
+            stopWatch.start("Data Mapping");
             List<AccountHistoryResponse> result = response.getRec().getList().stream()
                     .map(detail -> AccountHistoryResponse.builder()
                             .transactionMemo(detail.getTransactionSummary())
@@ -132,21 +111,12 @@ public class ExpenseServiceImpl implements ExpenseService {
                             .transactionAt(parseLocalDateTime(detail.getTransactionDate(), detail.getTransactionTime()))
                             .build())
                     .toList();
-            
-            // 캐시 덮어쓰기 (Update)
-            if (cache != null) {
-                cache.put(userId, result);
-            }
             stopWatch.stop();
 
-            log.info("Cache MISS Pipeline Completed. Total: {}ms [API: {}ms, Mapping: {}ms]",
-                    stopWatch.getTotalTimeMillis(),
-                    stopWatch.getTaskInfo()[stopWatch.getTaskCount()-2].getTimeMillis(),
-                    stopWatch.getLastTaskTimeMillis());
-
+            log.info("[DEBUG] Successfully fetched {} records. Total time: {}ms", result.size(), stopWatch.getTotalTimeMillis());
             return result;
         } catch (Exception e) {
-            log.error("Finance history fetch failed.", e);
+            log.error("[CRITICAL] getAccountHistory Failed!", e);
             throw new CustomException(ErrorCode.FINANCE_API_ERROR);
         }
     }
@@ -175,12 +145,12 @@ public class ExpenseServiceImpl implements ExpenseService {
     @Override
     @Transactional
     public Long registerExpense(Long userId, Long roomId, ExpenseUpsertRequest request) {
-        expenseValidator.validateRegistration(userId, roomId, request);
+        Long activeSessionId = expenseValidator.validateRegistration(userId, roomId, request);
         Map<Long, UserProfileSnapshotResponse> profileMap = getUserProfiles(collectReferencedUserIds(userId, request));
 
         Expense expense = Expense.builder()
                 .roomId(roomId)
-                .roomSessionId(request.getRoomSessionId())
+                .roomSessionId(activeSessionId)
                 .payerUserId(userId)
                 .payerUserName(resolveRequiredProfile(profileMap, userId).getUserName())
                 .inputType(request.getInputType())
@@ -196,6 +166,7 @@ public class ExpenseServiceImpl implements ExpenseService {
         // [BADGE 트리거] OCR 영수증 스캔 등록 시 뱃지 진행도 갱신 (SCANNER_DUCK +1)
         if ("OCR".equals(request.getInputType())) {
             badgeTriggerService.callBadgeCheckSafely(
+                    expenseId,
                     com.duckchi.pay.domain.badge.dto.BadgeCheckRequest.builder()
                             .userId(userId)
                             .eventType("EXPENSE_OCR_ADDED")
@@ -246,6 +217,7 @@ public class ExpenseServiceImpl implements ExpenseService {
     public void updateExpense(Long userId, Long roomId, Long expenseId, ExpenseUpsertRequest request) {
         Expense expense = findExpenseWithRoomCheck(roomId, expenseId);
         expenseValidator.validateEditableByRequester(userId, expense);
+        
         expenseValidator.validateRegistration(userId, roomId, request);
         Map<Long, UserProfileSnapshotResponse> profileMap = getUserProfiles(collectReferencedUserIds(userId, request));
 

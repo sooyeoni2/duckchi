@@ -1,6 +1,5 @@
 package com.duckchi.pay.domain.expense.controller;
 
-import com.duckchi.pay.domain.expense.dto.request.AccountHistoryRequest;
 import com.duckchi.pay.domain.expense.dto.request.ExpenseUpsertRequest;
 import com.duckchi.pay.domain.expense.dto.response.AccountHistoryResponse;
 import com.duckchi.pay.domain.expense.dto.response.ExpenseDetailResponse;
@@ -45,32 +44,29 @@ public class ExpenseController {
     private final ExpenseService expenseService;
     private final ExpenseOcrService expenseOcrService;
 
-    @Operation(summary = "OCR 실행", description = "S3에 업로드된 영수증 이미지 URL을 분석해 결제 등록용 초안 정보를 반환함")
-    @PostMapping(value = "/expenses/ocr")
+    @Operation(summary = "OCR 분석 실행", description = "영수증 이미지 파일을 직접 분석해 결제 등록용 초안 정보를 반환함")
+    @PostMapping(value = "/expenses/ocr", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResponseDto<ExpenseOcrDraftResponse> analyzeReceipt(
-            @Parameter(description = "S3에 업로드된 영수증 이미지 URL", required = true)
-            String imageUrl
+            @RequestPart("image") MultipartFile image
     ) {
-        return ApiResponseDto.success(expenseOcrService.analyzeReceipt(imageUrl));
+        return ApiResponseDto.success(expenseOcrService.analyzeReceipt(image));
     }
 
-    @Operation(summary = "개발용 OCR 원본 응답 조회", description = "S3에 업로드된 영수증 이미지 URL을 OCR에 전달한 뒤 네이버 OCR 원본 JSON 응답을 그대로 반환함")
-    @PostMapping(value = "/expenses/ocr/raw")
+    @Operation(summary = "개발용 OCR 원본 응답 조회", description = "영수증 이미지 파일을 직접 OCR에 전달한 뒤 네이버 OCR 원본 JSON 응답을 그대로 반환함")
+    @PostMapping(value = "/expenses/ocr/raw", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResponseDto<JsonNode> analyzeReceiptRaw(
-            @Parameter(description = "S3에 업로드된 영수증 이미지 URL", required = true)
-            String imageUrl
+            @RequestPart("image") MultipartFile image
     ) {
-        return ApiResponseDto.success(expenseOcrService.analyzeReceiptRaw(imageUrl));
+        return ApiResponseDto.success(expenseOcrService.analyzeReceiptRaw(image));
     }
 
     @Operation(summary = "계좌 거래 내역 조회", description = "로그인 사용자의 대표 계좌 기준으로 최근 거래 내역을 조회함")
-    @PostMapping("/expenses/account-history")
+    @GetMapping("/expenses/account-history")
     public ApiResponseDto<List<AccountHistoryResponse>> getAccountHistory(
             @Parameter(description = "로그인 사용자 식별자", example = "1", required = true)
-            @RequestHeader(USER_ID_HEADER) Long userId,
-            @RequestBody(required = false) @Valid AccountHistoryRequest request
+            @RequestHeader(USER_ID_HEADER) Long userId
     ) {
-        return ApiResponseDto.success(expenseService.getAccountHistory(userId, request));
+        return ApiResponseDto.success(expenseService.getAccountHistory(userId));
     }
 
     @Operation(summary = "결제 참여자 조회", description = "결제안 등록 화면에서 사용할 방 참여자 상세 목록을 조회함")

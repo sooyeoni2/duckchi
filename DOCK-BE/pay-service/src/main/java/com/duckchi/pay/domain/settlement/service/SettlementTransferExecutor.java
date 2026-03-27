@@ -16,6 +16,7 @@ import com.duckchi.pay.infra.finance.dto.request.FinanceRequestHeader;
 import com.duckchi.pay.infra.finance.dto.request.TransferRequest;
 import com.duckchi.pay.infra.finance.dto.response.FinanceResponseHeader;
 import com.duckchi.pay.infra.finance.dto.response.TransferResponse;
+import feign.FeignException;
 import java.time.LocalDateTime;
 
 import com.duckchi.pay.infra.kafka.service.OutboxEventCommandService;
@@ -35,6 +36,7 @@ public class SettlementTransferExecutor {
 
     private static final String FINANCE_TRANSFER_API = "updateDemandDepositAccountTransfer";
     private static final String FINANCE_SUCCESS_CODE = "H0000";
+    private static final String FINANCE_INSUFFICIENT_BALANCE_CODE = "A1014";
     private static final String SETTLEMENT_PENDING_STATUS = "PENDING";
 
     private final SettlementRepository settlementRepository;
@@ -90,6 +92,7 @@ public class SettlementTransferExecutor {
         // [BADGE 트리거] 정산 송금 완료 시 뱃지 진행도 갱신
         // NOBLE_DUCK(금액), ASSASSIN_DUCK(1시간 이내), TURTLE_DUCK(48시간 초과), NIGHTOWL_DUCK(새벽 시간대)
         badgeTriggerService.triggerSettlementCompleted(
+                settlement.getId(),
                 settlement.getPayerUserId(),
                 settlement.getPayableAmount(),
                 settlement.getCreatedAt(),
@@ -133,9 +136,45 @@ public class SettlementTransferExecutor {
         } catch (CustomException ex) {
             throw ex;
         } catch (Exception ex) {
+            if (hasInsufficientBalanceSignal(ex)) {
+                log.warn("SSAFY 송금 API 실패(A1014 감지). 잔액 부족으로 매핑합니다. message={}", ex.getMessage());
+                throw new CustomException(ErrorCode.SETTLEMENT_INSUFFICIENT_BALANCE);
+            }
             log.error("SSAFY 송금 API 호출 실패. settlement transfer request={}", transferRequest, ex);
             throw new CustomException(ErrorCode.FINANCE_API_ERROR);
         }
+    }
+
+    /**
+     * 금융 클라이언트가 예외를 던지는 경로에서도 A1014 신호를 놓치지 않기 위해
+     * 예외 메시지/본문을 함께 검사한다.
+     */
+    private boolean hasInsufficientBalanceSignal(Exception ex) {
+        if (containsInsufficientBalanceCode(ex.getMessage())) {
+            return true;
+        }
+
+        if (ex instanceof FeignException feignException
+                && containsInsufficientBalanceCode(feignException.contentUTF8())) {
+            return true;
+        }
+
+        Throwable cause = ex.getCause();
+        while (cause != null) {
+            if (containsInsufficientBalanceCode(cause.getMessage())) {
+                return true;
+            }
+            if (cause instanceof FeignException feignCause
+                    && containsInsufficientBalanceCode(feignCause.contentUTF8())) {
+                return true;
+            }
+            cause = cause.getCause();
+        }
+        return false;
+    }
+
+    private boolean containsInsufficientBalanceCode(String text) {
+        return StringUtils.hasText(text) && text.contains(FINANCE_INSUFFICIENT_BALANCE_CODE);
     }
 
     /**
@@ -147,12 +186,19 @@ public class SettlementTransferExecutor {
         }
 
         FinanceResponseHeader header = response.header();
-        if (!FINANCE_SUCCESS_CODE.equals(header.getResponseCode())) {
-            String message = StringUtils.hasText(header.getResponseMessage())
-                    ? header.getResponseMessage()
-                    : ErrorCode.FINANCE_API_ERROR.getMsg();
-            throw new CustomException(message, ErrorCode.FINANCE_API_ERROR);
+        if (FINANCE_SUCCESS_CODE.equals(header.getResponseCode())) {
+            return;
         }
+
+        // SSAFY A1014는 사용자가 즉시 조치 가능한 잔액 부족 상황이므로 일반 외부 장애와 분리해 전달한다.
+        if (FINANCE_INSUFFICIENT_BALANCE_CODE.equals(header.getResponseCode())) {
+            throw new CustomException(ErrorCode.SETTLEMENT_INSUFFICIENT_BALANCE);
+        }
+
+        String message = StringUtils.hasText(header.getResponseMessage())
+                ? header.getResponseMessage()
+                : ErrorCode.FINANCE_API_ERROR.getMsg();
+        throw new CustomException(message, ErrorCode.FINANCE_API_ERROR);
     }
 
     /**
@@ -214,6 +260,7 @@ public class SettlementTransferExecutor {
         ExpenseSettledNotificationEvent event = ExpenseSettledNotificationEvent.builder()
                 .expenseId(expense.getId())
                 .expenseTitle(expense.getTitle())
+                .roomId(expense.getRoomId())
                 .payerUserId(expense.getPayerUserId())
                 .occurredAt(LocalDateTime.now())
                 .build();

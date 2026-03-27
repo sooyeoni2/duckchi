@@ -11,11 +11,9 @@ import {
 
 import { AppColorStyles } from '@core/theme/colors';
 import { KBODiaGothicTextStyle } from '@core/theme/typography';
-import type { MeetingRoomInviteLink } from '../models/roomMockData';
-
 interface MeetingRoomLinkSheetProps {
   visible: boolean;
-  inviteLink: MeetingRoomInviteLink;
+  inviteLink: string;
   onCopyLink: () => void;
   onLater: () => void;
   title?: string;
@@ -38,10 +36,10 @@ export function MeetingRoomLinkSheet({
           <View style={styles.handle} />
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.description}>링크를 공유하면 참여자가{'\n'}바로 모임에 입장해요</Text>
-
+ 
           <TouchableOpacity activeOpacity={0.85} style={styles.linkBox} onPress={onCopyLink}>
             <Text style={styles.linkText} numberOfLines={1}>
-              {inviteLink.inviteLink}
+              {inviteLink}
             </Text>
             <MaterialCommunityIcons name="link-variant" size={28} color={AppColorStyles.black} />
           </TouchableOpacity>
@@ -89,7 +87,7 @@ const styles = StyleSheet.create({
       lineHeight: 32,
     }),
     marginBottom: 10,
-  },
+  } as any,
   description: {
     ...KBODiaGothicTextStyle.light({
       fontSize: 15,
@@ -97,7 +95,7 @@ const styles = StyleSheet.create({
       lineHeight: 22,
     }),
     marginBottom: 28,
-  },
+  } as any,
   linkBox: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -121,7 +119,7 @@ const styles = StyleSheet.create({
       color: AppColorStyles.gray1,
       lineHeight: 22,
     }),
-  },
+  } as any,
   laterButton: {
     alignSelf: 'center',
     marginTop: 18,
@@ -134,5 +132,5 @@ const styles = StyleSheet.create({
       color: AppColorStyles.gray2,
       lineHeight: 22,
     }),
-  },
+  } as any,
 });

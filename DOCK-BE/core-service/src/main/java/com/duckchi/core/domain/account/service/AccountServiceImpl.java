@@ -294,11 +294,17 @@ public class AccountServiceImpl implements AccountService {
 
     //계좌 삭제
     @Override
+    @Transactional
     public void deleteBankAccount(Long userId, Long accountId) {
         UserAccount userAccount = userAccountRepository.findByIdAndUserIdAndStatusAndDeletedAtIsNull(accountId,userId, AccountStatus.VERIFIED)
                 .orElseThrow(() -> new CustomException(ErrorCode.ACCOUNT_INVALID));
-
+        User user = userRepository.findById(userId)
+                .orElseThrow(()-> new CustomException(ErrorCode.USER_NOT_FOUND));
+        //계좌 소프트 삭제
         userAccount.softDelete();
+        //계좌 비밀번호 초기화 + 실패횟수 카운트 초기화
+        user.deletePayPassword();
+
     }
 
 

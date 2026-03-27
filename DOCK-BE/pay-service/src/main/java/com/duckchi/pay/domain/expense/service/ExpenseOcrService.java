@@ -10,7 +10,7 @@ import org.springframework.web.multipart.MultipartFile;
  */
 public interface ExpenseOcrService {
 
-    ExpenseOcrDraftResponse analyzeReceipt(String imageUrl);
+    ExpenseOcrDraftResponse analyzeReceipt(MultipartFile image);
 
-    JsonNode analyzeReceiptRaw(String imageUrl);
+    JsonNode analyzeReceiptRaw(MultipartFile image);
 }

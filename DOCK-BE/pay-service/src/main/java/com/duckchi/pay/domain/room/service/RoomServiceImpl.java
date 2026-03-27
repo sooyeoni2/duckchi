@@ -17,6 +17,7 @@ import com.duckchi.pay.domain.room.dto.request.DelegateAdminRequest;
 import com.duckchi.pay.domain.room.dto.request.StartRoomRequest;
 import com.duckchi.pay.domain.room.dto.request.UpdateRoomRequest;
 import com.duckchi.pay.domain.room.dto.response.CreateRoomResponse;
+import com.duckchi.pay.domain.room.dto.response.GetAutoDebitConsentResponse;
 import com.duckchi.pay.domain.room.dto.response.RoomListResponse;
 import com.duckchi.pay.domain.room.dto.response.RoomMySetItemResponse;
 import com.duckchi.pay.domain.room.dto.response.RoomMySetResponse;
@@ -108,7 +109,7 @@ public class RoomServiceImpl implements RoomService {
         roomParticipantRepository.save(owner);
 
         // [BADGE 트리거] 방 생성 시 뱃지 진행도 갱신 (ALLEY_BOSS +1, INSSA_DUCK +1)
-        badgeTriggerService.triggerRoomCreated(currentUserId);
+        badgeTriggerService.triggerRoomCreated(savedRoom.getId(), currentUserId);
 
         return CreateRoomResponse.from(savedRoom);
     }
@@ -169,6 +170,42 @@ public class RoomServiceImpl implements RoomService {
                 .userId(currentUserId)
                 .role(participant.isAdmin() ? "ADMIN" : "MEMBER")
                 .isAgreed(participant.isAgreed())
+                .build();
+    }
+
+    @Override
+    public GetAutoDebitConsentResponse getAutoDebitConsent(Long roomId, Long currentUserId) {
+        if (currentUserId == null) {
+            throw new CustomException(ErrorCode.COMMON_UNAUTHORIZED);
+        }
+
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
+
+        if (room.getDeletedAt() != null) {
+            throw new CustomException(ErrorCode.ROOM_NOT_FOUND);
+        }
+
+        // ROOM-20은 "본인이 속한 방의 본인 상태"만 조회하도록 고정해 홈 진입 시 상태 복원 기준을 일관되게 유지한다.
+        RoomParticipant participant = roomParticipantRepository.findByRoom_IdAndUserId(roomId, currentUserId)
+                .orElseThrow(() -> new CustomException(
+                        "해당 모임의 멤버만 자동이체 동의 상태를 조회할 수 있습니다.",
+                        ErrorCode.ROOM_MEMBER_ONLY));
+
+        long participantCount = roomParticipantRepository.countByRoom_Id(roomId);
+        long agreedCount = roomParticipantRepository.countByRoom_IdAndIsAgreedTrue(roomId);
+
+        // 동의율은 FE에서 즉시 배지/문구에 사용하므로 별도 후처리 없이 정수 퍼센트 값으로 바로 내려준다.
+        int consentRate = participantCount == 0 ? 0 : safeLongToInt((agreedCount * 100) / participantCount);
+
+        return GetAutoDebitConsentResponse.builder()
+                .roomId(roomId)
+                .userId(currentUserId)
+                .role(participant.isAdmin() ? "ADMIN" : "MEMBER")
+                .isAgreed(participant.isAgreed())
+                .agreedCount(safeLongToInt(agreedCount))
+                .participantCount(safeLongToInt(participantCount))
+                .consentRate(consentRate)
                 .build();
     }
 
@@ -496,6 +533,7 @@ public class RoomServiceImpl implements RoomService {
                 .roomId(room.getId())
                 .roomName(room.getName())
                 .category(room.getCategory())
+                .description(room.getDescription())
                 .isProgress(room.isProgress())
                 .participants(participants)
                 .participantCount(participants.size())
@@ -563,6 +601,7 @@ public class RoomServiceImpl implements RoomService {
         }
 
         room.updateRoomInfo(request.getName(), request.getCategory());
+        room.updateRoomDetails(request.getCategory(), request.getDescription());
     }
 
     @Override
@@ -586,7 +625,13 @@ public class RoomServiceImpl implements RoomService {
         RoomParticipant participant = roomParticipantRepository.findByRoom_IdAndUserId(roomId, currentUserId)
                 .orElseThrow(() -> new CustomException(ErrorCode.ROOM_MEMBER_ONLY));
 
-        if (participant.isAdmin()) {
+        long participantCount = roomParticipantRepository.countByRoom_Id(roomId);
+
+        // 마지막 인원이면 방을 삭제한다.
+        if (participantCount <= 1) {
+            room.deleteRoom();
+        } else if (participant.isAdmin()) {
+            // 다른 사람이 남아있는데 방장이 나가려면 위임이 필요하다.
             throw new CustomException(ErrorCode.ROOM_ADMIN_DELEGATION_REQUIRED);
         }
 
@@ -683,10 +728,12 @@ public class RoomServiceImpl implements RoomService {
                 .occurredAt(LocalDateTime.now())
                 .build();
         //outboxEventCommandService 호출
+        // aggregate_id는 Kafka 파티셔닝을 위해 roomId를 유지하되, 
+        // DB 유니크 제약 조건을 피하기 위해 event_type 컬럼에 sessionId를 포함시킨다.
         outboxEventCommandService.save(
                 "ROOM",
                 room.getId(),
-                "ROOM_STARTED",
+                "ROOM_STARTED_" + session.getId(),
                 KafkaTopicNames.ROOM_LIFECYCLE_NOTIFICATION_EVENT,
                 event
         );
@@ -751,10 +798,12 @@ public class RoomServiceImpl implements RoomService {
                 .occurredAt(LocalDateTime.now())
                 .build();
         //outboxEventCommandService 호출
+        // aggregate_id는 Kafka 파티셔닝을 위해 roomId를 유지하되, 
+        // DB 유니크 제약 조건을 피하기 위해 event_type 컬럼에 sessionId를 포함시킨다.
         outboxEventCommandService.save(
                 "ROOM",
                 room.getId(),
-                "ROOM_ENDED",
+                "ROOM_ENDED_" + (activeSession != null ? activeSession.getId() : System.currentTimeMillis()),
                 KafkaTopicNames.ROOM_LIFECYCLE_NOTIFICATION_EVENT,
                 event
         );

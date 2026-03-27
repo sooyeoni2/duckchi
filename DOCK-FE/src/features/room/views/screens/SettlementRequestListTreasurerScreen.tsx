@@ -21,8 +21,13 @@ export function SettlementRequestListTreasurerScreen({
       isTreasurer
       selectedPendingId={viewModel.selectedPendingId}
       canDirectComplete={viewModel.canDirectComplete}
+      isLoading={viewModel.isLoading}
+      isDirectCompleting={viewModel.isDirectCompleting}
+      errorMessage={viewModel.errorMessage}
       onBackPress={onBackPress}
       onTogglePendingParticipant={viewModel.togglePendingParticipant}
+      onDirectComplete={viewModel.directCompleteSelected}
+      onRetry={viewModel.reload}
     />
   );
 }

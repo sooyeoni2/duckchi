@@ -1,6 +1,8 @@
 import { MaterialCommunityIcons as MaterialDesignIcons } from '@expo/vector-icons';
 import React from 'react';
 import {
+  Animated,
+  Easing,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -15,24 +17,30 @@ import { KBODiaGothicTextStyle, PretendardTextStyle } from '@core/theme/typograp
 import { CustomAppBar } from '@shared/components/app_bar/CustomAppBar';
 import { FilledButton } from '@shared/components/buttons/FilledButton';
 import { OutlineButton } from '@shared/components/buttons/OutlineButton';
+import { ShimmerBlock } from '@shared/components/feedback/ShimmerBlock';
 
 import type {
   SettlementParticipantItem,
-  SettlementRequestListMock,
-} from '../../models/settlementRequestListMockData';
+  SettlementRequestListData,
+} from '../../models/settlementRequestListTypes';
 
 const BASE_WIDTH = 412;
 
 const toWon = (value: number) => `${value.toLocaleString('ko-KR')}원`;
 
 interface SettlementRequestListViewProps {
-  data: SettlementRequestListMock;
+  data: SettlementRequestListData;
   participants: SettlementParticipantItem[];
   isTreasurer: boolean;
   selectedPendingId: number | null;
   canDirectComplete: boolean;
+  isLoading?: boolean;
+  isDirectCompleting?: boolean;
+  errorMessage?: string;
   onBackPress: () => void;
   onTogglePendingParticipant: (participantId: number) => void;
+  onDirectComplete?: () => void;
+  onRetry?: () => void;
 }
 
 export function SettlementRequestListView({
@@ -41,12 +49,40 @@ export function SettlementRequestListView({
   isTreasurer,
   selectedPendingId,
   canDirectComplete,
+  isLoading = false,
+  isDirectCompleting = false,
+  errorMessage,
   onBackPress,
   onTogglePendingParticipant,
+  onDirectComplete,
+  onRetry,
 }: SettlementRequestListViewProps) {
   const { width } = useWindowDimensions();
   const contentWidth = Math.min(width, 430);
   const s = contentWidth / BASE_WIDTH;
+  const participantEntryAnimsRef = React.useRef<Animated.Value[]>([]);
+
+  React.useEffect(() => {
+    if (isLoading || participants.length === 0) {
+      return;
+    }
+
+    participantEntryAnimsRef.current = participants.map(
+      (_, index) => participantEntryAnimsRef.current[index] ?? new Animated.Value(0),
+    );
+    participantEntryAnimsRef.current.forEach((anim) => anim.setValue(0));
+
+    Animated.stagger(
+      35,
+      participantEntryAnimsRef.current.map((anim) =>
+        Animated.timing(anim, {
+          toValue: 1,
+          duration: 220,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        })),
+    ).start();
+  }, [isLoading, participants]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -113,6 +149,35 @@ export function SettlementRequestListView({
             </Text>
           </View>
 
+          {errorMessage != null && !isLoading && (
+            <View style={[styles.errorBox, { marginTop: 12 * s, borderRadius: 8 * s }]}>
+              <Text
+                style={[
+                  styles.errorText,
+                  { fontSize: 12 * s, lineHeight: 17 * s },
+                ]}
+              >
+                {errorMessage}
+              </Text>
+              {onRetry != null && (
+                <Pressable
+                  onPress={onRetry}
+                  style={styles.retryButton}
+                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                >
+                  <Text
+                    style={[
+                      styles.retryText,
+                      { fontSize: 12 * s, lineHeight: 12 * s },
+                    ]}
+                  >
+                    다시 시도
+                  </Text>
+                </Pressable>
+              )}
+            </View>
+          )}
+
           <View style={[styles.participantsHeaderRow, { marginTop: 28 * s }]}> 
             <Text
               style={[
@@ -124,6 +189,7 @@ export function SettlementRequestListView({
             </Text>
             {isTreasurer && (
               <Pressable
+                onPress={canDirectComplete ? onDirectComplete : undefined}
                 style={[
                   styles.quickCompleteButton,
                   {
@@ -131,6 +197,7 @@ export function SettlementRequestListView({
                     height: 24 * s,
                     paddingHorizontal: 16 * s,
                   },
+                  !canDirectComplete && styles.quickCompleteButtonDisabled,
                 ]}
               >
                 <Text
@@ -146,107 +213,148 @@ export function SettlementRequestListView({
           </View>
 
           <View style={{ marginTop: 12 * s }}>
-            {participants.map((participant) => {
-              const isPending = participant.status === 'PENDING';
-              const isSelectedPending =
-                isPending && selectedPendingId === participant.id;
-              const displayName = participant.isMe
-                ? `${participant.name} (나)`
-                : participant.name;
+            {isLoading ? (
+              Array.from({ length: 6 }).map((_, index) => (
+                <View key={`participant-skeleton-${index}`} style={[styles.participantRow, { paddingVertical: 7 * s }]}>
+                  <ShimmerBlock width={34 * s} height={34 * s} borderRadius={17 * s} />
+                  <View style={[styles.participantTextWrap, { gap: 6 * s }]}>
+                    <ShimmerBlock width={92 * s} height={14 * s} borderRadius={6 * s} />
+                    <ShimmerBlock width={66 * s} height={14 * s} borderRadius={6 * s} />
+                  </View>
+                  <View style={styles.participantStatusWrap}>
+                    <ShimmerBlock width={40 * s} height={14 * s} borderRadius={7 * s} />
+                  </View>
+                </View>
+              ))
+            ) : participants.length > 0 ? (
+              participants.map((participant, index) => {
+                const isPending = participant.status === 'PENDING';
+                const isSelectedPending =
+                  isPending && selectedPendingId === participant.id;
+                const displayName = participant.isMe
+                  ? `${participant.name} (나)`
+                  : participant.name;
+                const anim = participantEntryAnimsRef.current[index] ?? new Animated.Value(1);
 
-              return (
-                <View
-                  key={participant.id}
-                  style={[styles.participantRow, { paddingVertical: 7 * s }]}
-                >
-                  <View
+                return (
+                  <Animated.View
+                    key={participant.id}
                     style={[
-                      styles.avatarWrap,
+                      styles.participantRow,
+                      { paddingVertical: 7 * s },
                       {
-                        width: 34 * s,
-                        height: 34 * s,
-                        borderRadius: 17 * s,
+                        opacity: anim,
+                        transform: [
+                          {
+                            translateY: anim.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: [10 * s, 0],
+                            }),
+                          },
+                        ],
                       },
                     ]}
                   >
-                    <MaterialDesignIcons
-                      name="account-outline"
-                      size={24 * s}
-                      color={AppColorStyles.gray2}
-                    />
-                  </View>
-
-                  <View style={styles.participantTextWrap}>
-                    <Text
+                    <View
                       style={[
-                        styles.participantName,
-                        { fontSize: 16 * s, lineHeight: 16 * s },
-                        !isTreasurer && participant.isMe
-                          ? { color: AppColorStyles.gray2 }
-                          : null,
+                        styles.avatarWrap,
+                        {
+                          width: 34 * s,
+                          height: 34 * s,
+                          borderRadius: 17 * s,
+                        },
                       ]}
                     >
-                      {displayName}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.participantAmount,
-                        { fontSize: 16 * s, lineHeight: 16 * s },
-                      ]}
-                    >
-                      {toWon(participant.amount)}
-                    </Text>
-                  </View>
+                      <MaterialDesignIcons
+                        name="account-outline"
+                        size={24 * s}
+                        color={AppColorStyles.gray2}
+                      />
+                    </View>
 
-                  <View style={styles.participantStatusWrap}>
-                    {isPending ? (
-                      isTreasurer ? (
-                        <Pressable
-                          onPress={() => onTogglePendingParticipant(participant.id)}
-                          style={[
-                            styles.checkBox,
-                            {
-                              width: 17 * s,
-                              height: 17 * s,
-                              borderRadius: 4 * s,
-                            },
-                            isSelectedPending
-                              ? styles.checkBoxChecked
-                              : styles.checkBoxUnchecked,
-                          ]}
-                        >
-                          {isSelectedPending && (
-                            <MaterialDesignIcons
-                              name="check"
-                              size={12 * s}
-                              color={AppColorStyles.white}
-                            />
-                          )}
-                        </Pressable>
+                    <View style={styles.participantTextWrap}>
+                      <Text
+                        style={[
+                          styles.participantName,
+                          { fontSize: 16 * s, lineHeight: 16 * s },
+                          !isTreasurer && participant.isMe
+                            ? { color: AppColorStyles.gray2 }
+                            : null,
+                        ]}
+                      >
+                        {displayName}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.participantAmount,
+                          { fontSize: 16 * s, lineHeight: 16 * s },
+                        ]}
+                      >
+                        {toWon(participant.amount)}
+                      </Text>
+                    </View>
+
+                    <View style={styles.participantStatusWrap}>
+                      {isPending ? (
+                        isTreasurer ? (
+                          <Pressable
+                            onPress={() => onTogglePendingParticipant(participant.id)}
+                            style={[
+                              styles.checkBox,
+                              {
+                                width: 17 * s,
+                                height: 17 * s,
+                                borderRadius: 4 * s,
+                              },
+                              isSelectedPending
+                                ? styles.checkBoxChecked
+                                : styles.checkBoxUnchecked,
+                            ]}
+                          >
+                            {isSelectedPending && (
+                              <MaterialDesignIcons
+                                name="check"
+                                size={12 * s}
+                                color={AppColorStyles.white}
+                              />
+                            )}
+                          </Pressable>
+                        ) : (
+                          <Text
+                            style={[
+                              styles.pendingText,
+                              { fontSize: 12 * s, lineHeight: 12 * s },
+                            ]}
+                          >
+                            미완료
+                          </Text>
+                        )
                       ) : (
                         <Text
                           style={[
-                            styles.pendingText,
+                            styles.completedText,
                             { fontSize: 12 * s, lineHeight: 12 * s },
                           ]}
                         >
-                          미완료
+                          완료
                         </Text>
-                      )
-                    ) : (
-                      <Text
-                        style={[
-                          styles.completedText,
-                          { fontSize: 12 * s, lineHeight: 12 * s },
-                        ]}
-                      >
-                        완료
-                      </Text>
-                    )}
-                  </View>
-                </View>
-              );
-            })}
+                      )}
+                    </View>
+                  </Animated.View>
+                );
+              })
+            ) : (
+              <View style={[styles.emptyBox, { borderRadius: 8 * s, paddingVertical: 14 * s }]}>
+                <Text
+                  style={[
+                    styles.emptyText,
+                    { fontSize: 13 * s, lineHeight: 13 * s },
+                  ]}
+                >
+                  정산 참여 내역이 없습니다.
+                </Text>
+              </View>
+            )}
           </View>
 
           <View
@@ -294,7 +402,8 @@ export function SettlementRequestListView({
               />
               <OutlineButton
                 text="직접 완료하기"
-                onPress={canDirectComplete ? () => {} : undefined}
+                onPress={canDirectComplete ? onDirectComplete : undefined}
+                isLoading={isDirectCompleting}
                 isFullWidth={false}
                 width={175 * s}
                 height={60 * s}
@@ -379,6 +488,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  quickCompleteButtonDisabled: {
+    backgroundColor: AppColorStyles.gray4,
+  },
   quickCompleteText: {
     ...KBODiaGothicTextStyle.medium({
       fontSize: 14,
@@ -433,6 +545,48 @@ const styles = StyleSheet.create({
     backgroundColor: AppColorStyles.white,
     borderWidth: 1,
     borderColor: AppColorStyles.gray2,
+  },
+  errorBox: {
+    borderWidth: 1,
+    borderColor: AppColorStyles.divider,
+    backgroundColor: AppColorStyles.surface,
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+  },
+  errorText: {
+    ...PretendardTextStyle.medium({
+      fontSize: 12,
+      color: AppColorStyles.textSecondary,
+    }),
+  },
+  retryButton: {
+    marginTop: 6,
+    alignSelf: 'flex-start',
+  },
+  retryText: {
+    ...PretendardTextStyle.bold({
+      fontSize: 12,
+      color: AppColorStyles.gray1,
+    }),
+  },
+  loadingText: {
+    ...PretendardTextStyle.medium({
+      fontSize: 12,
+      color: AppColorStyles.textSecondary,
+    }),
+  },
+  emptyBox: {
+    borderWidth: 1,
+    borderColor: AppColorStyles.divider,
+    backgroundColor: AppColorStyles.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyText: {
+    ...KBODiaGothicTextStyle.medium({
+      fontSize: 13,
+      color: AppColorStyles.gray3,
+    }),
   },
   myAmountCard: {
     backgroundColor: AppColorStyles.yellowLight,

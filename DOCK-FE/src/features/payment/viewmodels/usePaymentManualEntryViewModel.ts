@@ -1,6 +1,7 @@
 import React from 'react';
-import { getManualEntryDraft } from '../models/paymentService';
-import type { ManualEntryDraft } from '../models/paymentTypes';
+import { useAuthStore } from '@features/auth/models/authStore';
+import { getManualEntryDraft } from '../models/services/paymentService';
+import type { ManualEntryDraft } from '../models/types/paymentTypes';
 
 /**
  * 직접 입력 flow의 draft 조회 상태.
@@ -56,10 +57,11 @@ const distributeAmountEvenly = (draft: ManualEntryDraft): ManualEntryDraft => {
 };
 
 /**
- * 직접 입력 mock 전용 ViewModel.
+ * 직접 입력 ViewModel.
  * amount/participant/splitAmount를 한 draft에서 이어서 관리한다.
  */
 export function usePaymentManualEntryViewModel(roomId: number) {
+  const currentUserId = useAuthStore((state) => state.user?.userId ?? null);
   const [state, setState] = React.useState<PaymentManualEntryState>({
     status: 'idle',
   });
@@ -72,7 +74,19 @@ export function usePaymentManualEntryViewModel(roomId: number) {
     setState({ status: 'loading' });
 
     try {
-      const draft = await getManualEntryDraft(roomId);
+      const baseDraft = await getManualEntryDraft(roomId);
+      const draft: ManualEntryDraft = {
+        ...baseDraft,
+        participants: baseDraft.participants.map((participant) => ({
+          ...participant,
+          // 본인 식별 가독성을 유지하기 위해 라벨에 (나)를 붙인다.
+          userName:
+            currentUserId != null && participant.userId === currentUserId
+              ? `${participant.userName} (나)`
+              : participant.userName,
+        })),
+      };
+
       setState({
         status: 'loaded',
         draft,
@@ -86,11 +100,44 @@ export function usePaymentManualEntryViewModel(roomId: number) {
             : '직접 입력 초안을 불러오지 못했습니다.',
       });
     }
-  }, [roomId]);
+  }, [currentUserId, roomId]);
 
   const resetDraft = React.useCallback(() => {
     setState({ status: 'idle' });
   }, []);
+
+  const loadDraftFromDetail = React.useCallback(async (detail: any) => {
+    setState({ status: 'loading' });
+    try {
+      // API 통신부를 통해 모임방 멤버들을 가져온 뒤 detail 정보로 오버라이드.
+      const participants = await getManualEntryDraft(roomId).then(d => d.participants);
+      
+      const hydratedParticipants = participants.map((p: any) => {
+        const matched = detail.participants.find((ep: any) => ep.userId === p.userId);
+        return {
+          ...p,
+          isSelected: !!matched,
+          splitAmount: matched ? matched.splitAmount : 0,
+        };
+      });
+
+      setState({
+        status: 'loaded',
+        draft: {
+          expenseId: detail.expenseId,
+          roomSessionId: detail.roomSessionId,
+          title: detail.title,
+          totalAmount: detail.totalAmount,
+          participants: hydratedParticipants,
+        },
+      });
+    } catch (error) {
+      setState({
+        status: 'error',
+        message: error instanceof Error ? error.message : '초안을 불러오지 못했습니다.',
+      });
+    }
+  }, [roomId]);
 
   const updateTitle = React.useCallback((title: string) => {
     setState((previousState) => {
@@ -209,6 +256,7 @@ export function usePaymentManualEntryViewModel(roomId: number) {
   return {
     state,
     loadDraft,
+    loadDraftFromDetail,
     resetDraft,
     updateTitle,
     updateTotalAmount,

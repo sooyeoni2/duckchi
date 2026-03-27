@@ -1,8 +1,8 @@
 import React from 'react';
-import { View, StyleSheet, ScrollView, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, StyleSheet, ScrollView, Alert, ActivityIndicator, Clipboard } from 'react-native';
+import { SafeAreaView, Edges } from 'react-native-safe-area-context';
 import { AppColorStyles } from '@core/theme/colors';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 import type { RoomStackParamList } from '@core/navigation/types';
 import { CustomAppBar } from '@shared/components/app_bar/CustomAppBar';
@@ -12,7 +12,7 @@ import { useRoomActionViewModel } from '../../viewmodels/useRoomActionViewModel'
 import { RoomMenuItem } from '../components/RoomMenuItem';
 import { RoomActionConfirmBottomSheet, type PendingSettlement } from '../components/RoomActionConfirmBottomSheet';
 import { MeetingRoomLinkSheet } from '../../components/MeetingRoomLinkSheet';
-import { getMeetingRoomInviteLinkMock } from '../../models/roomMockData';
+import { useToastStore } from '../../../../shared/stores/useToastStore';
 
 type Route = RouteProp<RoomStackParamList, 'RoomMoreOptions'>;
 
@@ -21,20 +21,19 @@ const RoomMoreOptionsScreen: React.FC = () => {
   const route = useRoute<Route>();
   const { roomId } = route.params;
   
-  // ViewModel 훅을 통해 상태와 로직(핸들러)을 가져옴
-  const { state, openInviteModal, closeInviteModal, openActionModal, closeActionModal } = useRoomMoreOptionsViewModel();
+  const { state, fetchRoomInfo, openInviteModal, closeInviteModal, openActionModal, closeActionModal } = useRoomMoreOptionsViewModel(roomId);
   const { roomInfo, isInviteModalVisible, activeActionType, isActionModalVisible } = state;
 
-  const { state: actionState, startRoom, endRoom, deleteRoom, leaveRoom } = useRoomActionViewModel();
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchRoomInfo();
+    }, [fetchRoomInfo])
+  );
 
-  // 팀 공용 MeetingRoomLinkSheet에서 사용할 초대 링크 Mock
-  const inviteLink = getMeetingRoomInviteLinkMock(1);
+  const { state: actionState, startRoom, endRoom, deleteRoom, leaveRoom } = useRoomActionViewModel(roomId);
 
-  // 미완료 정산 Mock (실제 연동 시 서버 데이터로 교체)
-  const pendingSettlement: PendingSettlement | undefined =
-    (activeActionType === 'LEAVE' || activeActionType === 'DELETE')
-      ? { count: 1, name: '고기집', amount: 20000, requester: '류병선' }
-      : undefined;
+  // 미완료 정산 Mock 제거 (실제 연동 시 서버 데이터로 교체 예정)
+  const pendingSettlement: PendingSettlement | undefined = undefined;
 
   const handleActionConfirm = async () => {
     if (!activeActionType) return;
@@ -49,7 +48,24 @@ const RoomMoreOptionsScreen: React.FC = () => {
     let success = false;
     switch (activeActionType) {
       case 'START': success = await startRoom(); break;
-      case 'END': success = await endRoom(); break;
+      case 'END': 
+        if (roomInfo.totalPay > 0) {
+          closeActionModal();
+          Alert.alert(
+            '정산 필요',
+            '미완료된 정산 내역이 있습니다. 정산하기 화면으로 이동하시겠습니까?',
+            [
+              { text: '취소', style: 'cancel' },
+              { 
+                text: '정산하기', 
+                onPress: () => navigation.navigate('RoomDetail', { roomId, showTransfer: true }) 
+              },
+            ]
+          );
+          return;
+        }
+        success = await endRoom(); 
+        break;
       case 'DELETE': success = await deleteRoom(); break;
       case 'LEAVE': success = await leaveRoom(); break;
     }
@@ -57,13 +73,21 @@ const RoomMoreOptionsScreen: React.FC = () => {
     if (success) {
       closeActionModal();
       if (activeActionType === 'DELETE' || activeActionType === 'LEAVE') {
-        navigation.navigate('Home');
+        navigation.navigate('Room', { screen: 'RoomList' });
       }
     }
   };
 
+  if (roomInfo.isLoading) {
+    return (
+      <SafeAreaView style={styles.centered} edges={['top', 'bottom'] as Edges}>
+        <ActivityIndicator size="large" color={AppColorStyles.yellow} />
+      </SafeAreaView>
+    );
+  }
+
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom'] as Edges}>
       {/* 공용 AppBar 컴포넌트 사용 */}
       <CustomAppBar
         showDivider
@@ -81,7 +105,7 @@ const RoomMoreOptionsScreen: React.FC = () => {
           <RoomMenuItem title="N빵 룰렛" />
           <RoomMenuItem 
             title="자동이체 동의" 
-            onPress={() => navigation.navigate('AutoTransferAgree')}
+            onPress={() => navigation.navigate('AutoTransferAgree', { roomId, roomName: roomInfo.title })}
           />
           
           {roomInfo.isAdmin && (
@@ -91,10 +115,15 @@ const RoomMoreOptionsScreen: React.FC = () => {
             />
           )}
           
-          <RoomMenuItem 
-            title="모임방 수정" 
-            onPress={() => navigation.navigate('RoomEdit')}
-          />
+          {roomInfo.isAdmin && (
+            <RoomMenuItem 
+              title="모임방 수정" 
+              onPress={() => navigation.navigate('RoomEdit', { roomId })}
+            />
+          )}
+
+          
+          {/* 시작하기/종료하기 버튼은 사용자의 요청에 따라 더보기 메뉴에서 제거됨 */}
           
           {/* 삭제: danger 색상으로 메뉴 텍스트만 시각 구분 */}
           {roomInfo.isAdmin && (
@@ -121,11 +150,12 @@ const RoomMoreOptionsScreen: React.FC = () => {
       {/* 초대링크 공유 — 팀 공용 MeetingRoomLinkSheet 사용 */}
       <MeetingRoomLinkSheet
         visible={isInviteModalVisible}
-        inviteLink={inviteLink}
+        inviteLink={state.inviteLink}
         title="친구를 모임방으로 초대하기"
         showLater={false}
         onCopyLink={() => {
-          Alert.alert('초대 링크', '링크가 복사되었습니다.');
+          Clipboard.setString(state.inviteLink);
+          useToastStore.getState().showToast('초대 링크가 복사되었습니다.', 'success');
         }}
         onLater={closeInviteModal}
       />
@@ -161,6 +191,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: AppColorStyles.divider,
     overflow: 'hidden',
+  },
+  centered: {
+    flex: 1,
+    backgroundColor: AppColorStyles.background,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 
