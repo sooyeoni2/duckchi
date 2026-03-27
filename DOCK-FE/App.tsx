@@ -396,7 +396,7 @@ function App() {
         }}
       >
         <Stack.Navigator
-          screenOptions={{ headerShown: false, animation: 'none' }}
+          screenOptions={{ headerShown: false, animation: 'fade' }}
           initialRouteName="Onboarding"
         >
           <Stack.Screen name="Onboarding">

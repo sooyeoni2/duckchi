@@ -44,7 +44,7 @@ export type RoomStackParamList = {
   AutoTransferJoin: { roomId: number; roomName?: string; inviteToken?: string };
   AdminDelegation: { roomId: number };
   RoomEdit: { roomId: number };
-  SettlementRequestList: { roomId: number };
+  SettlementRequestList: { roomId: number; expenseId?: number; expenseTitle?: string };
 };
 
 export type AuthStackParamList = {

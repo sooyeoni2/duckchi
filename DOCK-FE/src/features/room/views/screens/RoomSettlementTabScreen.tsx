@@ -20,6 +20,7 @@ interface RoomSettlementTabScreenProps {
   roomStatus?: 'STARTED' | 'ENDED';
   onRefresh: () => Promise<void>;
   onOpenSettlementDetail: (expenseId: number) => void;
+  onOpenSettlementRequestList: (item: RoomSettlementRow) => void;
   onOpenTransfer: () => void;
   onRetrySettlementDetail: (expenseId: number) => void;
   onStartRoom: () => void;
@@ -37,6 +38,7 @@ export function RoomSettlementTabScreen({
   roomStatus,
   onRefresh,
   onOpenSettlementDetail,
+  onOpenSettlementRequestList,
   onOpenTransfer,
   onRetrySettlementDetail,
   onStartRoom,
@@ -72,6 +74,7 @@ export function RoomSettlementTabScreen({
       onRefresh={onRefresh}
       onOpenTransfer={onOpenTransfer}
       onOpenSettlementDetail={onOpenSettlementDetail}
+      onOpenSettlementRequestList={onOpenSettlementRequestList}
     />
   );
 }

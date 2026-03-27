@@ -16,7 +16,11 @@ export function SettlementRequestListScreen() {
   const navigation = useNavigation<Nav>();
   const route = useRoute<ScreenRoute>();
 
-  const viewModel = useSettlementRequestListViewModel(route.params.roomId);
+  const viewModel = useSettlementRequestListViewModel({
+    roomId: route.params.roomId,
+    expenseId: route.params.expenseId,
+    expenseTitle: route.params.expenseTitle,
+  });
 
   if (viewModel.isTreasurer) {
     return (

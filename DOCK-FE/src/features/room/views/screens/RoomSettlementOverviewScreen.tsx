@@ -33,6 +33,7 @@ interface RoomSettlementOverviewScreenProps {
   onRefresh: () => Promise<void>;
   onOpenTransfer: () => void;
   onOpenSettlementDetail: (expenseId: number) => void;
+  onOpenSettlementRequestList: (item: RoomSettlementRow) => void;
 }
 
 export function RoomSettlementOverviewScreen({
@@ -45,6 +46,7 @@ export function RoomSettlementOverviewScreen({
   onRefresh,
   onOpenTransfer,
   onOpenSettlementDetail,
+  onOpenSettlementRequestList,
 }: RoomSettlementOverviewScreenProps) {
   return (
     <ScrollView
@@ -107,7 +109,8 @@ export function RoomSettlementOverviewScreen({
               key={item.id}
               item={item}
               isLast={index === settlementRequests.length - 1}
-              onPress={() => onOpenSettlementDetail(item.id)}
+              // 정산 요청 목록 카드는 클릭한 expense 기준으로 상세 목록을 열어야 한다.
+              onPress={() => onOpenSettlementRequestList(item)}
             />
           ))
         ) : (
