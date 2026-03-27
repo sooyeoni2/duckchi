@@ -1,10 +1,7 @@
 import { MaterialCommunityIcons as MaterialDesignIcons } from '@expo/vector-icons';
 import React, { useEffect } from 'react';
 import {
-  Animated,
   Dimensions,
-  Easing,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -15,7 +12,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppColorStyles } from '@core/theme/colors';
 import { KBODiaGothicTextStyle, PretendardTextStyle } from '@core/theme/typography';
-import { ShimmerBlock } from '@shared/components/feedback/ShimmerBlock';
 
 import type { ReportCategoryData } from '../models/reportTypes';
 import { useReportViewModel } from '../viewmodels/useReportViewModel';
@@ -33,7 +29,7 @@ const formatCurrency = (value: number) => `${value.toLocaleString('ko-KR')}원`;
 const buildPieSegments = (categories: ReportCategoryData[]) => {
   const total = categories.reduce((sum, category) => sum + category.amount, 0);
   if (total <= 0) {
-    return [] as Array<{ color: string; angle: number; categoryName: string }>;
+    return [] as Array<{ color: string; angle: number }>;
   }
 
   const rawCounts = categories.map((category) => (category.amount / total) * PIE_SEGMENTS);
@@ -50,18 +46,12 @@ const buildPieSegments = (categories: ReportCategoryData[]) => {
     remaining -= 1;
   }
 
-  const segments: Array<{ color: string; categoryName: string }> = [];
-  segmentCounts.forEach((count, index) => {
-    for (let i = 0; i < count; i += 1) {
-      segments.push({
-        color: categories[index].color,
-        categoryName: categories[index].name,
-      });
-    }
-  });
+  const segmentColors = segmentCounts.flatMap((count, index) =>
+    Array.from({ length: count }, () => categories[index].color),
+  );
 
-  return segments.map((segment, index) => ({
-    ...segment,
+  return segmentColors.map((color, index) => ({
+    color,
     angle: (360 / PIE_SEGMENTS) * index - 90,
   }));
 };
@@ -88,77 +78,12 @@ export function ReportScreen() {
   } = useReportViewModel();
 
   useEffect(() => {
-    reload().catch(() => undefined);
+    void reload();
   }, [reload]);
 
-  const rawCategories = reportData?.categories;
-  const categories = React.useMemo(
-    () => rawCategories ?? [],
-    [rawCategories],
-  );
+  const categories = reportData?.categories ?? [];
   const pieSegments = React.useMemo(() => buildPieSegments(categories), [categories]);
-  const [selectedCategoryName, setSelectedCategoryName] = React.useState<string | null>(null);
-  const pieReveal = React.useRef(new Animated.Value(0)).current;
-  const chartHintPulse = React.useRef(new Animated.Value(0)).current;
   const monthLabel = reportData?.month.label ?? '----년 --월';
-
-  const selectedCategory = React.useMemo(
-    () => categories.find((category) => category.name === selectedCategoryName) ?? null,
-    [categories, selectedCategoryName],
-  );
-
-  useEffect(() => {
-    if (categories.length === 0) {
-      setSelectedCategoryName(null);
-      return;
-    }
-
-    setSelectedCategoryName((current) =>
-      current != null && categories.some((category) => category.name === current)
-        ? current
-        : categories[0].name);
-  }, [categories]);
-
-  useEffect(() => {
-    if (categories.length === 0) {
-      return;
-    }
-
-    pieReveal.setValue(0);
-    chartHintPulse.setValue(0);
-
-    Animated.parallel([
-      Animated.timing(pieReveal, {
-        toValue: 1,
-        duration: 460,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.sequence([
-        Animated.delay(180),
-        Animated.timing(chartHintPulse, {
-          toValue: 1,
-          duration: 240,
-          easing: Easing.out(Easing.quad),
-          useNativeDriver: true,
-        }),
-      ]),
-    ]).start();
-  }, [categories, chartHintPulse, pieReveal]);
-
-  useEffect(() => {
-    if (selectedCategory == null) {
-      return;
-    }
-
-    chartHintPulse.setValue(0);
-    Animated.timing(chartHintPulse, {
-      toValue: 1,
-      duration: 220,
-      easing: Easing.out(Easing.quad),
-      useNativeDriver: true,
-    }).start();
-  }, [chartHintPulse, selectedCategory]);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -177,7 +102,7 @@ export function ReportScreen() {
             activeOpacity={0.8}
             disabled={!canGoPrev}
             onPress={() => {
-              goPrevMonth().catch(() => undefined);
+              void goPrevMonth();
             }}
             style={styles.monthArrowButton}
           >
@@ -194,7 +119,7 @@ export function ReportScreen() {
             activeOpacity={0.8}
             disabled={!canGoNext}
             onPress={() => {
-              goNextMonth().catch(() => undefined);
+              void goNextMonth();
             }}
             style={styles.monthArrowButton}
           >
@@ -213,7 +138,7 @@ export function ReportScreen() {
             <TouchableOpacity
               activeOpacity={0.85}
               onPress={() => {
-                reload().catch(() => undefined);
+                void reload();
               }}
               style={styles.noticeRetryButton}
             >
@@ -223,24 +148,9 @@ export function ReportScreen() {
         ) : null}
 
         {status === 'loading' && reportData == null ? (
-          <>
-            <View style={styles.card}>
-              <ShimmerBlock width="30%" height={14 * s} borderRadius={7 * s} />
-              <ShimmerBlock width="52%" height={36 * s} borderRadius={12 * s} style={{ marginTop: 10 * s }} />
-              <ShimmerBlock width="34%" height={24 * s} borderRadius={12 * s} style={{ marginTop: 12 * s }} />
-            </View>
-            <View style={styles.card}>
-              <ShimmerBlock width="28%" height={20 * s} borderRadius={10 * s} />
-              <View style={styles.skeletonChartRow}>
-                <ShimmerBlock width={PIE_SIZE} height={PIE_SIZE} borderRadius={PIE_RADIUS} />
-                <View style={styles.skeletonLegendColumn}>
-                  <ShimmerBlock width="88%" height={18 * s} borderRadius={8 * s} />
-                  <ShimmerBlock width="82%" height={18 * s} borderRadius={8 * s} />
-                  <ShimmerBlock width="74%" height={18 * s} borderRadius={8 * s} />
-                </View>
-              </View>
-            </View>
-          </>
+          <View style={styles.noticeCard}>
+            <Text style={styles.noticeMessage}>리포트를 불러오는 중입니다.</Text>
+          </View>
         ) : null}
 
         {reportData != null ? (
@@ -259,31 +169,10 @@ export function ReportScreen() {
               <Text style={styles.sectionTitle}>지출 비율</Text>
               <View style={styles.categoryChartRow}>
                 <View style={styles.pieBox}>
-                  <Animated.View
-                    style={[
-                      styles.pieBase,
-                      {
-                        opacity: pieReveal,
-                        transform: [
-                          {
-                            scale: pieReveal.interpolate({
-                              inputRange: [0, 1],
-                              outputRange: [0.78, 1],
-                            }),
-                          },
-                          {
-                            rotate: pieReveal.interpolate({
-                              inputRange: [0, 1],
-                              outputRange: ['-28deg', '0deg'],
-                            }),
-                          },
-                        ],
-                      },
-                    ]}
-                  >
+                  <View style={styles.pieBase}>
                     {pieSegments.map((segment, index) => (
                       <View
-                        key={`${segment.color}-${segment.categoryName}-${index}`}
+                        key={`${segment.color}-${index}`}
                         style={[
                           styles.pieSegmentWrap,
                           {
@@ -291,10 +180,6 @@ export function ReportScreen() {
                             top: PIE_RADIUS,
                             transform: [{ rotate: `${segment.angle}deg` }],
                           },
-                          selectedCategory == null ||
-                          segment.categoryName === selectedCategory.name
-                            ? styles.pieSegmentWrapActive
-                            : styles.pieSegmentWrapDimmed,
                         ]}
                       >
                         <View
@@ -309,76 +194,25 @@ export function ReportScreen() {
                         />
                       </View>
                     ))}
-                  </Animated.View>
+                  </View>
                 </View>
 
                 <View style={styles.legendColumn}>
                   {categories.length > 0 ? (
                     categories.map((category) => (
-                      <Pressable
-                        key={category.name}
-                        onPress={() => setSelectedCategoryName(category.name)}
-                        style={[
-                          styles.legendRow,
-                          selectedCategory?.name === category.name && styles.legendRowActive,
-                        ]}
-                      >
+                      <View key={category.name} style={styles.legendRow}>
                         <View
                           style={[styles.legendDot, { backgroundColor: category.color }]}
                         />
-                        <Text
-                          style={[
-                            styles.legendLabel,
-                            selectedCategory?.name === category.name && styles.legendLabelActive,
-                          ]}
-                        >
-                          {category.name}
-                        </Text>
-                        <Text
-                          style={[
-                            styles.legendValue,
-                            selectedCategory?.name === category.name && styles.legendValueActive,
-                          ]}
-                        >
-                          {`${category.percentage}%`}
-                        </Text>
-                      </Pressable>
+                        <Text style={styles.legendLabel}>{category.name}</Text>
+                        <Text style={styles.legendValue}>{`${category.percentage}%`}</Text>
+                      </View>
                     ))
                   ) : (
                     <Text style={styles.emptyInlineText}>카테고리 데이터가 없습니다.</Text>
                   )}
                 </View>
               </View>
-
-              {selectedCategory != null && (
-                <Animated.View
-                  style={[
-                    styles.chartTooltip,
-                    {
-                      opacity: chartHintPulse,
-                      transform: [
-                        {
-                          translateY: chartHintPulse.interpolate({
-                            inputRange: [0, 1],
-                            outputRange: [10 * s, 0],
-                          }),
-                        },
-                      ],
-                    },
-                  ]}
-                >
-                  <View
-                    style={[
-                      styles.chartTooltipDot,
-                      { backgroundColor: selectedCategory.color },
-                    ]}
-                  />
-                  <Text style={styles.chartTooltipTitle}>{selectedCategory.name}</Text>
-                  <Text style={styles.chartTooltipValue}>
-                    {formatCurrency(selectedCategory.amount)} · {selectedCategory.percentage}%
-                  </Text>
-                </Animated.View>
-              )}
 
               <Text style={styles.topTagCaption}>이달 가장 많이 쓴 모임 태그</Text>
               <Text style={styles.topTagValue}>{reportData.topCategoryName}</Text>
@@ -584,16 +418,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: AppColorStyles.divider,
   },
-  skeletonChartRow: {
-    marginTop: 12 * s,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  skeletonLegendColumn: {
-    flex: 1,
-    marginLeft: 16 * s,
-    gap: 10 * s,
-  },
   lastCard: {
     marginBottom: 8 * s,
   },
@@ -659,12 +483,6 @@ const styles = StyleSheet.create({
     width: 0,
     height: 0,
   },
-  pieSegmentWrapActive: {
-    opacity: 1,
-  },
-  pieSegmentWrapDimmed: {
-    opacity: 0.22,
-  },
   pieSegmentBar: {
     position: 'absolute',
     width: PIE_SEGMENT_WIDTH,
@@ -679,12 +497,6 @@ const styles = StyleSheet.create({
   legendRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 10 * s,
-    paddingVertical: 4 * s,
-    paddingHorizontal: 6 * s,
-  },
-  legendRowActive: {
-    backgroundColor: '#F6F1CF',
   },
   legendDot: {
     width: 8 * s,
@@ -700,51 +512,12 @@ const styles = StyleSheet.create({
       color: AppColorStyles.textSecondary,
     }),
   },
-  legendLabelActive: {
-    color: AppColorStyles.black,
-  },
   legendValue: {
     marginLeft: 4 * s,
     ...KBODiaGothicTextStyle.medium({
       fontSize: 17 * s,
       lineHeight: 20 * s,
       color: AppColorStyles.black,
-    }),
-  },
-  legendValueActive: {
-    color: '#B57600',
-  },
-  chartTooltip: {
-    marginTop: 12 * s,
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 10 * s,
-    borderWidth: 1,
-    borderColor: '#E6D38A',
-    backgroundColor: '#FFF8D8',
-    paddingHorizontal: 10 * s,
-    paddingVertical: 7 * s,
-  },
-  chartTooltipDot: {
-    width: 8 * s,
-    height: 8 * s,
-    borderRadius: 4 * s,
-    marginRight: 8 * s,
-  },
-  chartTooltipTitle: {
-    ...KBODiaGothicTextStyle.medium({
-      fontSize: 13 * s,
-      lineHeight: 16 * s,
-      color: AppColorStyles.black,
-    }),
-  },
-  chartTooltipValue: {
-    marginLeft: 8 * s,
-    ...PretendardTextStyle.medium({
-      fontSize: 12 * s,
-      lineHeight: 16 * s,
-      color: AppColorStyles.gray1,
     }),
   },
   topTagCaption: {
