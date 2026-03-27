@@ -267,6 +267,7 @@ export interface OcrReceiptSummary {
   storeName: string;
   paidAt: Date | null;
   totalAmount: number;
+  participants: OcrParticipantDraft[];
 }
 
 export type OcrRecognitionResult = 

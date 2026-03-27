@@ -28,10 +28,10 @@ type InviteValidationResult =
   | 'invalid';
 
 type JoinActionResult =
-  | 'failed'
-  | 'consent-only'
-  | 'invite-joined'
-  | 'already-participant';
+  | { type: 'failed' }
+  | { type: 'consent-only' }
+  | { type: 'invite-joined'; roomId: number }
+  | { type: 'already-participant'; roomId: number };
 
 const initialState: AutoTransferJoinState = {
   isProcessing: false,
@@ -96,31 +96,49 @@ export const useAutoTransferJoinViewModel = (roomId: number) => {
     try {
       updateState({ isProcessing: true });
       let targetRoomId = roomId;
+      let joinedByInvite = false;
 
       if (inviteToken) {
         try {
           const joined = await joinRoomByInviteToken(inviteToken);
           targetRoomId = joined.roomId ?? roomId;
+          joinedByInvite = true;
         } catch (joinError: any) {
           if (getErrorCode(joinError) === 'ROOM-409-1') {
             // 왜: 중복 참여 응답은 실패가 아니라 이미 참가 완료 상태로 간주해야 화면 흐름이 끊기지 않는다.
             updateState({ isProcessing: false });
-            return 'already-participant';
+            return { type: 'already-participant', roomId: targetRoomId };
           }
           throw joinError;
         }
       }
 
       // 왜: inviteToken 기반 참가는 기본값이 isAgreed=false로 생성되므로, 동의 선택 시에는 참가 직후 상태를 확정 저장해야 한다.
-      await updateAutoDebitConsent(targetRoomId, status);
+      try {
+        await updateAutoDebitConsent(targetRoomId, status);
+      } catch (consentError: any) {
+        if (joinedByInvite) {
+          // 왜: ROOM-19가 이미 성공한 상태라면 동의 저장 실패가 있어도 모임 진입 자체는 막지 않아야 사용자가 고립되지 않는다.
+          updateState({ isProcessing: false });
+          Alert.alert(
+            '안내',
+            getErrorMessage(consentError, '모임 참여는 완료되었고 자동이체 설정 저장에 실패했습니다.'),
+          );
+          return { type: 'invite-joined', roomId: targetRoomId };
+        }
+        throw consentError;
+      }
 
       updateState({ isProcessing: false });
-      return inviteToken ? 'invite-joined' : 'consent-only';
+      if (inviteToken) {
+        return { type: 'invite-joined', roomId: targetRoomId };
+      }
+      return { type: 'consent-only' };
     } catch (e: any) {
       updateState({ isProcessing: false });
       Alert.alert('오류', getErrorMessage(e, '처리 중 오류가 발생했습니다.'));
       console.error(e);
-      return 'failed';
+      return { type: 'failed' };
     }
   }, [roomId, updateState]);
 

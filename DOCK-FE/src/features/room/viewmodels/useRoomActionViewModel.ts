@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { Alert } from 'react-native';
 import { startMeetingRoom, endMeetingRoom, leaveMeetingRoom, deleteMeetingRoom } from '../models/roomService';
 import { useRoomStore } from '../models/roomStore';
+import { useToastStore } from '../../../shared/stores/useToastStore';
 
 interface RoomActionState {
   status: 'READY' | 'START' | 'END';
@@ -36,7 +37,8 @@ export const useRoomActionViewModel = (roomId: number) => {
       return true;
     } catch (e: any) {
       updateState({ isProcessing: false });
-      Alert.alert('모임 시작 실패', e?.response?.data?.message || '알 수 없는 오류가 발생했습니다.');
+      const msg = e?.response?.data?.message || '알 수 없는 오류가 발생했습니다.';
+      useToastStore.getState().showToast(msg, 'error');
       console.error('Failed to start room:', e);
       return false;
     }
@@ -51,7 +53,8 @@ export const useRoomActionViewModel = (roomId: number) => {
       return true;
     } catch (e: any) {
       updateState({ isProcessing: false });
-      Alert.alert('모임 종료 실패', e?.response?.data?.message || '알 수 없는 오류가 발생했습니다.');
+      const msg = e?.response?.data?.message || '알 수 없는 오류가 발생했습니다.';
+      useToastStore.getState().showToast(msg, 'error');
       console.error('Failed to end room:', e);
       return false;
     }
@@ -66,7 +69,8 @@ export const useRoomActionViewModel = (roomId: number) => {
       return true;
     } catch (e: any) {
       updateState({ isProcessing: false });
-      Alert.alert('방 나가기 실패', e?.response?.data?.message || '알 수 없는 오류가 발생했습니다.');
+      const msg = e?.response?.data?.message || '알 수 없는 오류가 발생했습니다.';
+      useToastStore.getState().showToast(msg, 'error');
       console.error('Failed to leave room:', e);
       return false;
     }
@@ -81,7 +85,8 @@ export const useRoomActionViewModel = (roomId: number) => {
       return true;
     } catch (e: any) {
       updateState({ isProcessing: false });
-      Alert.alert('방 삭제 실패', e?.response?.data?.message || '알 수 없는 오류가 발생했습니다.');
+      const msg = e?.response?.data?.message || '알 수 없는 오류가 발생했습니다.';
+      useToastStore.getState().showToast(msg, 'error');
       console.error('Failed to delete room:', e);
       return false;
     }

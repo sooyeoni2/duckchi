@@ -1,5 +1,5 @@
 import { MaterialCommunityIcons as MaterialDesignIcons } from '@expo/vector-icons';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Dimensions,
   ScrollView,
@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppColorStyles } from '@core/theme/colors';
 import { KBODiaGothicTextStyle, PretendardTextStyle } from '@core/theme/typography';
+import { CustomAppBar } from '@shared/components/app_bar/CustomAppBar';
 
 import type { ReportCategoryData } from '../models/reportTypes';
 import { useReportViewModel } from '../viewmodels/useReportViewModel';
@@ -19,39 +20,40 @@ import { useReportViewModel } from '../viewmodels/useReportViewModel';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const s = SCREEN_WIDTH / 412;
 
-const DONUT_SIZE = 108 * s;
-const DONUT_THICKNESS = 14 * s;
-const DONUT_TICKS = 56;
+const PIE_SIZE = 108 * s;
+const PIE_RADIUS = PIE_SIZE / 2;
+const PIE_SEGMENTS = 180;
+const PIE_SEGMENT_WIDTH = Math.max(2 * s, 1.5);
 
 const formatCurrency = (value: number) => `${value.toLocaleString('ko-KR')}원`;
 
-const buildDonutTicks = (categories: ReportCategoryData[]) => {
+const buildPieSegments = (categories: ReportCategoryData[]) => {
   const total = categories.reduce((sum, category) => sum + category.amount, 0);
   if (total <= 0) {
     return [] as Array<{ color: string; angle: number }>;
   }
 
-  const rawCounts = categories.map((category) => (category.amount / total) * DONUT_TICKS);
+  const rawCounts = categories.map((category) => (category.amount / total) * PIE_SEGMENTS);
   const floored = rawCounts.map((value) => Math.floor(value));
-  let remaining = DONUT_TICKS - floored.reduce((sum, value) => sum + value, 0);
+  let remaining = PIE_SEGMENTS - floored.reduce((sum, value) => sum + value, 0);
 
   const indexedRemainders = rawCounts
     .map((value, index) => ({ index, remainder: value - Math.floor(value) }))
     .sort((a, b) => b.remainder - a.remainder);
 
-  const tickCounts = [...floored];
+  const segmentCounts = [...floored];
   for (let i = 0; i < indexedRemainders.length && remaining > 0; i += 1) {
-    tickCounts[indexedRemainders[i].index] += 1;
+    segmentCounts[indexedRemainders[i].index] += 1;
     remaining -= 1;
   }
 
-  const tickColors = tickCounts.flatMap((count, index) =>
+  const segmentColors = segmentCounts.flatMap((count, index) =>
     Array.from({ length: count }, () => categories[index].color),
   );
 
-  return tickColors.map((color, index) => ({
+  return segmentColors.map((color, index) => ({
     color,
-    angle: (360 / DONUT_TICKS) * index - 90,
+    angle: (360 / PIE_SEGMENTS) * index - 90,
   }));
 };
 
@@ -64,7 +66,10 @@ const EmptyCard = ({ message }: { message: string }) => (
   </View>
 );
 
+type RankTab = 'amount' | 'frequency';
+
 export function ReportScreen() {
+  const [rankTab, setRankTab] = useState<RankTab>('amount');
   const {
     status,
     errorMessage,
@@ -81,15 +86,18 @@ export function ReportScreen() {
   }, [reload]);
 
   const categories = reportData?.categories ?? [];
-  const donutTicks = React.useMemo(() => buildDonutTicks(categories), [categories]);
+  const pieSegments = React.useMemo(() => buildPieSegments(categories), [categories]);
   const monthLabel = reportData?.month.label ?? '----년 --월';
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>소비 리포트</Text>
-      </View>
-      <View style={styles.headerDivider} />
+      <CustomAppBar
+        title="소비 리포트"
+        centerTitle={false}
+        showBackButton={false}
+        showDivider
+        backgroundColor={AppColorStyles.background}
+      />
 
       <ScrollView
         style={styles.scroll}
@@ -167,30 +175,32 @@ export function ReportScreen() {
             <View style={styles.card}>
               <Text style={styles.sectionTitle}>지출 비율</Text>
               <View style={styles.categoryChartRow}>
-                <View style={styles.donutBox}>
-                  <View style={styles.donutBase}>
-                    {donutTicks.map((tick, index) => {
-                      const radius = DONUT_SIZE / 2 - DONUT_THICKNESS / 2;
-                      const radian = (tick.angle * Math.PI) / 180;
-                      const x = DONUT_SIZE / 2 + Math.cos(radian) * radius;
-                      const y = DONUT_SIZE / 2 + Math.sin(radian) * radius;
-
-                      return (
+                <View style={styles.pieBox}>
+                  <View style={styles.pieBase}>
+                    {pieSegments.map((segment, index) => (
+                      <View
+                        key={`${segment.color}-${index}`}
+                        style={[
+                          styles.pieSegmentWrap,
+                          {
+                            left: PIE_RADIUS,
+                            top: PIE_RADIUS,
+                            transform: [{ rotate: `${segment.angle}deg` }],
+                          },
+                        ]}
+                      >
                         <View
-                          key={`${tick.color}-${index}`}
                           style={[
-                            styles.donutTick,
+                            styles.pieSegmentBar,
                             {
-                              backgroundColor: tick.color,
-                              left: x - 4 * s,
-                              top: y - 2 * s,
-                              transform: [{ rotate: `${tick.angle + 90}deg` }],
+                              backgroundColor: segment.color,
+                              left: -PIE_SEGMENT_WIDTH / 2,
+                              top: -PIE_RADIUS,
                             },
                           ]}
                         />
-                      );
-                    })}
-                    <View style={styles.donutInnerHole} />
+                      </View>
+                    ))}
                   </View>
                 </View>
 
@@ -256,37 +266,61 @@ export function ReportScreen() {
               </View>
             </View>
 
-            <View style={styles.card}>
-              <Text style={styles.sectionTitle}>모임별 소비 랭킹</Text>
-              <View style={styles.listGroup}>
-                {reportData.amountRanking.length > 0 ? (
-                  reportData.amountRanking.map((item, index) => (
-                    <View
-                      key={`amount-rank-${item.roomName}-${index}`}
-                      style={styles.rankRow}
-                    >
-                      <View style={styles.rankLeft}>
-                        <MaterialDesignIcons
-                          name="medal"
-                          size={22 * s}
-                          color={index === 0 ? '#F4B63E' : index === 1 ? '#7FB7DE' : '#F08A35'}
-                        />
-                        <Text style={styles.rankOrder}>{index + 1}</Text>
-                        <Text style={styles.rankRoomName}>{item.roomName}</Text>
-                      </View>
-                      <Text style={styles.rankValue}>{formatCurrency(item.amount)}</Text>
-                    </View>
-                  ))
-                ) : (
-                  <EmptyCard message="소비 랭킹 데이터가 없습니다." />
-                )}
-              </View>
-            </View>
-
+            {/* 모임 랭킹 — 탭 형식 */}
             <View style={[styles.card, styles.lastCard]}>
-              <Text style={styles.sectionTitle}>모임별 빈도 랭킹</Text>
+              <Text style={styles.sectionTitle}>모임 랭킹</Text>
+
+              {/* 탭 헤더 */}
+              <View style={styles.tabRow}>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => setRankTab('amount')}
+                  style={[styles.tabButton, rankTab === 'amount' && styles.tabButtonActive]}
+                >
+                  <Text
+                    style={[styles.tabLabel, rankTab === 'amount' && styles.tabLabelActive]}
+                  >
+                    금액순
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => setRankTab('frequency')}
+                  style={[styles.tabButton, rankTab === 'frequency' && styles.tabButtonActive]}
+                >
+                  <Text
+                    style={[styles.tabLabel, rankTab === 'frequency' && styles.tabLabelActive]}
+                  >
+                    빈도순
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* 탭 콘텐츠 */}
               <View style={styles.listGroup}>
-                {reportData.frequencyRanking.length > 0 ? (
+                {rankTab === 'amount' ? (
+                  reportData.amountRanking.length > 0 ? (
+                    reportData.amountRanking.map((item, index) => (
+                      <View
+                        key={`amount-rank-${item.roomName}-${index}`}
+                        style={styles.rankRow}
+                      >
+                        <View style={styles.rankLeft}>
+                          <MaterialDesignIcons
+                            name="medal"
+                            size={22 * s}
+                            color={index === 0 ? '#F4B63E' : index === 1 ? '#7FB7DE' : '#F08A35'}
+                          />
+                          <Text style={styles.rankOrder}>{index + 1}</Text>
+                          <Text style={styles.rankRoomName}>{item.roomName}</Text>
+                        </View>
+                        <Text style={styles.rankValue}>{formatCurrency(item.amount)}</Text>
+                      </View>
+                    ))
+                  ) : (
+                    <EmptyCard message="소비 랭킹 데이터가 없습니다." />
+                  )
+                ) : reportData.frequencyRanking.length > 0 ? (
                   reportData.frequencyRanking.map((item, index) => (
                     <View key={`freq-rank-${item.roomName}-${index}`} style={styles.rankRow}>
                       <View style={styles.rankLeft}>
@@ -296,12 +330,7 @@ export function ReportScreen() {
                           color={index === 0 ? '#F4B63E' : index === 1 ? '#7FB7DE' : '#F08A35'}
                         />
                         <Text style={styles.rankOrder}>{index + 1}</Text>
-                        <View>
-                          <Text style={styles.rankRoomName}>{item.roomName}</Text>
-                          {item.tag.length > 0 ? (
-                            <Text style={styles.rankTag}>{item.tag}</Text>
-                          ) : null}
-                        </View>
+                        <Text style={styles.rankRoomName}>{item.roomName}</Text>
                       </View>
                       <Text style={styles.rankValue}>{`${item.count}회`}</Text>
                     </View>
@@ -322,23 +351,6 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: AppColorStyles.background,
-  },
-  header: {
-    paddingHorizontal: 20 * s,
-    paddingTop: 12 * s,
-    paddingBottom: 10 * s,
-  },
-  headerTitle: {
-    ...KBODiaGothicTextStyle.bold({
-      fontSize: 30 * s,
-      lineHeight: 36 * s,
-      color: AppColorStyles.black,
-    }),
-  },
-  headerDivider: {
-    borderBottomWidth: 1,
-    borderBottomColor: AppColorStyles.gray3,
-    borderStyle: 'dashed',
   },
   scroll: {
     flex: 1,
@@ -364,8 +376,8 @@ const styles = StyleSheet.create({
   },
   monthLabel: {
     ...KBODiaGothicTextStyle.medium({
-      fontSize: 30 * s,
-      lineHeight: 34 * s,
+      fontSize: 20 * s,
+      lineHeight: 24 * s,
       color: AppColorStyles.black,
     }),
   },
@@ -419,23 +431,23 @@ const styles = StyleSheet.create({
     marginBottom: 8 * s,
   },
   cardSubLabel: {
-    ...PretendardTextStyle.medium({
-      fontSize: 13 * s,
-      lineHeight: 18 * s,
+    ...KBODiaGothicTextStyle.medium({
+      fontSize: 16 * s,
+      lineHeight: 16 * s,
       color: AppColorStyles.textHint,
     }),
   },
   totalSpendText: {
-    marginTop: 6 * s,
+    marginTop: 12 * s,
     ...KBODiaGothicTextStyle.bold({
-      fontSize: 35 * s,
-      lineHeight: 40 * s,
+      fontSize: 24 * s,
+      lineHeight: 24 * s,
       color: AppColorStyles.black,
     }),
   },
   compareChip: {
     alignSelf: 'flex-start',
-    marginTop: 10 * s,
+    marginTop: 16 * s,
     backgroundColor: '#F5F1DE',
     borderRadius: 10 * s,
     paddingHorizontal: 10 * s,
@@ -449,9 +461,10 @@ const styles = StyleSheet.create({
     }),
   },
   sectionTitle: {
+    marginBottom: 8 * s,
     ...KBODiaGothicTextStyle.medium({
-      fontSize: 20 * s,
-      lineHeight: 24 * s,
+      fontSize: 16 * s,
+      lineHeight: 16 * s,
       color: AppColorStyles.black,
     }),
   },
@@ -461,33 +474,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  donutBox: {
-    width: DONUT_SIZE,
-    height: DONUT_SIZE,
+  pieBox: {
+    width: PIE_SIZE,
+    height: PIE_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  donutBase: {
-    width: DONUT_SIZE,
-    height: DONUT_SIZE,
-    borderRadius: DONUT_SIZE / 2,
+  pieBase: {
+    width: PIE_SIZE,
+    height: PIE_SIZE,
+    borderRadius: PIE_RADIUS,
     backgroundColor: '#EFEFEF',
     position: 'relative',
+    overflow: 'hidden',
   },
-  donutTick: {
+  pieSegmentWrap: {
     position: 'absolute',
-    width: 9 * s,
-    height: 4 * s,
-    borderRadius: 999,
+    width: 0,
+    height: 0,
   },
-  donutInnerHole: {
+  pieSegmentBar: {
     position: 'absolute',
-    top: DONUT_THICKNESS,
-    left: DONUT_THICKNESS,
-    right: DONUT_THICKNESS,
-    bottom: DONUT_THICKNESS,
+    width: PIE_SEGMENT_WIDTH,
+    height: PIE_RADIUS,
     borderRadius: 999,
-    backgroundColor: AppColorStyles.surface,
   },
   legendColumn: {
     flex: 1,
@@ -506,33 +516,33 @@ const styles = StyleSheet.create({
   },
   legendLabel: {
     width: 50 * s,
-    ...PretendardTextStyle.medium({
-      fontSize: 13 * s,
-      lineHeight: 18 * s,
-      color: AppColorStyles.textSecondary,
+    ...KBODiaGothicTextStyle.medium({
+      fontSize: 15 * s,
+      lineHeight: 15 * s,
+      color: AppColorStyles.textHint,
     }),
   },
   legendValue: {
     marginLeft: 4 * s,
     ...KBODiaGothicTextStyle.medium({
-      fontSize: 17 * s,
-      lineHeight: 20 * s,
-      color: AppColorStyles.black,
+      fontSize: 15 * s,
+      lineHeight: 15 * s,
+      color: AppColorStyles.textHint,
     }),
   },
   topTagCaption: {
     marginTop: 14 * s,
-    ...PretendardTextStyle.medium({
-      fontSize: 12 * s,
-      lineHeight: 16 * s,
+    ...KBODiaGothicTextStyle.medium({
+      fontSize: 13 * s,
+      lineHeight: 13 * s,
       color: AppColorStyles.textHint,
     }),
   },
   topTagValue: {
     marginTop: 4 * s,
     ...KBODiaGothicTextStyle.bold({
-      fontSize: 26 * s,
-      lineHeight: 30 * s,
+      fontSize: 24 * s,
+      lineHeight: 24 * s,
       color: AppColorStyles.black,
     }),
   },
@@ -555,15 +565,15 @@ const styles = StyleSheet.create({
   },
   detailName: {
     ...KBODiaGothicTextStyle.medium({
-      fontSize: 18 * s,
-      lineHeight: 20 * s,
+      fontSize: 16 * s,
+      lineHeight: 16 * s,
       color: AppColorStyles.black,
     }),
   },
   detailAmount: {
     ...KBODiaGothicTextStyle.bold({
-      fontSize: 20 * s,
-      lineHeight: 24 * s,
+      fontSize: 16 * s,
+      lineHeight: 16 * s,
       color: AppColorStyles.black,
     }),
   },
@@ -613,8 +623,8 @@ const styles = StyleSheet.create({
   },
   rankRoomName: {
     ...KBODiaGothicTextStyle.medium({
-      fontSize: 19 * s,
-      lineHeight: 22 * s,
+      fontSize: 16 * s,
+      lineHeight: 16 * s,
       color: AppColorStyles.black,
     }),
   },
@@ -627,8 +637,8 @@ const styles = StyleSheet.create({
   },
   rankValue: {
     ...KBODiaGothicTextStyle.bold({
-      fontSize: 24 * s,
-      lineHeight: 28 * s,
+      fontSize: 16 * s,
+      lineHeight: 16 * s,
       color: AppColorStyles.black,
     }),
   },
@@ -653,6 +663,38 @@ const styles = StyleSheet.create({
       fontSize: 13 * s,
       lineHeight: 18 * s,
       color: AppColorStyles.textHint,
+    }),
+  },
+  tabRow: {
+    flexDirection: 'row' as const,
+    marginTop: 10 * s,
+    marginBottom: 4 * s,
+    gap: 8 * s,
+  },
+  tabButton: {
+    paddingHorizontal: 14 * s,
+    paddingVertical: 6 * s,
+    borderRadius: 20 * s,
+    borderWidth: 1,
+    borderColor: AppColorStyles.divider,
+    backgroundColor: AppColorStyles.surface,
+  },
+  tabButtonActive: {
+    backgroundColor: AppColorStyles.yellow,
+    borderColor: AppColorStyles.yellow,
+  },
+  tabLabel: {
+    ...PretendardTextStyle.medium({
+      fontSize: 13 * s,
+      lineHeight: 18 * s,
+      color: AppColorStyles.textSecondary,
+    }),
+  },
+  tabLabelActive: {
+    ...PretendardTextStyle.medium({
+      fontSize: 13 * s,
+      lineHeight: 18 * s,
+      color: AppColorStyles.black,
     }),
   },
 });
