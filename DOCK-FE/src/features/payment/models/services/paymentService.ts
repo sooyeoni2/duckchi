@@ -6,16 +6,15 @@ import {
   fetchExpenseParticipantsApi,
   fetchMyExpensesApi,
   fetchRoomExpensesApi,
-  fetchOcrAnalysisApi,
   getPaymentErrorMessage,
   requestSettlementsApi,
   updateExpenseApi,
 } from '../api/paymentApi';
+import { createProfileImageUploadUrl, uploadProfileImageToS3 } from '@features/auth/models/authService';
 import {
   toAccountHistoryItem,
   toMyExpenseDetail,
   toMyExpenseItem,
-  toOcrReceiptItem,
 } from './paymentMappers';
 import type {
   AccountHistoryEntryDraft,
@@ -24,7 +23,6 @@ import type {
   ManualEntryDraft,
   MyExpenseDetail,
   MyExpenseItem,
-  OcrReceiptItem,
 } from '../types/paymentTypes';
 
 /**
@@ -69,10 +67,7 @@ export const getAccountHistoryEntryDraft = async (roomId: number | string): Prom
  */
 export const getManualEntryDraft = async (roomId: number | string): Promise<ManualEntryDraft> => {
   const participants = await getExpenseParticipants(roomId);
-  // 직접입력 진입 시 참여자 목록은 실서버 응답으로 초기화하고,
-  // 분배 화면에서 금액을 다시 입력하도록 splitAmount는 0으로 시작한다.
   return {
-    // roomId와 roomSessionId는 다른 값일 수 있어 여기서 임의 추정하지 않는다.
     roomSessionId: 0,
     title: '',
     totalAmount: 0,
@@ -167,19 +162,28 @@ export const getAccountHistories = async (): Promise<AccountHistoryItem[]> => {
 };
 
 /**
- * --------------------------------------------------------------------------
- * OCR 영수증 분석 서비스 (PAY-03)
- * --------------------------------------------------------------------------
- * @param imageUrl S3에 업로드된 이미지 URL
+ * 🖼️ 지연된 이미지 업로드 처리 (Deferred S3 Upload) 헬퍼
+ * 영수증 이미지가 로컬 경로(file:// 등)인 경우 최종 등록/수정 시점에 S3로 올립니다.
  */
-export const analyzeReceipt = async (imageUrl: string): Promise<OcrReceiptItem> => {
-  try {
-    const dto = await fetchOcrAnalysisApi(imageUrl);
-    return toOcrReceiptItem(dto);
-  } catch (error) {
-    throw new Error(getPaymentErrorMessage(error, '영수증 분석에 실패했습니다.'));
+async function resolveDeferredImageUpload(request: ExpenseUpsertRequest) {
+  if (request.receiptImageUrl && (request.receiptImageUrl.startsWith('file://') || request.receiptImageUrl.startsWith('ph://'))) {
+    console.log('[PaymentService] Local receipt image detected. Uploading to S3...');
+    
+    const uploadInfo = await createProfileImageUploadUrl({
+      fileName: `receipt_${Date.now()}.jpg`,
+      contentType: 'image/jpeg',
+    });
+
+    await uploadProfileImageToS3(
+      uploadInfo.uploadUrl,
+      request.receiptImageUrl,
+      'image/jpeg',
+    );
+
+    console.log('[PaymentService] S3 Upload complete. URL:', uploadInfo.fileUrl);
+    request.receiptImageUrl = uploadInfo.fileUrl; // 진짜 S3 URL로 교체
   }
-};
+}
 
 /**
  * --------------------------------------------------------------------------
@@ -191,6 +195,7 @@ export const createExpense = async (
   request: ExpenseUpsertRequest
 ): Promise<number> => {
   try {
+    await resolveDeferredImageUpload(request);
     return await createExpenseApi(roomId, request);
   } catch (error) {
     throw new Error(getPaymentErrorMessage(error, '결제안 생성에 실패했습니다.'));
@@ -208,6 +213,7 @@ export const updateExpense = async (
   request: ExpenseUpsertRequest
 ): Promise<void> => {
   try {
+    await resolveDeferredImageUpload(request);
     await updateExpenseApi(roomId, expenseId, request);
   } catch (error) {
     throw new Error(getPaymentErrorMessage(error, '결제안 수정에 실패했습니다.'));

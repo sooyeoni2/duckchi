@@ -1,5 +1,6 @@
 package com.duckchi.core.domain.notification.dto.event;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -14,6 +15,7 @@ import java.util.Map;
 public class SettlementRequestNotificationEvent {
 
     private Long receiverId; //정산 받는 사람 id
+    @JsonProperty("isAgreed")
     private boolean isAgreed; //자동이체 동의 여부
     private Long roomId; //roomId(프론트 라우팅용)
     private String roomName; //모임방 이름

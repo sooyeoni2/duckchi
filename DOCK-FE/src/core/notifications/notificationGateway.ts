@@ -23,13 +23,18 @@ const normalizeNotificationData = (
 // 원본 RemoteMessage를 앱 전역에서 재사용할 수 있는 NotificationMessage로 변환한다.
 export const toNotificationMessage = (
   remoteMessage: FirebaseMessagingTypes.RemoteMessage,
-): NotificationMessage => ({
-  messageId: remoteMessage.messageId,
-  title: remoteMessage.notification?.title,
-  body: remoteMessage.notification?.body,
-  sentTime: remoteMessage.sentTime,
-  data: normalizeNotificationData(remoteMessage.data),
-});
+): NotificationMessage => {
+  const normalizedData = normalizeNotificationData(remoteMessage.data);
+
+  return {
+    messageId: remoteMessage.messageId,
+    // data-only 테스트 시 notification 블록이 없으므로 data의 title/body를 fallback으로 사용한다.
+    title: remoteMessage.notification?.title ?? normalizedData.title ?? normalizedData.__title,
+    body: remoteMessage.notification?.body ?? normalizedData.body ?? normalizedData.__body,
+    sentTime: remoteMessage.sentTime,
+    data: normalizedData,
+  };
+};
 
 // 알림 열림 이벤트는 메시지 내용과 진입 출처를 함께 기록해 후속 처리에 넘긴다.
 export const toNotificationOpenEvent = (

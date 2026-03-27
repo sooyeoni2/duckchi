@@ -71,12 +71,11 @@ const AutoTransferJoinScreen: React.FC = () => {
   const handleAgree = async () => {
     if (state.isProcessing || isInviteValidating) return;
     const result = await agreeAndJoin(inviteToken);
-    if (result === 'invite-joined' || result === 'already-participant') {
-      navigation.replace('RoomDetail', { roomId });
+    if (result.type === 'invite-joined' || result.type === 'already-participant') {
+      navigation.replace('RoomDetail', { roomId: result.roomId });
       return;
     }
-    if (result === 'consent-only') {
-      await fetchInviteLink();
+    if (result.type === 'consent-only') {
       setSheetVisible(true);
     }
   };
@@ -84,12 +83,11 @@ const AutoTransferJoinScreen: React.FC = () => {
   const handleSkip = async () => {
     if (state.isProcessing || isInviteValidating) return;
     const result = await skipAndJoin(inviteToken);
-    if (result === 'invite-joined' || result === 'already-participant') {
-      navigation.replace('RoomDetail', { roomId });
+    if (result.type === 'invite-joined' || result.type === 'already-participant') {
+      navigation.replace('RoomDetail', { roomId: result.roomId });
       return;
     }
-    if (result === 'consent-only') {
-      await fetchInviteLink();
+    if (result.type === 'consent-only') {
       setSheetVisible(true);
     }
   };

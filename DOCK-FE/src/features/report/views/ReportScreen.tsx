@@ -19,39 +19,40 @@ import { useReportViewModel } from '../viewmodels/useReportViewModel';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const s = SCREEN_WIDTH / 412;
 
-const DONUT_SIZE = 108 * s;
-const DONUT_THICKNESS = 14 * s;
-const DONUT_TICKS = 56;
+const PIE_SIZE = 108 * s;
+const PIE_RADIUS = PIE_SIZE / 2;
+const PIE_SEGMENTS = 180;
+const PIE_SEGMENT_WIDTH = Math.max(2 * s, 1.5);
 
 const formatCurrency = (value: number) => `${value.toLocaleString('ko-KR')}원`;
 
-const buildDonutTicks = (categories: ReportCategoryData[]) => {
+const buildPieSegments = (categories: ReportCategoryData[]) => {
   const total = categories.reduce((sum, category) => sum + category.amount, 0);
   if (total <= 0) {
     return [] as Array<{ color: string; angle: number }>;
   }
 
-  const rawCounts = categories.map((category) => (category.amount / total) * DONUT_TICKS);
+  const rawCounts = categories.map((category) => (category.amount / total) * PIE_SEGMENTS);
   const floored = rawCounts.map((value) => Math.floor(value));
-  let remaining = DONUT_TICKS - floored.reduce((sum, value) => sum + value, 0);
+  let remaining = PIE_SEGMENTS - floored.reduce((sum, value) => sum + value, 0);
 
   const indexedRemainders = rawCounts
     .map((value, index) => ({ index, remainder: value - Math.floor(value) }))
     .sort((a, b) => b.remainder - a.remainder);
 
-  const tickCounts = [...floored];
+  const segmentCounts = [...floored];
   for (let i = 0; i < indexedRemainders.length && remaining > 0; i += 1) {
-    tickCounts[indexedRemainders[i].index] += 1;
+    segmentCounts[indexedRemainders[i].index] += 1;
     remaining -= 1;
   }
 
-  const tickColors = tickCounts.flatMap((count, index) =>
+  const segmentColors = segmentCounts.flatMap((count, index) =>
     Array.from({ length: count }, () => categories[index].color),
   );
 
-  return tickColors.map((color, index) => ({
+  return segmentColors.map((color, index) => ({
     color,
-    angle: (360 / DONUT_TICKS) * index - 90,
+    angle: (360 / PIE_SEGMENTS) * index - 90,
   }));
 };
 
@@ -81,7 +82,7 @@ export function ReportScreen() {
   }, [reload]);
 
   const categories = reportData?.categories ?? [];
-  const donutTicks = React.useMemo(() => buildDonutTicks(categories), [categories]);
+  const pieSegments = React.useMemo(() => buildPieSegments(categories), [categories]);
   const monthLabel = reportData?.month.label ?? '----년 --월';
 
   return (
@@ -167,30 +168,32 @@ export function ReportScreen() {
             <View style={styles.card}>
               <Text style={styles.sectionTitle}>지출 비율</Text>
               <View style={styles.categoryChartRow}>
-                <View style={styles.donutBox}>
-                  <View style={styles.donutBase}>
-                    {donutTicks.map((tick, index) => {
-                      const radius = DONUT_SIZE / 2 - DONUT_THICKNESS / 2;
-                      const radian = (tick.angle * Math.PI) / 180;
-                      const x = DONUT_SIZE / 2 + Math.cos(radian) * radius;
-                      const y = DONUT_SIZE / 2 + Math.sin(radian) * radius;
-
-                      return (
+                <View style={styles.pieBox}>
+                  <View style={styles.pieBase}>
+                    {pieSegments.map((segment, index) => (
+                      <View
+                        key={`${segment.color}-${index}`}
+                        style={[
+                          styles.pieSegmentWrap,
+                          {
+                            left: PIE_RADIUS,
+                            top: PIE_RADIUS,
+                            transform: [{ rotate: `${segment.angle}deg` }],
+                          },
+                        ]}
+                      >
                         <View
-                          key={`${tick.color}-${index}`}
                           style={[
-                            styles.donutTick,
+                            styles.pieSegmentBar,
                             {
-                              backgroundColor: tick.color,
-                              left: x - 4 * s,
-                              top: y - 2 * s,
-                              transform: [{ rotate: `${tick.angle + 90}deg` }],
+                              backgroundColor: segment.color,
+                              left: -PIE_SEGMENT_WIDTH / 2,
+                              top: -PIE_RADIUS,
                             },
                           ]}
                         />
-                      );
-                    })}
-                    <View style={styles.donutInnerHole} />
+                      </View>
+                    ))}
                   </View>
                 </View>
 
@@ -461,33 +464,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  donutBox: {
-    width: DONUT_SIZE,
-    height: DONUT_SIZE,
+  pieBox: {
+    width: PIE_SIZE,
+    height: PIE_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  donutBase: {
-    width: DONUT_SIZE,
-    height: DONUT_SIZE,
-    borderRadius: DONUT_SIZE / 2,
+  pieBase: {
+    width: PIE_SIZE,
+    height: PIE_SIZE,
+    borderRadius: PIE_RADIUS,
     backgroundColor: '#EFEFEF',
     position: 'relative',
+    overflow: 'hidden',
   },
-  donutTick: {
+  pieSegmentWrap: {
     position: 'absolute',
-    width: 9 * s,
-    height: 4 * s,
-    borderRadius: 999,
+    width: 0,
+    height: 0,
   },
-  donutInnerHole: {
+  pieSegmentBar: {
     position: 'absolute',
-    top: DONUT_THICKNESS,
-    left: DONUT_THICKNESS,
-    right: DONUT_THICKNESS,
-    bottom: DONUT_THICKNESS,
+    width: PIE_SEGMENT_WIDTH,
+    height: PIE_RADIUS,
     borderRadius: 999,
-    backgroundColor: AppColorStyles.surface,
   },
   legendColumn: {
     flex: 1,

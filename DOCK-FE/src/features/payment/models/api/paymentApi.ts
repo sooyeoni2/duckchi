@@ -48,13 +48,28 @@ export async function fetchAccountHistoriesApi() {
 }
 
 /**
- * --------------------------------------------------------------------------
- * PAY-03: OCR 영수증 분석 (S3 URL 방식)
- * --------------------------------------------------------------------------
- * 프론트에서 S3 업로드 후 획득한 URL을 전달합니다.
+ * 🖼️ OCR 영수증 분석 (Multipart/Binary 방식)
+ * 프론트에서 로컬 URI 상태의 이미지를 즉시 전송합니다.
  */
-export async function fetchOcrAnalysisApi(imageUrl: string) {
-  const response = await axiosClient.post(ENDPOINTS.payment.ocr, { imageUrl });
+export async function fetchOcrAnalysisMultipartApi(imageUri: string) {
+  const formData = new FormData();
+  
+  // React Native에서 파일을 FormData로 보낼 때의 표준 형식
+  // @ts-ignore - FormData 타입 정의 이슈 우회를 위해 any 사용 가능
+  formData.append('image', {
+    uri: imageUri,
+    name: `receipt_${Date.now()}.jpg`,
+    type: 'image/jpeg',
+  } as any);
+
+  const response = await axiosClient.post(ENDPOINTS.payment.ocr, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+    // 대용량 전송을 위한 타임아웃 연장 (필요시)
+    timeout: 30000, 
+  });
+
   return validateAndUnwrap(response, ocrDraftSchema);
 }
 

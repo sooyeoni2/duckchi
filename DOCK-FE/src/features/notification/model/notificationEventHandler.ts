@@ -71,7 +71,14 @@ export const handleDisplayedNotificationEvent = (
     if (!handled) {
       enqueueNotificationOpen({
         source: 'background_notification_press',
-        message,
+        message: {
+          ...message,
+          // quit -> app launch 구간에서 액션 ID를 잃지 않도록 큐에 함께 보존한다.
+          data: {
+            ...message.data,
+            __pressActionId: pressActionId,
+          },
+        },
         receivedAt: Date.now(),
       });
     }

@@ -35,6 +35,7 @@ export type ProfileStackParamList = {
 export type RoomStackParamList = {
   RoomList: undefined;
   RoomDetail: { roomId: number; showTransfer?: boolean; initialTab?: 'PAYMENT' | 'SETTLEMENT' | 'RANKING' };
+  SettlementTransferAction: { roomId: number; settlementIds: number[] };
   PaymentList: { roomId: number; roomSessionId?: number };
   RoomCreate: undefined;
   RoomRestart: { roomId: number };
@@ -43,7 +44,7 @@ export type RoomStackParamList = {
   AutoTransferJoin: { roomId: number; roomName?: string; inviteToken?: string };
   AdminDelegation: { roomId: number };
   RoomEdit: { roomId: number };
-  SettlementRequestList: { roomId: number };
+  SettlementRequestList: { roomId: number; expenseId?: number; expenseTitle?: string };
 };
 
 export type AuthStackParamList = {

@@ -12,6 +12,7 @@ import { useRoomActionViewModel } from '../../viewmodels/useRoomActionViewModel'
 import { RoomMenuItem } from '../components/RoomMenuItem';
 import { RoomActionConfirmBottomSheet, type PendingSettlement } from '../components/RoomActionConfirmBottomSheet';
 import { MeetingRoomLinkSheet } from '../../components/MeetingRoomLinkSheet';
+import { useToastStore } from '../../../../shared/stores/useToastStore';
 
 type Route = RouteProp<RoomStackParamList, 'RoomMoreOptions'>;
 
@@ -154,7 +155,7 @@ const RoomMoreOptionsScreen: React.FC = () => {
         showLater={false}
         onCopyLink={() => {
           Clipboard.setString(state.inviteLink);
-          Alert.alert('초대 링크', '링크가 복사되었습니다.');
+          useToastStore.getState().showToast('초대 링크가 복사되었습니다.', 'success');
         }}
         onLater={closeInviteModal}
       />

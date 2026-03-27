@@ -62,13 +62,13 @@ pipeline {
 
                       case "${JOB_NAME}" in
                         duckchi-cd-release|*/duckchi-cd-release)
-                          ./gradlew clean bootJar -x test
+                          ./gradlew --no-daemon -Dorg.gradle.workers.max=1 clean bootJar -x test
                           ;;
                         duckchi-ci|*/duckchi-ci)
-                          ./gradlew clean build -x test
+                          ./gradlew --no-daemon -Dorg.gradle.workers.max=1 clean build -x test
                           ;;
                         *)
-                          ./gradlew clean build
+                          ./gradlew --no-daemon -Dorg.gradle.workers.max=1 clean build
                           ;;
                       esac
 
