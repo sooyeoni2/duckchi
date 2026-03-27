@@ -11,5 +11,8 @@ public record CategorySpendResponse(
         Integer amount,
 
         @Schema(description = "해당 월 총 지출 대비 비중 (%)", example = "69.2")
-        Double percentage
+        Double percentage,
+
+        @Schema(description = "정산 횟수 (해당 카테고리 정산 이벤트 수)", example = "3")
+        Integer count
 ) {}

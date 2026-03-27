@@ -1,5 +1,5 @@
 import { MaterialCommunityIcons as MaterialDesignIcons } from '@expo/vector-icons';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Animated,
   Dimensions,
@@ -75,7 +75,10 @@ const EmptyCard = ({ message }: { message: string }) => (
   </View>
 );
 
+type RankTab = 'amount' | 'frequency';
+
 export function ReportScreen() {
+  const [rankTab, setRankTab] = useState<RankTab>('amount');
   const {
     status,
     errorMessage,
@@ -425,37 +428,61 @@ export function ReportScreen() {
               </View>
             </View>
 
-            <View style={styles.card}>
-              <Text style={styles.sectionTitle}>모임별 소비 랭킹</Text>
-              <View style={styles.listGroup}>
-                {reportData.amountRanking.length > 0 ? (
-                  reportData.amountRanking.map((item, index) => (
-                    <View
-                      key={`amount-rank-${item.roomName}-${index}`}
-                      style={styles.rankRow}
-                    >
-                      <View style={styles.rankLeft}>
-                        <MaterialDesignIcons
-                          name="medal"
-                          size={22 * s}
-                          color={index === 0 ? '#F4B63E' : index === 1 ? '#7FB7DE' : '#F08A35'}
-                        />
-                        <Text style={styles.rankOrder}>{index + 1}</Text>
-                        <Text style={styles.rankRoomName}>{item.roomName}</Text>
-                      </View>
-                      <Text style={styles.rankValue}>{formatCurrency(item.amount)}</Text>
-                    </View>
-                  ))
-                ) : (
-                  <EmptyCard message="소비 랭킹 데이터가 없습니다." />
-                )}
-              </View>
-            </View>
-
+            {/* 모임 랭킹 — 탭 형식 */}
             <View style={[styles.card, styles.lastCard]}>
-              <Text style={styles.sectionTitle}>모임별 빈도 랭킹</Text>
+              <Text style={styles.sectionTitle}>모임 랭킹</Text>
+
+              {/* 탭 헤더 */}
+              <View style={styles.tabRow}>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => setRankTab('amount')}
+                  style={[styles.tabButton, rankTab === 'amount' && styles.tabButtonActive]}
+                >
+                  <Text
+                    style={[styles.tabLabel, rankTab === 'amount' && styles.tabLabelActive]}
+                  >
+                    금액순
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => setRankTab('frequency')}
+                  style={[styles.tabButton, rankTab === 'frequency' && styles.tabButtonActive]}
+                >
+                  <Text
+                    style={[styles.tabLabel, rankTab === 'frequency' && styles.tabLabelActive]}
+                  >
+                    빈도순
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* 탭 콘텐츠 */}
               <View style={styles.listGroup}>
-                {reportData.frequencyRanking.length > 0 ? (
+                {rankTab === 'amount' ? (
+                  reportData.amountRanking.length > 0 ? (
+                    reportData.amountRanking.map((item, index) => (
+                      <View
+                        key={`amount-rank-${item.roomName}-${index}`}
+                        style={styles.rankRow}
+                      >
+                        <View style={styles.rankLeft}>
+                          <MaterialDesignIcons
+                            name="medal"
+                            size={22 * s}
+                            color={index === 0 ? '#F4B63E' : index === 1 ? '#7FB7DE' : '#F08A35'}
+                          />
+                          <Text style={styles.rankOrder}>{index + 1}</Text>
+                          <Text style={styles.rankRoomName}>{item.roomName}</Text>
+                        </View>
+                        <Text style={styles.rankValue}>{formatCurrency(item.amount)}</Text>
+                      </View>
+                    ))
+                  ) : (
+                    <EmptyCard message="소비 랭킹 데이터가 없습니다." />
+                  )
+                ) : reportData.frequencyRanking.length > 0 ? (
                   reportData.frequencyRanking.map((item, index) => (
                     <View key={`freq-rank-${item.roomName}-${index}`} style={styles.rankRow}>
                       <View style={styles.rankLeft}>
@@ -465,12 +492,7 @@ export function ReportScreen() {
                           color={index === 0 ? '#F4B63E' : index === 1 ? '#7FB7DE' : '#F08A35'}
                         />
                         <Text style={styles.rankOrder}>{index + 1}</Text>
-                        <View>
-                          <Text style={styles.rankRoomName}>{item.roomName}</Text>
-                          {item.tag.length > 0 ? (
-                            <Text style={styles.rankTag}>{item.tag}</Text>
-                          ) : null}
-                        </View>
+                        <Text style={styles.rankRoomName}>{item.roomName}</Text>
                       </View>
                       <Text style={styles.rankValue}>{`${item.count}회`}</Text>
                     </View>
@@ -880,6 +902,38 @@ const styles = StyleSheet.create({
       fontSize: 13 * s,
       lineHeight: 18 * s,
       color: AppColorStyles.textHint,
+    }),
+  },
+  tabRow: {
+    flexDirection: 'row' as const,
+    marginTop: 10 * s,
+    marginBottom: 4 * s,
+    gap: 8 * s,
+  },
+  tabButton: {
+    paddingHorizontal: 14 * s,
+    paddingVertical: 6 * s,
+    borderRadius: 20 * s,
+    borderWidth: 1,
+    borderColor: AppColorStyles.divider,
+    backgroundColor: AppColorStyles.surface,
+  },
+  tabButtonActive: {
+    backgroundColor: AppColorStyles.yellow,
+    borderColor: AppColorStyles.yellow,
+  },
+  tabLabel: {
+    ...PretendardTextStyle.medium({
+      fontSize: 13 * s,
+      lineHeight: 18 * s,
+      color: AppColorStyles.textSecondary,
+    }),
+  },
+  tabLabelActive: {
+    ...PretendardTextStyle.medium({
+      fontSize: 13 * s,
+      lineHeight: 18 * s,
+      color: AppColorStyles.black,
     }),
   },
 });

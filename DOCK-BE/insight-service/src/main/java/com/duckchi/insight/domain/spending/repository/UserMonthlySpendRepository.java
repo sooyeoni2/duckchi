@@ -23,9 +23,9 @@ public interface UserMonthlySpendRepository extends JpaRepository<UserMonthlySpe
      * Native Query를 이용한 원자적 업데이트 (동시성 제어 고도화).
      * DB 레벨에서 직접 더하기 연산을 수행하여 갱신 분실(Lost Update) 문제를 원천 차단함.
      */
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query(value = "UPDATE user_monthly_spends " +
-                   "SET total_amount = total_amount + :amount, last_updated_at = NOW() " +
+                   "SET total_amount = total_amount + :amount, session_count = session_count + 1, last_updated_at = NOW() " +
                    "WHERE user_id = :userId AND spend_month = :spendMonth " +
                    "AND stat_type = :statType AND stat_value = :statValue", 
            nativeQuery = true)
@@ -35,4 +35,11 @@ public interface UserMonthlySpendRepository extends JpaRepository<UserMonthlySpe
             @Param("statType") String statType,
             @Param("statValue") String statValue,
             @Param("amount") Integer amount);
+
+    /**
+     * 방별 빈도 랭킹 조회 (AN-05).
+     * session_count가 높은 순으로 정렬하여 해당 월 방별 정산 횟수를 반환함.
+     */
+    List<UserMonthlySpend> findAllByUserIdAndSpendMonthAndStatTypeOrderBySessionCountDesc(
+            Long userId, String spendMonth, String statType);
 }
