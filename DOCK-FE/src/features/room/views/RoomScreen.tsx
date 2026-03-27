@@ -344,7 +344,7 @@ export function RoomScreen() {
           onRetrySettlementDetail={handleRetrySettlementDetail}
         />
       ) : (
-        <RoomRankingTabScreen />
+        <RoomRankingTabScreen roomId={route.params.roomId} />
       )}
     </SafeAreaView>
   );

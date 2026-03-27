@@ -192,3 +192,67 @@ export const getAutoDebitConsent = async (roomId: number): Promise<GetAutoDebitC
   const response = await axiosInstance.get(`/api/v1/rooms/${roomId}/auto-debit/consents`);
   return response.data?.data as GetAutoDebitConsentResponse;
 };
+
+export interface RoomRankingItemResponse {
+  userId: number;
+  userName: string;
+  userTag: string;
+  profileImageUrl: string | null;
+  amount: number;
+  rank: number;
+}
+
+export interface RoomRankingMyResponse {
+  userId: number;
+  userName: string;
+  userTag: string;
+  profileImageUrl: string | null;
+  amount: number;
+  rank: number;
+}
+
+export interface RoomRankingSnapshotResponse {
+  roomId: number;
+  asOf: string;
+  revision: number;
+  my: RoomRankingMyResponse | null;
+  top3: RoomRankingItemResponse[];
+  items: RoomRankingItemResponse[];
+}
+
+export interface RoomRankingChangeResponse {
+  userId: number;
+  rank: number;
+  rankDelta: number;
+  amount: number;
+  amountDelta: number;
+}
+
+export interface RoomRankingUpdateEventResponse {
+  roomId: number;
+  asOf: string;
+  revision: number;
+  changes: RoomRankingChangeResponse[];
+  top3: RoomRankingItemResponse[];
+  items: RoomRankingItemResponse[];
+}
+
+/**
+ * 총무 금액 순위 조회 (ROOM-10)
+ * GET /api/v1/rooms/{roomId}/rankings
+ */
+export const getRoomRankingSnapshot = async (
+  roomId: number,
+): Promise<RoomRankingSnapshotResponse> => {
+  const response = await axiosInstance.get<ApiEnvelope<RoomRankingSnapshotResponse>>(
+    `/api/v1/rooms/${roomId}/rankings`,
+  );
+  return (response.data?.data ?? {
+    roomId,
+    asOf: new Date().toISOString(),
+    revision: 0,
+    my: null,
+    top3: [],
+    items: [],
+  }) as RoomRankingSnapshotResponse;
+};
