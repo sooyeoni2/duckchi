@@ -452,7 +452,7 @@ export function RoomScreen() {
           onStartRoom={() => openActionModal('START')}
         />
       ) : (
-        <RoomRankingTabScreen />
+        <RoomRankingTabScreen roomId={route.params.roomId} />
       )}
 
       {activeActionType && (
