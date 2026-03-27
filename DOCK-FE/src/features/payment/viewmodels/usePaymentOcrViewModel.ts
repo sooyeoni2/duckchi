@@ -256,36 +256,7 @@ export function usePaymentOcrViewModel(roomId: number) {
           ...previousState.summary,
           splitMode: 'TOTAL',
           items: [],
-          participants: [
-            {
-              userId: 1,
-              userName: '박성환',
-              isSelected: true,
-              isMe: false,
-              splitAmount: 0,
-            },
-            {
-              userId: 2,
-              userName: '정우주',
-              isSelected: true,
-              isMe: false,
-              splitAmount: 0,
-            },
-            {
-              userId: 3,
-              userName: '류병선 (나)',
-              isSelected: true,
-              isMe: true,
-              splitAmount: 0,
-            },
-            {
-              userId: 4,
-              userName: '김수연',
-              isSelected: false,
-              isMe: false,
-              splitAmount: 0,
-            },
-          ],
+          participants: previousState.summary.participants,
         }),
       };
     });
