@@ -1,10 +1,12 @@
 import React, { useCallback } from 'react';
-import { StyleSheet, Text, TextInput, View, ViewStyle } from 'react-native';
+import { Image, StyleSheet, Text, TextInput, View, ViewStyle } from 'react-native';
 
 interface AmountInputProps {
   value: number;
   onChange: (amount: number) => void;
   label?: string;
+  userTag?: string | null;
+  profileImageUrl?: string | null;
   error?: string | null;
   style?: ViewStyle;
   editable?: boolean;
@@ -20,6 +22,8 @@ const AmountInput: React.FC<AmountInputProps> = ({
   value,
   onChange,
   label,
+  userTag,
+  profileImageUrl,
   error,
   style,
   editable = true,
@@ -38,7 +42,21 @@ const AmountInput: React.FC<AmountInputProps> = ({
 
   return (
     <View style={[styles.container, style]}>
-      {label && <Text style={styles.label}>{label}</Text>}
+      {label && (
+        <View style={styles.labelRow}>
+          {profileImageUrl ? (
+            <Image source={{ uri: profileImageUrl }} style={styles.avatarImage} />
+          ) : (
+            userTag && (
+              <View style={styles.avatarPlaceholder}>
+                <Text style={styles.avatarInitial}>{label[0]}</Text>
+              </View>
+            )
+          )}
+          <Text style={styles.label}>{label}</Text>
+          {userTag && <Text style={styles.tagText}>#{userTag}</Text>}
+        </View>
+      )}
       <View style={[styles.inputWrapper, !editable && styles.disabledInput]}>
         <TextInput
           style={styles.input}
@@ -62,11 +80,43 @@ const styles = StyleSheet.create({
     width: '100%',
     marginBottom: 16,
   },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
   label: {
     fontSize: 14,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 8,
+  },
+  tagText: {
+    fontSize: 12,
+    color: '#999',
+    marginLeft: 4,
+    fontWeight: '400',
+  },
+  avatarImage: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    marginRight: 6,
+    borderWidth: 0.5,
+    borderColor: '#E0E0E0',
+  },
+  avatarPlaceholder: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#F0F0F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 6,
+  },
+  avatarInitial: {
+    fontSize: 10,
+    color: '#999',
+    fontWeight: 'bold',
   },
   inputWrapper: {
     flexDirection: 'row',

@@ -67,6 +67,8 @@ export const toMyExpenseDetail = (dto: ExpenseDetailDto): MyExpenseDetail => {
     participants: dto.participants.map(p => ({
       userId: p.userId,
       userName: p.userName,
+      userTag: p.userTag,
+      profileImageUrl: p.profileImageUrl,
       splitAmount: p.splitAmount,
       isRequester: p.userId === dto.payerUserId,
       isSettled: false,
@@ -80,6 +82,8 @@ export const toMyExpenseDetail = (dto: ExpenseDetailDto): MyExpenseDetail => {
       assignmentDetails: item.itemParticipants.map(ip => ({
         userId: ip.userId,
         userName: ip.userName,
+        userTag: ip.userTag,
+        profileImageUrl: ip.profileImageUrl,
         quantity: ip.quantity,
         amount: ip.splitAmount,
       })),

@@ -3,6 +3,8 @@ import { useState, useCallback, useMemo } from 'react';
 export interface CalculationParticipant {
   userId: number;
   userName: string;
+  userTag?: string | null;
+  profileImageUrl?: string | null;
   splitAmount: number;
 }
 

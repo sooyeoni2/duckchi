@@ -42,4 +42,7 @@ public interface UserMonthlySpendRepository extends JpaRepository<UserMonthlySpe
      */
     List<UserMonthlySpend> findAllByUserIdAndSpendMonthAndStatTypeOrderBySessionCountDesc(
             Long userId, String spendMonth, String statType);
+
+    @Query("SELECT DISTINCT u.spendMonth FROM UserMonthlySpend u WHERE u.userId = :userId ORDER BY u.spendMonth ASC")
+    List<String> findDistinctSpendMonthByUserIdOrderBySpendMonthAsc(@Param("userId") Long userId);
 }

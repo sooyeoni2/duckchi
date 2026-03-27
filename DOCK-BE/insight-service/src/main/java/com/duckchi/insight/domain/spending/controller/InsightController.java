@@ -19,8 +19,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 소비 분석 API 컨트롤러 (명세서 AN-01 ~ AN-04 준수)
- * 사용자의 월별 지출 통계 및 트렌드를 제공함.
+ * 소비 분석 API 컨트롤러 (명세서 AN-01 ~ AN-06 준수)
+ * 사용자의 월별 지출 통계, 트렌드 및 가용 월 정보를 제공함.
  */
 @Tag(name = "Insight", description = "소비 분석 및 지출 통계 API")
 @RestController
@@ -82,5 +82,14 @@ public class InsightController {
             @Parameter(description = "조회 대상 월 (yyyy-MM)", example = "2026-03", required = true)
             @RequestParam("month") String month) {
         return ApiResponseDto.success(insightService.getRoomFrequencyRanking(userId, month));
+    }
+
+    @Operation(summary = "AN-06: 지출 데이터 존재 월 목록 조회",
+               description = "사용자의 지출 내역이 존재하는 모든 월(yyyy-MM) 목록을 조회하여 리포트 이동에 활용함.")
+    @GetMapping("/monthly/available-months")
+    public ApiResponseDto<List<String>> getAvailableMonths(
+            @Parameter(description = "사용자 식별자", required = true)
+            @RequestHeader(USER_ID_HEADER) Long userId) {
+        return ApiResponseDto.success(insightService.getAvailableMonths(userId));
     }
 }

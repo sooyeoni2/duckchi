@@ -4,6 +4,7 @@ import { StyleSheet, Text, TouchableOpacity, View, FlatList, Image } from 'react
 interface MemberOption {
   userId: number;
   userName: string;
+  userTag?: string | null;
   profileImageUrl?: string | null;
 }
 
@@ -49,9 +50,16 @@ const MemberSelector: React.FC<MemberSelectorProps> = ({
             </View>
           )}
         </View>
-        <Text style={[styles.userName, isSelected && styles.selectedText]}>
-          {item.userName}
-        </Text>
+        <View>
+          <Text style={[styles.userName, isSelected && styles.selectedText]}>
+            {item.userName}
+          </Text>
+          {item.userTag && (
+            <Text style={[styles.userTag, isSelected && styles.selectedTagText]}>
+              #{item.userTag}
+            </Text>
+          )}
+        </View>
       </TouchableOpacity>
     );
   }, [selectedUserIds, onToggleMember]);
@@ -131,6 +139,14 @@ const styles = StyleSheet.create({
   selectedText: {
     color: '#FFFFFF',
     fontWeight: '600',
+  },
+  userTag: {
+    fontSize: 10,
+    color: '#999',
+    fontWeight: '400',
+  },
+  selectedTagText: {
+    color: 'rgba(255, 255, 255, 0.8)',
   },
   errorText: {
     fontSize: 12,

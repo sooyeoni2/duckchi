@@ -2,6 +2,7 @@ import { MaterialCommunityIcons as MaterialDesignIcons } from '@expo/vector-icon
 import React from 'react';
 import {
   ActivityIndicator,
+  Image,
   StyleSheet,
   Switch,
   Text,
@@ -196,34 +197,46 @@ export function PaymentManualEntrySetupView({
         {draft.participants.map((participant: any) => (
           <View key={participant.userId} style={styles.participantRow}>
             <View style={styles.participantInfo}>
-              <View
-                style={[
-                  styles.avatarCircle,
-                  !participant.isSelected && styles.avatarCircleInactive,
-                ]}
-              >
-                <MaterialDesignIcons
-                  name="account-outline"
-                  size={28}
-                  color={
-                    participant.isSelected
-                      ? AppColorStyles.gray2
-                      : AppColorStyles.gray3
-                  }
-                />
-              </View>
+                {participant.profileImageUrl ? (
+                  <Image
+                    source={{ uri: participant.profileImageUrl }}
+                    style={styles.avatarImage}
+                  />
+                ) : (
+                  <View
+                    style={[
+                      styles.avatarCircle,
+                      !participant.isSelected && styles.avatarCircleInactive,
+                    ]}
+                  >
+                    <MaterialDesignIcons
+                      name="account-outline"
+                      size={28}
+                      color={
+                        participant.isSelected
+                          ? AppColorStyles.gray2
+                          : AppColorStyles.gray3
+                      }
+                    />
+                  </View>
+                )}
 
               <View>
-                <Text
-                  style={KBODiaGothicTextStyle.medium({
-                    fontSize: 18,
-                    color: participant.isSelected
-                      ? AppColorStyles.black
-                      : AppColorStyles.textSecondary,
-                  })}
-                >
-                  {participant.userName}
-                </Text>
+                  <View style={styles.participantNameRow}>
+                    <Text
+                      style={KBODiaGothicTextStyle.medium({
+                        fontSize: 18,
+                        color: participant.isSelected
+                          ? AppColorStyles.black
+                          : AppColorStyles.textSecondary,
+                      })}
+                    >
+                      {participant.userName}
+                    </Text>
+                    {participant.userTag && (
+                      <Text style={styles.participantTag}>#{participant.userTag}</Text>
+                    )}
+                  </View>
                 {!participant.isSelected && (
                   <Text
                     style={PretendardTextStyle.medium({
@@ -343,9 +356,9 @@ const styles = StyleSheet.create({
     paddingRight: 16,
   },
   avatarCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 999,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: AppColorStyles.white,
@@ -353,8 +366,27 @@ const styles = StyleSheet.create({
     borderColor: AppColorStyles.divider,
     marginRight: 14,
   },
+  avatarImage: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    marginRight: 14,
+    borderWidth: 1,
+    borderColor: AppColorStyles.divider,
+  },
   avatarCircleInactive: {
     opacity: 0.55,
+  },
+  participantNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  participantTag: {
+    marginLeft: 6,
+    ...PretendardTextStyle.medium({
+      fontSize: 13,
+      color: AppColorStyles.textHint,
+    }),
   },
   primaryButton: {
     height: 60,

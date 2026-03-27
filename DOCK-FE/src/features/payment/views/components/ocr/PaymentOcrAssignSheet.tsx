@@ -1,6 +1,7 @@
 import { MaterialCommunityIcons as MaterialDesignIcons } from '@expo/vector-icons';
 import React from 'react';
 import {
+  Image,
   Modal,
   Pressable,
   StyleSheet,
@@ -125,14 +126,26 @@ export function PaymentOcrAssignSheet({
             return (
               <View key={participant.userId} style={styles.participantRow}>
                 <View style={styles.participantInfo}>
-                  <View style={styles.avatarCircle}>
-                    <MaterialDesignIcons
-                      name="account-outline"
-                      size={28}
-                      color={AppColorStyles.gray2}
+                  {participant.profileImageUrl ? (
+                    <Image
+                      source={{ uri: participant.profileImageUrl }}
+                      style={styles.avatarImage}
                     />
+                  ) : (
+                    <View style={styles.avatarCircle}>
+                      <MaterialDesignIcons
+                        name="account-outline"
+                        size={28}
+                        color={AppColorStyles.gray2}
+                      />
+                    </View>
+                  )}
+                  <View style={styles.participantNameRow}>
+                    <Text style={styles.participantName}>{participant.userName}</Text>
+                    {participant.userTag && (
+                      <Text style={styles.participantTag}>#{participant.userTag}</Text>
+                    )}
                   </View>
-                  <Text style={styles.participantName}>{participant.userName}</Text>
                 </View>
 
                 {mode === 'PERSON' ? (
@@ -280,10 +293,29 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 14,
   },
+  avatarImage: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    marginRight: 14,
+    borderWidth: 1,
+    borderColor: AppColorStyles.gray4,
+  },
+  participantNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   participantName: {
     ...KBODiaGothicTextStyle.medium({
       fontSize: 18,
       color: AppColorStyles.black,
+    }),
+  },
+  participantTag: {
+    marginLeft: 6,
+    ...PretendardTextStyle.medium({
+      fontSize: 13,
+      color: AppColorStyles.textHint,
     }),
   },
   quantityStepper: {

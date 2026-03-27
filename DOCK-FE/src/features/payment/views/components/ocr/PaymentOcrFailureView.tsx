@@ -71,7 +71,7 @@ export function PaymentOcrFailureView({
         <Text style={styles.messageDescription}>
           {isReceiptUnreadable
             ? '영수증이 흐리거나 빛 반사가 심해요'
-            : '총금액만 등록하고 항목은 나중에 직접 추가할 수 있어요'}
+            : '항목 인식을 실패했습니다. 수동으로 메뉴를 추가할 수 있어요'}
         </Text>
 
         <Text style={styles.messageDescription}>
@@ -98,7 +98,7 @@ export function PaymentOcrFailureView({
           style={[styles.actionButton, styles.secondaryButton]}
         >
           <Text style={styles.secondaryButtonText}>
-            {isReceiptUnreadable ? '직접 입력하기' : '총 금액만 등록'}
+            {isReceiptUnreadable ? '직접 입력하기' : '상세 메뉴 직접 입력'}
           </Text>
         </PaymentAnimatedTouchable>
       </View>
