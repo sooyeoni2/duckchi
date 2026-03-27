@@ -9,10 +9,10 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Circle, G } from 'react-native-svg';
 
 import { AppColorStyles } from '@core/theme/colors';
 import { KBODiaGothicTextStyle, PretendardTextStyle } from '@core/theme/typography';
+import { CustomAppBar } from '@shared/components/app_bar/CustomAppBar';
 import { useReportViewModel } from '../viewmodels/useReportViewModel';
 import { ReportCategoryData } from '../models/reportTypes';
 import { SpendingDonutChart } from './components/SpendingDonutChart';
@@ -76,9 +76,13 @@ export function ReportScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>소비 리포트</Text>
-      </View>
+      <CustomAppBar
+        title="소비 리포트"
+        centerTitle={false}
+        showBackButton={false}
+        showDivider
+        backgroundColor={AppColorStyles.background}
+      />
 
       <ScrollView
         contentContainerStyle={styles.scrollContainer}
@@ -303,9 +307,7 @@ export function ReportScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: AppColorStyles.background },
-  header: { paddingHorizontal: 20 * s, paddingTop: 12 * s, paddingBottom: 8 * s },
-  headerTitle: { ...KBODiaGothicTextStyle.bold({ fontSize: 24 * s, color: AppColorStyles.black }) },
-  scrollContainer: { paddingHorizontal: 16 * s },
+  scrollContainer: { paddingHorizontal: 16 * s, paddingBottom: 40 * s },
   monthSelector: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12 * s },
   monthNavBtn: { padding: 10 * s },
   monthLabel: { marginHorizontal: 20 * s, ...KBODiaGothicTextStyle.medium({ fontSize: 22 * s, color: AppColorStyles.black }) },
@@ -319,15 +321,9 @@ const styles = StyleSheet.create({
   card: { backgroundColor: AppColorStyles.surface, borderRadius: 12 * s, padding: 20 * s, marginTop: 16 * s },
   sectionTitle: { ...KBODiaGothicTextStyle.medium({ fontSize: 18 * s, color: AppColorStyles.black }), marginBottom: 16 * s },
 
-  // 새로 추가된 상단 인사이트 박스 스타일
-  topInsightBox: { backgroundColor: '#F8F9FA', borderRadius: 8 * s, padding: 14 * s, marginBottom: 20 * s, alignItems: 'center' },
-  topInsightLabel: { ...PretendardTextStyle.medium({ fontSize: 13 * s, color: AppColorStyles.textSecondary }) },
-  topInsightName: { marginTop: 4 * s, ...KBODiaGothicTextStyle.bold({ fontSize: 20 * s, color: AppColorStyles.black }) },
-
   analysisContainer: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10 * s },
   pieWrapper: { width: PIE_SIZE, height: PIE_SIZE, alignItems: 'center', justifyContent: 'center' },
 
-  // 인사이트 카드 스타일 추가
   insightCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -390,7 +386,6 @@ const styles = StyleSheet.create({
   gaugeTrack: { height: 4 * s, backgroundColor: '#F3F4F6', borderRadius: 2 * s, overflow: 'hidden' },
   gaugeFill: { height: '100%', backgroundColor: AppColorStyles.yellow, borderRadius: 2 * s },
 
-  // 포디움 스타일
   podiumContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
@@ -426,4 +421,3 @@ const styles = StyleSheet.create({
   modalCloseButton: { backgroundColor: AppColorStyles.yellow, paddingHorizontal: 24 * s, paddingVertical: 10 * s, borderRadius: 10 * s },
   modalCloseText: { ...KBODiaGothicTextStyle.bold({ fontSize: 14 * s, color: AppColorStyles.black }) },
 });
-

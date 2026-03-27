@@ -9,6 +9,7 @@ import com.duckchi.pay.domain.expense.entity.ExpenseParticipant;
 import com.duckchi.pay.domain.expense.repository.ExpenseItemParticipantRepository;
 import com.duckchi.pay.domain.expense.repository.ExpenseParticipantRepository;
 import com.duckchi.pay.domain.expense.repository.ExpenseRepository;
+import com.duckchi.pay.domain.expense.repository.projection.RoomRankingPayerAmountProjection;
 import com.duckchi.pay.domain.room.dto.event.RoomLifecycleNotificationEvent;
 import com.duckchi.pay.domain.expense.repository.projection.ExpenseParticipantCountProjection;
 import com.duckchi.pay.domain.expense.repository.projection.ExpenseTitleProjection;
@@ -16,16 +17,9 @@ import com.duckchi.pay.domain.room.dto.request.CreateRoomRequest;
 import com.duckchi.pay.domain.room.dto.request.DelegateAdminRequest;
 import com.duckchi.pay.domain.room.dto.request.StartRoomRequest;
 import com.duckchi.pay.domain.room.dto.request.UpdateRoomRequest;
-import com.duckchi.pay.domain.room.dto.response.CreateRoomResponse;
-import com.duckchi.pay.domain.room.dto.response.GetAutoDebitConsentResponse;
-import com.duckchi.pay.domain.room.dto.response.RoomListResponse;
-import com.duckchi.pay.domain.room.dto.response.RoomMySetItemResponse;
-import com.duckchi.pay.domain.room.dto.response.RoomMySetResponse;
-import com.duckchi.pay.domain.room.dto.response.RoomParticipantListResponse;
-import com.duckchi.pay.domain.room.dto.response.RoomSettlementDetailResponse;
-import com.duckchi.pay.domain.room.dto.response.RoomSettlementItemSplitResponse;
-import com.duckchi.pay.domain.room.dto.response.RoomSettlementParticipantStatusResponse;
-import com.duckchi.pay.domain.room.dto.response.UpdateAutoDebitConsentResponse;
+import com.duckchi.pay.domain.room.dto.response.*;
+import com.duckchi.pay.domain.room.entity.RoomRankingRevision;
+import com.duckchi.pay.domain.room.repository.RoomRankingRevisionRepository;
 import com.duckchi.pay.infra.client.CoreClient;
 import com.duckchi.pay.domain.room.entity.Room;
 import com.duckchi.pay.domain.room.entity.RoomParticipant;
@@ -42,14 +36,12 @@ import com.duckchi.pay.domain.settlement.entity.Settlement;
 import com.duckchi.pay.domain.settlement.repository.SettlementRepository;
 import com.duckchi.pay.global.error.CustomException;
 import com.duckchi.pay.global.error.ErrorCode;
+
+import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.*;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -59,6 +51,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @Service
 @RequiredArgsConstructor
@@ -82,6 +75,9 @@ public class RoomServiceImpl implements RoomService {
     private final CoreClient coreClient;
     private final BadgeTriggerService badgeTriggerService;
     private final OutboxEventCommandService outboxEventCommandService;
+    private final RoomRankingRevisionRepository roomRankingRevisionRepository;
+    private final RoomRankingEmitterRegistry roomRankingEmitterRegistry;
+    private final RoomRankingEventCache roomRankingEventCache;
 
     @Override
     @Transactional
@@ -960,6 +956,276 @@ public class RoomServiceImpl implements RoomService {
                 })
                 .toList();
     }
+
+
+    @Override
+    public RoomRankingSnapshotResponse getRoomRankingSnapshot(Long roomId, Long currentUserId) {
+        //현재 로그인 되어있는지 확인
+        if (currentUserId == null) {
+            throw new CustomException(ErrorCode.COMMON_UNAUTHORIZED);
+        }
+
+        //roomId로 room 찾기
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
+        if (room.getDeletedAt() != null) {
+            throw new CustomException(ErrorCode.ROOM_NOT_FOUND);
+        }
+
+        //room 참여자들 찾기
+        List<RoomParticipant> participants = roomParticipantRepository.findByRoom_Id(roomId);
+        if (participants.isEmpty()) {
+            throw new CustomException(ErrorCode.ROOM_NOT_FOUND);
+        }
+
+        //요청한 멤버가 room 참여자인지 확인
+        boolean isMember = participants.stream().anyMatch(p -> p.getUserId().equals(currentUserId));
+        if (!isMember) {
+            throw new CustomException(ErrorCode.ROOM_MEMBER_ONLY);
+        }
+
+        //Room 참여자들 userId로 매핑
+        List<Long> userIds = participants.stream()
+                .map(RoomParticipant::getUserId)
+                .distinct()
+                .toList();
+
+        //userId마다 결제 금액 계산하기
+        Map<Long, Long> amountByUserId = expenseRepository.sumRequestedAmountByPayer(roomId)
+                .stream()
+                .collect(Collectors.toMap(
+                        RoomRankingPayerAmountProjection::getUserId,
+                        p -> p.getAmount() == null ? 0L : p.getAmount()
+                ));
+
+        //room 멤버 user Id 목록으로 core service에 프로필 배치 조회 요청
+        Map<Long, UserProfileSnapshotResponse> profileMap = new HashMap<>();
+        try {
+            UserProfileBatchRequest profileRequest = UserProfileBatchRequest.builder()
+                    .userIds(userIds)
+                    .build();
+
+            var response = coreClient.getUserProfiles(profileRequest);
+            if (response != null && response.isSuccess() && response.getData() != null) {
+                // 조회 결과를 userId -> profile 형태 맵으로 변환
+                response.getData().forEach(profile -> profileMap.put(profile.getUserId(), profile));
+            }
+        } catch (Exception e) {
+            //프로필 조회 실패해도 랭킹 자체는 내려주기 위해 예외 전파하지 않음
+            org.slf4j.LoggerFactory.getLogger(RoomServiceImpl.class)
+                    .warn("Failed to fetch user profiles. roomId={}", roomId, e);
+        }
+
+        //정렬 전 중간 모델 : userId 기준으로 프로필 + 집계금액을 합치기
+        record RankingRow(Long userId, String userName, String userTag, String profileImageUrl, long amount) {}
+
+        List<RankingRow> sorted = userIds.stream()
+                .map(userId -> {
+                    UserProfileSnapshotResponse profile = profileMap.get(userId);
+                    //프로필이 없거나 비어있으면 fallback 사용
+                    String userName = (profile != null && StringUtils.hasText(profile.getUserName()))
+                            ? profile.getUserName() : "Unknown";
+                    String userTag = (profile != null && StringUtils.hasText(profile.getUserTag()))
+                            ? profile.getUserTag() : "0000";
+                    String profileImageUrl = profile != null ? profile.getProfileImageUrl() : null;
+                    //집계가 없는 멤버는 0원 보장 (랭킹 대상은 room 멤버 전체)
+                    long amount = amountByUserId.getOrDefault(userId, 0L);
+                    return new RankingRow(userId, userName, userTag, profileImageUrl, amount);
+                })
+                .sorted(Comparator //랭킹 정렬 (amount 내림차순 : 동점이면 userId 오름차순)
+                        .comparingLong(RankingRow::amount).reversed()
+                        .thenComparingLong(RankingRow::userId))
+                .toList();
+
+        // 정렬된 결과를 API응답 DTO로 변환하면서 Dense rank 계산
+        List<RoomRankingItemResponse> items = new ArrayList<>();
+        int rank = 0;
+        Long prevAmount = null;
+
+        for (RankingRow row : sorted) {
+            //Dense rank 규칙 : 금액 바뀔 때만 rank 증가(1,2,2,3)
+            if (prevAmount == null || row.amount() != prevAmount) {
+                rank++; // Dense rank
+                prevAmount = row.amount();
+            }
+
+            items.add(new RoomRankingItemResponse(
+                    row.userId(),
+                    row.userName(),
+                    row.userTag(),
+                    row.profileImageUrl(),
+                    Math.toIntExact(row.amount()),
+                    rank
+            ));
+        }
+
+        //현재 요청 유저 정보 추출
+        RoomRankingMyResponse my = items.stream()
+                .filter(it -> it.userId().equals(currentUserId))
+                .findFirst()
+                .map(it -> new RoomRankingMyResponse(
+                        it.userId(),
+                        it.userName(),
+                        it.userTag(),
+                        it.profileImageUrl(),
+                        it.amount(),
+                        it.rank()
+                ))
+                .orElse(null);
+
+        //top 3는 상위 3개 그대로 사용
+        List<RoomRankingItemResponse> top3 = items.stream().limit(3).toList();
+
+        //현재 revision 조회(없으면 0)
+        long revision = roomRankingRevisionRepository.findById(roomId)
+                .map(RoomRankingRevision::getRevision)
+                .orElse(0L);
+
+        //최종 스냅샷 응답 반환
+        return new RoomRankingSnapshotResponse(
+                roomId,
+                LocalDateTime.now(),
+                revision,
+                my,
+                top3,
+                items
+        );
+    }
+
+    @Override
+    public SseEmitter subscribeRoomRanking(Long roomId, Long currentUserId, Long since, String lastEventId) {
+        if (currentUserId == null) {
+            throw new CustomException(ErrorCode.COMMON_UNAUTHORIZED);
+        }
+
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
+        if (room.getDeletedAt() != null) {
+            throw new CustomException(ErrorCode.ROOM_NOT_FOUND);
+        }
+
+        if (!roomParticipantRepository.existsByRoom_IdAndUserId(roomId, currentUserId)) {
+            throw new CustomException(ErrorCode.ROOM_MEMBER_ONLY);
+        }
+
+        long cursor = resolveCursor(since, lastEventId);
+        SseEmitter emitter = new SseEmitter(10 * 60 * 1000L);
+
+        roomRankingEmitterRegistry.add(roomId, currentUserId, emitter);
+
+        emitter.onCompletion(() -> roomRankingEmitterRegistry.remove(roomId, currentUserId, emitter));
+        emitter.onTimeout(() -> roomRankingEmitterRegistry.remove(roomId, currentUserId, emitter));
+        emitter.onError(ex -> roomRankingEmitterRegistry.remove(roomId, currentUserId, emitter));
+
+        try {
+            emitter.send(SseEmitter.event()
+                    .name("ranking.connected")
+                    .data(Map.of("roomId", roomId, "cursor", cursor)));
+
+            RoomRankingEventCache.ReplayWindowStatus replayStatus =
+                    roomRankingEventCache.getReplayStatus(roomId, cursor);
+
+            if (replayStatus == RoomRankingEventCache.ReplayWindowStatus.OUT_OF_WINDOW) {
+                emitter.send(SseEmitter.event()
+                        .name("ranking.resync-required")
+                        .data(Map.of(
+                                "roomId", roomId,
+                                "reason", "replay-window-exceeded",
+                                "action", "reload-snapshot"
+                        )));
+                return emitter;
+            }
+
+            if (replayStatus == RoomRankingEventCache.ReplayWindowStatus.REPLAYABLE) {
+                List<RoomRankingUpdateEventResponse> replayEvents =
+                        roomRankingEventCache.findAfter(roomId, cursor);
+
+                for (RoomRankingUpdateEventResponse event : replayEvents) {
+                    emitter.send(SseEmitter.event()
+                            .id(String.valueOf(event.revision()))
+                            .name("ranking.updated")
+                            .data(event));
+                }
+            }
+        } catch (IOException e) {
+            roomRankingEmitterRegistry.remove(roomId, currentUserId, emitter);
+            throw new CustomException(ErrorCode.COMMON_INTERNAL_ERROR);
+        }
+
+        return emitter;
+    }
+
+    private long resolveCursor(Long since, String lastEventId) {
+        if (since != null && since >= 0) {
+            return since;
+        }
+
+        if (StringUtils.hasText(lastEventId)) {
+            try {
+                long parsed = Long.parseLong(lastEventId.trim());
+                return Math.max(parsed, 0L);
+            } catch (NumberFormatException ignored) {
+                return 0L;
+            }
+        }
+
+        return 0L;
+    }
+
+
+    //랭킹 영향 이벤트 발생 시 갱신
+    // RoomServiceImpl.java - publishRoomRankingUpdated
+    @Transactional
+    public void publishRoomRankingUpdated(Long roomId) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
+        if (room.getDeletedAt() != null) {
+            throw new CustomException(ErrorCode.ROOM_NOT_FOUND);
+        }
+
+        List<RoomParticipant> participants = roomParticipantRepository.findByRoom_Id(roomId);
+        if (participants.isEmpty()) {
+            return;
+        }
+
+        RoomRankingRevision revisionEntity = roomRankingRevisionRepository.findByRoomIdForUpdate(roomId)
+                .orElseGet(() -> roomRankingRevisionRepository.save(RoomRankingRevision.initialize(roomId)));
+
+        long newRevision = revisionEntity.increaseRevision();
+        roomRankingRevisionRepository.save(revisionEntity);
+
+        Long anyMemberUserId = participants.get(0).getUserId();
+        RoomRankingSnapshotResponse snapshot = getRoomRankingSnapshot(roomId, anyMemberUserId);
+
+        List<RoomRankingChangeResponse> changes = List.of();
+
+        RoomRankingUpdateEventResponse event = new RoomRankingUpdateEventResponse(
+                roomId,
+                LocalDateTime.now(),
+                newRevision,
+                changes,
+                snapshot.top3(),
+                snapshot.items()
+        );
+
+        roomRankingEventCache.add(roomId, event);
+
+        for (SseEmitter emitter : roomRankingEmitterRegistry.getRoomEmitters(roomId)) {
+            try {
+                emitter.send(SseEmitter.event()
+                        .id(String.valueOf(event.revision()))
+                        .name("ranking.updated")
+                        .data(event));
+            } catch (Exception e) {
+                try {
+                    emitter.completeWithError(e);
+                } catch (Exception ignored) {
+                }
+            }
+        }
+    }
+
+
 }
 
 
