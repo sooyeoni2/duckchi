@@ -12,6 +12,7 @@ export const useReportViewModel = () => {
   const [monthOptions, setMonthOptions] = useState<ReportMonthOption[]>([]);
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
   const [reportData, setReportData] = useState<ReportMonthData | null>(null);
+  const [activeCategoryName, setActiveCategoryName] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const requestIdRef = useRef(0);
@@ -48,6 +49,11 @@ export const useReportViewModel = () => {
 
         setSelectedMonth(targetMonth);
         setReportData(data);
+        if (data.categories.length > 0) {
+          setActiveCategoryName(data.categories[0].name);
+        } else {
+          setActiveCategoryName(null);
+        }
         setStatus('loaded');
       } catch (error) {
         if (requestIdRef.current !== requestId) {
@@ -128,6 +134,8 @@ export const useReportViewModel = () => {
     monthOptions,
     selectedMonth,
     reportData,
+    activeCategoryName,
+    setActiveCategoryName,
     canGoPrev,
     canGoNext,
     isRefreshing,

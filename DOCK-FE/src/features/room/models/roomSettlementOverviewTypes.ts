@@ -1,8 +1,11 @@
+export type MySettlementStatus = 'PENDING' | 'DONE';
+
 export interface RoomSettlementRow {
   id: number;
   title: string;
   subtitle: string;
   amount: number;
+  myStatus?: MySettlementStatus | null;
 }
 
 export interface RoomSettlementOverviewData {

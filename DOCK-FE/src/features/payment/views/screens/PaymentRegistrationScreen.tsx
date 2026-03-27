@@ -69,6 +69,8 @@ const PaymentRegistrationScreen = () => {
           updateParticipantsList([{
             userId: me.userId,
             userName: me.userName,
+            userTag: me.userTag,
+            profileImageUrl: me.profileImageUrl,
             splitAmount: 0
           }]);
         }
@@ -123,6 +125,8 @@ const PaymentRegistrationScreen = () => {
           {
             userId: memberToAdd.userId,
             userName: memberToAdd.userName,
+            userTag: memberToAdd.userTag,
+            profileImageUrl: memberToAdd.profileImageUrl,
             splitAmount: 0
           }
         ]);
@@ -226,6 +230,8 @@ const PaymentRegistrationScreen = () => {
           <AmountInput
             key={p.userId}
             label={p.userId === user?.userId ? `${p.userName} (나)` : p.userName}
+            userTag={p.userTag}
+            profileImageUrl={p.profileImageUrl}
             value={p.splitAmount}
             onChange={(amount) => updateParticipantAmount(p.userId, amount)}
           />

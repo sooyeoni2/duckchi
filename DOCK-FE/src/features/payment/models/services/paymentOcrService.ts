@@ -67,8 +67,10 @@ export async function recognizeReceiptImage(
     const participants: OcrParticipantDraft[] = members.map(m => ({
         userId: m.userId,
         userName: m.userName,
-        isSelected: false, // UI 진입 후 사용자가 직접 고르거나 ViewModel 기본값 활용
-        isMe: false, // profileStore 연동 전이므로 false (UI에서 표시용)
+        userTag: m.userTag,
+        profileImageUrl: m.profileImageUrl,
+        isSelected: false,
+        isMe: false,
         splitAmount: 0
     }));
 
@@ -140,8 +142,10 @@ export async function getExistingOcrDraft(
     return {
       userId: m.userId,
       userName: m.userName,
+      userTag: m.userTag,
+      profileImageUrl: m.profileImageUrl,
       isSelected: !!existing,
-      isMe: false, // UI 표시 레벨이므로 일단 false
+      isMe: false,
       splitAmount: existing?.splitAmount || 0,
     };
   });

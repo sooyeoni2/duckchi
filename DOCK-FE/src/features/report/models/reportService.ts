@@ -256,13 +256,10 @@ const fetchMonthlyRoomRankings = async (
 };
 
 export const fetchReportMonthOptions = async (): Promise<ReportMonthOption[]> => {
-  const response = await axiosClient.get<ApiEnvelope<unknown>>(ENDPOINTS.insight.trends);
-  const data = unwrapOrThrow(response.data, '월별 소비 추이를 불러오지 못했습니다.');
-  const trendItems = parseTrendItems(data);
-
-  const monthValues = trendItems
-    .filter((item) => toNumber(item.totalAmount) > 0)
-    .map((item) => normalizeMonth(item.month));
+  const response = await axiosClient.get<ApiEnvelope<string[]>>(
+    ENDPOINTS.insight.monthlyAvailableMonths,
+  );
+  const monthValues = unwrapOrThrow(response.data, '월별 지출 가능 목록을 불러오지 못했습니다.');
 
   const uniqueSorted = [...new Set(monthValues)].sort((a, b) => a.localeCompare(b));
 
@@ -282,29 +279,30 @@ export const fetchReportMonthData = async (
     fetchMonthlyRoomRankings(month),
   ]);
 
-  const topCategory = categories[0];
-  let topCategoryDiff = 0;
-
-  if (topCategory != null) {
-    try {
-      const previousMonth = shiftMonth(month, -1);
-      const previousCategories = await fetchMonthlyCategories(previousMonth);
-      const previousTopCategory = previousCategories.find(
-        (item) => item.name === topCategory.name,
-      );
-      topCategoryDiff = topCategory.amount - (previousTopCategory?.amount ?? 0);
-    } catch {
-      topCategoryDiff = 0;
-    }
+  // 카테고리별 전월 대비 증감 계산
+  let previousCategories: ReportCategoryData[] = [];
+  try {
+    const previousMonth = shiftMonth(month, -1);
+    previousCategories = await fetchMonthlyCategories(previousMonth);
+  } catch {
+    previousCategories = [];
   }
+
+  const prevCategoryMap = new Map(previousCategories.map((c) => [c.name, c.amount]));
+  const categoriesWithDiff = categories.map((cat) => ({
+    ...cat,
+    monthlyDiff: cat.amount - (prevCategoryMap.get(cat.name) ?? 0),
+  }));
+
+  const topCategory = categoriesWithDiff[0];
 
   return {
     month: monthOption,
     totalSpend: summary.totalAmount,
     monthlyDiff: summary.difference,
-    categories,
+    categories: categoriesWithDiff,
     topCategoryName: topCategory?.name ?? '-',
-    topCategoryDiff,
+    topCategoryDiff: topCategory?.monthlyDiff ?? 0,
     amountRanking: rankings.amountRanking,
     frequencyRanking: rankings.frequencyRanking,
   };

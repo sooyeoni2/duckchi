@@ -4,7 +4,7 @@ import React from 'react';
 import { AppColorStyles } from '../theme/colors';
 import { HomeScreen } from '../../features/home/HomeScreen';
 import { ProfileNavigator } from '../../features/profile/ProfileNavigator';
-import { ReportScreen } from '../../features/report/ReportScreen';
+import { ReportScreen } from '../../features/report/views/ReportScreen';
 import { RoomNavigator } from '../../features/room/RoomNavigator';
 import { AppTabParamList } from './types';
 

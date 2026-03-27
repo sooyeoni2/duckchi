@@ -154,6 +154,33 @@ export function PaymentOverviewView({
 
   return (
     <>
+      <View style={styles.actionSection}>
+        <Text
+          style={KBODiaGothicTextStyle.medium({
+            fontSize: 18,
+            color: AppColorStyles.black,
+          })}
+        >
+          정산 요청 추가
+        </Text>
+        <View style={styles.actionRow}>
+          {PAYMENT_ENTRY_TABS.map((action: any, index: any) => (
+            <View
+              key={action.key}
+              style={[
+                styles.actionButtonWrap,
+                index < PAYMENT_ENTRY_TABS.length - 1 && styles.actionButtonSpacing,
+              ]}
+            >
+              <PaymentRequestActionButton
+                label={action.label}
+                onPress={() => onOpenEntry(action.key)}
+              />
+            </View>
+          ))}
+        </View>
+      </View>
+
       <View style={styles.listSection}>
         <Text
           style={KBODiaGothicTextStyle.medium({
@@ -185,33 +212,6 @@ export function PaymentOverviewView({
             요청하기
           </Text>
         </PaymentAnimatedTouchable>
-      </View>
-
-      <View style={styles.actionSection}>
-        <Text
-          style={KBODiaGothicTextStyle.medium({
-            fontSize: 18,
-            color: AppColorStyles.black,
-          })}
-        >
-          정산 요청 추가
-        </Text>
-        <View style={styles.actionRow}>
-          {PAYMENT_ENTRY_TABS.map((action: any, index: any) => (
-            <View
-              key={action.key}
-              style={[
-                styles.actionButtonWrap,
-                index < PAYMENT_ENTRY_TABS.length - 1 && styles.actionButtonSpacing,
-              ]}
-            >
-              <PaymentRequestActionButton
-                label={action.label}
-                onPress={() => onOpenEntry(action.key)}
-              />
-            </View>
-          ))}
-        </View>
       </View>
     </>
   );

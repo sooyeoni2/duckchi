@@ -105,7 +105,7 @@ function buildLayoutState(scene: PaymentScene): PaymentContentLayoutState {
   ) {
     return {
       headerTitle: '정산 요청 추가',
-      topTabMode: 'ENTRY',
+      topTabMode: 'NONE',
       activeEntryTab: 'ACCOUNT_HISTORY',
       showRoomActions: false,
     };
@@ -114,7 +114,7 @@ function buildLayoutState(scene: PaymentScene): PaymentContentLayoutState {
   if (scene.kind === 'manualSetup' || scene.kind === 'manualSplit') {
     return {
       headerTitle: '정산 요청 추가',
-      topTabMode: 'ENTRY',
+      topTabMode: 'NONE',
       activeEntryTab: 'MANUAL',
       showRoomActions: false,
     };
@@ -122,7 +122,7 @@ function buildLayoutState(scene: PaymentScene): PaymentContentLayoutState {
 
   return {
     headerTitle: '정산 요청 추가',
-    topTabMode: 'ENTRY',
+    topTabMode: 'NONE',
     activeEntryTab: 'OCR',
     showRoomActions: false,
   };
@@ -486,7 +486,7 @@ export const PaymentTabContent = React.forwardRef<
         inputType: 'ACCOUNT_HISTORY',
         title: draftState.title,
         totalAmount: draftState.totalAmount,
-        paidAt: draftState.transactionAt || new Date().toISOString(),
+        paidAt: draftState.transactionAt || new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, -1),
         participants: selectedParticipants.map((p: any) => ({
           userId: p.userId,
           splitAmount: p.splitAmount,
@@ -572,7 +572,7 @@ export const PaymentTabContent = React.forwardRef<
         inputType: 'MANUAL' as const,
         title: manualState.draft.title,
         totalAmount: manualState.draft.totalAmount,
-        paidAt: new Date().toISOString(),
+        paidAt: manualState.draft.paidAt || new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, -1),
         participants: manualState.draft.participants
           .filter((p: any) => p.isSelected)
           .map((p: any) => ({
@@ -632,10 +632,8 @@ export const PaymentTabContent = React.forwardRef<
     clearFeedback();
 
     if (detailState.detail.inputType === 'ACCOUNT_HISTORY') {
-      setScene({
-        kind: 'accountHistoryForm',
-        historyId: getAccountHistoryIdFromExpenseId(detailState.detail.expenseId),
-      });
+      loadManualDraftFromDetail(detailState.detail);
+      setScene({ kind: 'manualSetup' });
       return;
     }
 
