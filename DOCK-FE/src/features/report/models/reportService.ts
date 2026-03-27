@@ -48,18 +48,6 @@ interface RoomAmountRankingDto {
   totalAmount?: number;
 }
 
-interface RoomFrequencyRankingDto {
-  roomName?: string;
-  count?: number;
-  totalCount?: number;
-  tag?: string;
-}
-
-interface RoomRankingWrapperDto {
-  expenseRank?: RoomAmountRankingDto[];
-  countRank?: RoomFrequencyRankingDto[];
-}
-
 const DONUT_COLORS = ['#F2DD65', '#F59A36', '#5EA64E', '#69A6F9', '#C08CF5', '#8CCB6E'];
 
 const CATEGORY_COLOR_MAP: Record<string, string> = {
@@ -153,24 +141,16 @@ const parseCategoryItems = (raw: unknown): CategoryDto[] => {
   return [];
 };
 
-const parseRoomRanking = (
-  raw: unknown,
-): { amountRanking: RoomAmountRankingDto[]; frequencyRanking: RoomFrequencyRankingDto[] } => {
+const parseRoomRanking = (raw: unknown): RoomAmountRankingDto[] => {
   if (Array.isArray(raw)) {
-    // 왜: 현재 구현처럼 금액 랭킹만 배열로 내려오는 경우를 호환한다.
-    return { amountRanking: raw as RoomAmountRankingDto[], frequencyRanking: [] };
+    return raw as RoomAmountRankingDto[];
   }
-
-  if (raw != null && typeof raw === 'object') {
-    // 왜: 문서형 응답(expenseRank/countRank)도 지원해야 배포 환경 차이에서 UI가 깨지지 않는다.
-    const wrapper = raw as RoomRankingWrapperDto;
-    return {
-      amountRanking: Array.isArray(wrapper.expenseRank) ? wrapper.expenseRank : [],
-      frequencyRanking: Array.isArray(wrapper.countRank) ? wrapper.countRank : [],
-    };
+  // 신구 스펙이아니라 없는 필드를 평범하게 처리
+  if (raw != null && typeof raw === 'object' && 'expenseRank' in raw) {
+    const expenseRank = (raw as Record<string, unknown>)['expenseRank'];
+    return Array.isArray(expenseRank) ? (expenseRank as RoomAmountRankingDto[]) : [];
   }
-
-  return { amountRanking: [], frequencyRanking: [] };
+  return [];
 };
 
 const mapCategories = (items: CategoryDto[]): ReportCategoryData[] => {
@@ -212,12 +192,12 @@ const mapAmountRanking = (items: RoomAmountRankingDto[]): ReportAmountRankingIte
     }))
     .sort((a, b) => b.amount - a.amount);
 
-const mapFrequencyRanking = (items: RoomFrequencyRankingDto[]): ReportFrequencyRankingItem[] =>
+const mapFrequencyRanking = (items: Array<{ roomId: number; roomName: string; count: number }>): ReportFrequencyRankingItem[] =>
   items
     .map((item) => ({
       roomName: item.roomName ?? '알 수 없는 모임',
-      count: toNumber(item.count ?? item.totalCount),
-      tag: item.tag ?? '',
+      count: item.count,
+      tag: '',
     }))
     .sort((a, b) => b.count - a.count);
 
@@ -257,15 +237,21 @@ const fetchMonthlyRoomRankings = async (
   amountRanking: ReportAmountRankingItem[];
   frequencyRanking: ReportFrequencyRankingItem[];
 }> => {
-  const response = await axiosClient.get<ApiEnvelope<unknown>>(
-    ENDPOINTS.insight.monthlyRoomsRanking,
-    { params: { month } },
-  );
-  const data = unwrapOrThrow(response.data, '모임 랭킹을 불러오지 못했습니다.');
-  const parsed = parseRoomRanking(data);
+  const [amountResponse, frequencyResponse] = await Promise.all([
+    axiosClient.get<ApiEnvelope<unknown>>(ENDPOINTS.insight.monthlyRoomsRanking, { params: { month } }),
+    axiosClient.get<ApiEnvelope<Array<{ roomId: number; roomName: string; count: number }>>>(
+      ENDPOINTS.insight.monthlyRoomsFrequency,
+      { params: { month } },
+    ),
+  ]);
+
+  const amountData = unwrapOrThrow(amountResponse.data, '모임 지출 랭킹을 불러오지 못했습니다.');
+  const frequencyData = unwrapOrThrow(frequencyResponse.data, '모임 빈도 랭킹을 불러오지 못했습니다.');
+
+  const parsed = parseRoomRanking(amountData);
   return {
-    amountRanking: mapAmountRanking(parsed.amountRanking),
-    frequencyRanking: mapFrequencyRanking(parsed.frequencyRanking),
+    amountRanking: mapAmountRanking(parsed),
+    frequencyRanking: mapFrequencyRanking(Array.isArray(frequencyData) ? frequencyData : []),
   };
 };
 

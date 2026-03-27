@@ -52,14 +52,12 @@ public class UserMonthlySpend {
     @Column(name = "total_amount", nullable = false)
     private Integer totalAmount = 0;
 
+    @Builder.Default
+    @Column(name = "session_count", nullable = false)
+    private Integer sessionCount = 0;
+
     @UpdateTimestamp
     @Column(name = "last_updated_at", nullable = false)
     private LocalDateTime lastUpdatedAt;
 
-    /**
-     * 누적 금액 업데이트 메서드.
-     */
-    public void addAmount(Integer amount) {
-        this.totalAmount += amount;
-    }
-}
+}
