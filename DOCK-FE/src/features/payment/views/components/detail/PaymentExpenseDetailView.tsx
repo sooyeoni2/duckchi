@@ -1,6 +1,6 @@
 import { MaterialCommunityIcons as MaterialDesignIcons } from '@expo/vector-icons';
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 
 import { AppColorStyles } from '@core/theme/colors';
 import { KBODiaGothicTextStyle, PretendardTextStyle } from '@core/theme/typography';
@@ -153,24 +153,43 @@ export function PaymentExpenseDetailView({
       <View style={styles.sectionCard}>
         <Text style={styles.sectionTitle}>참여자 설정</Text>
         <View style={styles.sectionBody}>
-          {expense.participants.map((participant: any) => (
+          {expense.participants.map((participant) => (
             <View key={participant.userId} style={styles.participantRow}>
               <View style={styles.participantInfo}>
-                <Text style={styles.participantName}>{participant.userName}</Text>
-                <View
-                  style={[
-                    styles.statusChip,
-                    participant.isRequester && styles.requesterChip,
-                    participant.isSettled && styles.settledChip,
-                  ]}
-                >
-                  <Text style={styles.statusChipText}>
-                    {participant.isRequester
-                      ? '요청자'
-                      : participant.isSettled
-                        ? '완료'
-                        : '대기'}
-                  </Text>
+                {participant.profileImageUrl ? (
+                  <Image
+                    source={{ uri: participant.profileImageUrl }}
+                    style={styles.avatarImage}
+                  />
+                ) : (
+                  <View style={styles.avatarCircle}>
+                    <MaterialDesignIcons
+                      name="account-outline"
+                      size={24}
+                      color={AppColorStyles.gray3}
+                    />
+                  </View>
+                )}
+                <View style={styles.participantNameRow}>
+                  <Text style={styles.participantName}>{participant.userName}</Text>
+                  {participant.userTag && (
+                    <Text style={styles.participantTag}>#{participant.userTag}</Text>
+                  )}
+                  <View
+                    style={[
+                      styles.statusChip,
+                      participant.isRequester && styles.requesterChip,
+                      participant.isSettled && styles.settledChip,
+                    ]}
+                  >
+                    <Text style={styles.statusChipText}>
+                      {participant.isRequester
+                        ? '요청자'
+                        : participant.isSettled
+                          ? '완료'
+                          : '대기'}
+                    </Text>
+                  </View>
                 </View>
               </View>
               <Text style={styles.participantAmount}>{formatAmount(participant.splitAmount)}</Text>
@@ -230,11 +249,27 @@ export function PaymentExpenseDetailView({
                         </View>
                       ) : (
                         breakdowns.map((detail) => (
-                          <View
-                            key={`${item.itemId}-${detail.userId}-${detail.userName}`}
-                            style={styles.breakdownRow}
-                          >
-                            <Text style={styles.breakdownName}>{detail.userName}</Text>
+                          <View key={`${item.itemId}-${detail.userId}-${detail.userName}`} style={styles.breakdownRow}>
+                            <View style={styles.breakdownParticipantInfo}>
+                              {detail.profileImageUrl ? (
+                                <Image
+                                  source={{ uri: detail.profileImageUrl }}
+                                  style={styles.breakdownAvatar}
+                                />
+                              ) : (
+                                <View style={styles.breakdownAvatarPlaceholder}>
+                                  <MaterialDesignIcons
+                                    name="account"
+                                    size={12}
+                                    color={AppColorStyles.gray3}
+                                  />
+                                </View>
+                              )}
+                              <Text style={styles.breakdownName}>{detail.userName}</Text>
+                              {detail.userTag && (
+                                <Text style={styles.breakdownTag}>#{detail.userTag}</Text>
+                              )}
+                            </View>
                             <Text style={styles.breakdownMeta}>
                               {`${detail.quantity}개 · ${formatAmount(detail.amount)}`}
                             </Text>
@@ -370,10 +405,40 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingRight: 12,
   },
+  avatarCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: AppColorStyles.gray5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+    borderWidth: 1,
+    borderColor: AppColorStyles.divider,
+  },
+  avatarImage: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    marginRight: 12,
+    borderWidth: 1,
+    borderColor: AppColorStyles.divider,
+  },
+  participantNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   participantName: {
     ...KBODiaGothicTextStyle.medium({
       fontSize: 16,
       color: AppColorStyles.black,
+    }),
+  },
+  participantTag: {
+    marginLeft: 4,
+    ...PretendardTextStyle.medium({
+      fontSize: 12,
+      color: AppColorStyles.textHint,
     }),
   },
   participantAmount: {
@@ -456,10 +521,39 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingTop: 10,
   },
+  breakdownParticipantInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  breakdownAvatar: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    marginRight: 6,
+    borderWidth: 1,
+    borderColor: AppColorStyles.divider,
+  },
+  breakdownAvatarPlaceholder: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: AppColorStyles.gray4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 6,
+  },
   breakdownName: {
     ...PretendardTextStyle.medium({
       fontSize: 13,
       color: AppColorStyles.black,
+    }),
+  },
+  breakdownTag: {
+    marginLeft: 4,
+    ...PretendardTextStyle.medium({
+      fontSize: 11,
+      color: AppColorStyles.textHint,
     }),
   },
   breakdownMeta: {

@@ -147,6 +147,8 @@ export interface OcrLineItem {
 export interface ExpenseParticipantPreview {
   userId: number;
   userName: string;
+  userTag?: string | null;
+  profileImageUrl?: string | null;
   splitAmount: number;
   isRequester: boolean;
   isSettled: boolean;
@@ -164,6 +166,8 @@ export interface ExpenseLineItemPreview {
 export interface ExpenseLineItemAssignmentDetail {
   userId: number;
   userName: string;
+  userTag?: string | null;
+  profileImageUrl?: string | null;
   quantity: number;
   amount: number;
 }
@@ -192,6 +196,8 @@ export interface MyExpenseDetail extends MyExpenseItem {
 export interface ManualEntryParticipant {
   userId: number;
   userName: string;
+  userTag?: string | null;
+  profileImageUrl?: string | null;
   isSelected: boolean;
   splitAmount: number;
 }
@@ -201,6 +207,7 @@ export interface ManualEntryDraft {
   roomSessionId: number;
   title: string;
   totalAmount: number;
+  paidAt?: string | null;
   participants: ManualEntryParticipant[];
 }
 // 계좌 내역 기반 정산 초안
@@ -227,6 +234,8 @@ export type OcrSplitMode = 'TOTAL' | 'ITEM';
 export interface OcrParticipantDraft {
   userId: number;
   userName: string;
+  userTag?: string | null;
+  profileImageUrl?: string | null;
   isSelected: boolean;
   isMe: boolean;
   splitAmount: number;
@@ -267,6 +276,7 @@ export interface OcrReceiptSummary {
   storeName: string;
   paidAt: Date | null;
   totalAmount: number;
+  participants: OcrParticipantDraft[];
 }
 
 export type OcrRecognitionResult = 

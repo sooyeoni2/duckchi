@@ -39,7 +39,7 @@ const parseAmount = (text: string): number => {
 
 const parseQuantity = (text: string): number => {
   const digitsOnly = text.replace(/[^0-9]/g, '');
-  return digitsOnly.length > 0 ? Math.max(Number(digitsOnly), 1) : 1;
+  return digitsOnly.length > 0 ? Number(digitsOnly) : 0;
 };
 
 const recomputeLineItem = (item: OcrLineItemDraft): OcrLineItemDraft => ({
@@ -51,7 +51,11 @@ const recomputeLineItem = (item: OcrLineItemDraft): OcrLineItemDraft => ({
 
 const syncTotals = (draft: OcrReceiptDraft): OcrReceiptDraft => {
   const items = draft.items.map(recomputeLineItem);
-  const totalAmount = items.reduce((sum, item) => sum + item.amount, 0);
+  const itemsSum = items.reduce((sum, item) => sum + item.amount, 0);
+
+  // 항목이 존재할 때만 항목 합계로 총액을 동기화함.
+  // 항목이 모두 삭제되었거나 없는 경우(전체 나누기 모드 등)는 기존 총액을 유지.
+  const totalAmount = items.length > 0 ? itemsSum : draft.totalAmount;
 
   return {
     ...draft,
@@ -99,16 +103,64 @@ const applyTotalSplitPreview = (draft: OcrReceiptDraft): OcrReceiptDraft => {
   };
 };
 
-const normalizeDraft = (draft: OcrReceiptDraft): OcrReceiptDraft =>
-  draft.splitMode === 'TOTAL'
-    ? applyTotalSplitPreview(syncTotals(draft))
-    : syncTotals({
-        ...draft,
-        participants: draft.participants.map((participant) => ({
-          ...participant,
-          splitAmount: 0,
-        })),
+const applyItemSplitPreview = (draft: OcrReceiptDraft): OcrReceiptDraft => {
+  const splitMap = new Map<number, number>();
+  draft.participants.forEach((p) => splitMap.set(p.userId, 0));
+
+  draft.items.forEach((item) => {
+    if (!item.assignment) return;
+
+    const { mode, participantUserIds, quantityAllocations } = item.assignment;
+
+    if (
+      mode === 'PERSON' ||
+      mode === 'EQUAL_SPLIT' ||
+      mode === 'MANUAL_SPLIT'
+    ) {
+      const selectedCount = participantUserIds.length;
+      if (selectedCount > 0) {
+        const perPerson = Math.floor(item.amount / selectedCount);
+        let remainder = item.amount % selectedCount;
+        participantUserIds.forEach((uid) => {
+          const bonus = remainder > 0 ? 1 : 0;
+          remainder--;
+          splitMap.set(uid, (splitMap.get(uid) || 0) + perPerson + bonus);
+        });
+      }
+    } else if (mode === 'QUANTITY' || mode === 'QUANTITY_SPLIT') {
+      quantityAllocations?.forEach((alloc) => {
+        if (alloc.quantity > 0) {
+          const allocAmount = item.unitPrice * alloc.quantity;
+          splitMap.set(
+            alloc.userId,
+            (splitMap.get(alloc.userId) || 0) + allocAmount,
+          );
+        }
       });
+    }
+  });
+
+  return {
+    ...draft,
+    participants: draft.participants.map((p) => ({
+      ...p,
+      splitAmount: splitMap.get(p.userId) || 0,
+    })),
+  };
+};
+
+const normalizeDraft = (draft: OcrReceiptDraft): OcrReceiptDraft => {
+  const synced = syncTotals(draft);
+
+  // 결제 일시가 없으면 현재 시간으로 기본값 설정
+  if (synced.paidAt == null) {
+    synced.paidAt = new Date();
+  }
+
+  return synced.splitMode === 'TOTAL'
+    ? applyTotalSplitPreview(synced)
+    : applyItemSplitPreview(synced);
+};
 
 function createEmptyQuantityAllocations(
   draft: OcrReceiptDraft,
@@ -129,6 +181,28 @@ export function usePaymentOcrViewModel(roomId: number) {
     React.useState<PaymentOcrAssignSheetState>({
       status: 'closed',
     });
+
+  const draft = state.status === 'loaded' ? state.draft : null;
+  const assignTargetItem =
+    draft != null && assignSheetState.status === 'open'
+      ? draft.items.find((item) => item.itemId === assignSheetState.itemId) ?? null
+      : null;
+
+  const selectedParticipants =
+    draft?.participants.filter((participant) => participant.isSelected) ?? [];
+  const selectedParticipantCount = selectedParticipants.length;
+  const perPersonAmount =
+    selectedParticipantCount > 0
+      ? Math.floor((draft?.totalAmount ?? 0) / selectedParticipantCount)
+      : 0;
+  const unassignedItems =
+    draft?.items.filter((item) => item.assignment == null) ?? [];
+  const assignedItems =
+    draft?.items.filter((item) => item.assignment != null) ?? [];
+  const remainingUnassignedAmount = unassignedItems.reduce(
+    (sum, item) => sum + item.amount,
+    0,
+  );
 
   React.useEffect(() => {
     setState({ status: 'idle' });
@@ -256,37 +330,69 @@ export function usePaymentOcrViewModel(roomId: number) {
           ...previousState.summary,
           splitMode: 'TOTAL',
           items: [],
-          participants: [
+          participants: previousState.summary.participants,
+        }),
+      };
+    });
+  }, []);
+
+  const fallbackToManualEditor = React.useCallback(() => {
+    setState((previousState) => {
+      if (
+        previousState.status !== 'failure' ||
+        previousState.failureType !== 'ITEMS_UNREADABLE' ||
+        previousState.summary == null
+      ) {
+        return previousState;
+      }
+
+      return {
+        status: 'loaded',
+        draft: normalizeDraft({
+          ...previousState.summary,
+          splitMode: 'ITEM',
+          items: [
             {
-              userId: 1,
-              userName: '박성환',
-              isSelected: true,
-              isMe: false,
-              splitAmount: 0,
-            },
-            {
-              userId: 2,
-              userName: '정우주',
-              isSelected: true,
-              isMe: false,
-              splitAmount: 0,
-            },
-            {
-              userId: 3,
-              userName: '류병선 (나)',
-              isSelected: true,
-              isMe: true,
-              splitAmount: 0,
-            },
-            {
-              userId: 4,
-              userName: '김수연',
-              isSelected: false,
-              isMe: false,
-              splitAmount: 0,
+              itemId: 1,
+              name: '',
+              unitPrice: previousState.summary.totalAmount,
+              quantity: 1,
+              amount: previousState.summary.totalAmount,
+              assignment: null,
             },
           ],
+          participants: previousState.summary.participants,
         }),
+      };
+    });
+  }, []);
+
+  const updateStoreName = React.useCallback((storeName: string) => {
+    setState((previousState) => {
+      if (previousState.status !== 'loaded') {
+        return previousState;
+      }
+      return {
+        status: 'loaded',
+        draft: {
+          ...previousState.draft,
+          storeName,
+        },
+      };
+    });
+  }, []);
+
+  const updateTotalAmount = React.useCallback((text: string) => {
+    setState((previousState) => {
+      if (previousState.status !== 'loaded') {
+        return previousState;
+      }
+      return {
+        status: 'loaded',
+        draft: {
+          ...previousState.draft,
+          totalAmount: parseAmount(text),
+        },
       };
     });
   }, []);
@@ -390,6 +496,22 @@ export function usePaymentOcrViewModel(roomId: number) {
               assignment: null,
             },
           ],
+        }),
+      };
+    });
+  }, []);
+
+  const removeLineItem = React.useCallback((itemId: number) => {
+    setState((previousState) => {
+      if (previousState.status !== 'loaded') {
+        return previousState;
+      }
+
+      return {
+        status: 'loaded',
+        draft: normalizeDraft({
+          ...previousState.draft,
+          items: previousState.draft.items.filter((item) => item.itemId !== itemId),
         }),
       };
     });
@@ -531,20 +653,27 @@ export function usePaymentOcrViewModel(roomId: number) {
           return previousState;
         }
 
+        const currentAllocations = previousState.quantityAllocations;
+        const otherQuantity = currentAllocations
+          .filter((a) => a.userId !== userId)
+          .reduce((sum, a) => sum + a.quantity, 0);
+
+        const maxAllowed = (assignTargetItem?.quantity ?? 0) - otherQuantity;
+
         return {
           ...previousState,
-          quantityAllocations: previousState.quantityAllocations.map((allocation) =>
+          quantityAllocations: currentAllocations.map((allocation) =>
             allocation.userId === userId
               ? {
                   ...allocation,
-                  quantity: Math.max(allocation.quantity + delta, 0),
+                  quantity: Math.min(Math.max(allocation.quantity + delta, 0), maxAllowed),
                 }
               : allocation,
           ),
         };
       });
     },
-    [],
+    [assignTargetItem?.quantity],
   );
 
   const confirmAssignSheet = React.useCallback((): boolean => {
@@ -645,26 +774,6 @@ export function usePaymentOcrViewModel(roomId: number) {
     });
   }, []);
 
-  const draft = state.status === 'loaded' ? state.draft : null;
-  const selectedParticipants =
-    draft?.participants.filter((participant) => participant.isSelected) ?? [];
-  const selectedParticipantCount = selectedParticipants.length;
-  const perPersonAmount =
-    selectedParticipantCount > 0
-      ? Math.floor((draft?.totalAmount ?? 0) / selectedParticipantCount)
-      : 0;
-  const unassignedItems =
-    draft?.items.filter((item) => item.assignment == null) ?? [];
-  const assignedItems =
-    draft?.items.filter((item) => item.assignment != null) ?? [];
-  const remainingUnassignedAmount = unassignedItems.reduce(
-    (sum, item) => sum + item.amount,
-    0,
-  );
-  const assignTargetItem =
-    draft != null && assignSheetState.status === 'open'
-      ? draft.items.find((item) => item.itemId === assignSheetState.itemId) ?? null
-      : null;
 
   return {
     state,
@@ -683,10 +792,14 @@ export function usePaymentOcrViewModel(roomId: number) {
     recognizeImage,
     loadExistingDraft,
     fallbackToTotalOnly,
+    fallbackToManualEditor,
+    updateStoreName,
+    updateTotalAmount,
     updateLineItemName,
     updateLineItemUnitPrice,
     updateLineItemQuantity,
     addLineItem,
+    removeLineItem,
     setSplitMode,
     toggleParticipant,
     openAssignSheet,

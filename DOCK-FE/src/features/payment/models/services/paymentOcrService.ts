@@ -1,5 +1,5 @@
 import * as ImageManipulator from 'expo-image-manipulator';
-import { fetchOcrAnalysisMultipartApi, fetchExpenseParticipantsApi } from '../api/paymentApi';
+import { fetchOcrAnalysisMultipartApi, fetchExpenseParticipantsApi, fetchExpenseDetailApi } from '../api/paymentApi';
 import { Alert } from 'react-native';
 import type {
   OcrFailureType,
@@ -25,11 +25,12 @@ const buildEmptyDraft = (imageUri: string): OcrReceiptDraft => ({
   items: [],
 });
 
-const buildItemsUnreadableSummary = (imageUri: string): OcrReceiptSummary => ({
+const buildItemsUnreadableSummary = (imageUri: string, participants: OcrParticipantDraft[]): OcrReceiptSummary => ({
   imageUri,
   storeName: '인식된 정보 없음',
   paidAt: new Date(),
   totalAmount: 0,
+  participants,
 });
 
 export async function recognizeReceiptImage(
@@ -66,8 +67,10 @@ export async function recognizeReceiptImage(
     const participants: OcrParticipantDraft[] = members.map(m => ({
         userId: m.userId,
         userName: m.userName,
-        isSelected: false, // UI 진입 후 사용자가 직접 고르거나 ViewModel 기본값 활용
-        isMe: false, // profileStore 연동 전이므로 false (UI에서 표시용)
+        userTag: m.userTag,
+        profileImageUrl: m.profileImageUrl,
+        isSelected: false,
+        isMe: false,
         splitAmount: 0
     }));
 
@@ -78,7 +81,7 @@ export async function recognizeReceiptImage(
       totalAmount: ocrResponse.totalAmount || 0,
       splitMode: 'TOTAL',
       participants, 
-      items: mappedItems.map((item, index) => ({
+      items: (ocrResponse.items || []).map((item, index) => ({
         itemId: index + 1,
         name: item.name || '알 수 없는 항목',
         unitPrice: item.totalAmount && item.quantity ? Math.floor(item.totalAmount / item.quantity) : (item.totalAmount || 0),
@@ -88,16 +91,40 @@ export async function recognizeReceiptImage(
       })),
     };
 
+    // 만약 아이템이 하나도 인식되지 않았다면 ITEMS_UNREADABLE로 처리
+    if (draft.items.length === 0) {
+        return {
+            kind: 'ITEMS_UNREADABLE',
+            summary: buildItemsUnreadableSummary(resized.uri, participants),
+        };
+    }
+
     return {
       kind: 'SUCCESS',
       draft,
     };
   } catch (error) {
     console.error('[OCR Recognition Exhaustive Error]:', error);
-    return {
-      kind: 'FAILURE',
-      failureType: 'NETWORK_ERROR',
-    };
+    // 실패하더라도 최소한 멤버 목록은 가져오려고 시도
+    try {
+        const members = await fetchExpenseParticipantsApi(roomId);
+        const participants: OcrParticipantDraft[] = members.map(m => ({
+            userId: m.userId,
+            userName: m.userName,
+            isSelected: false,
+            isMe: false,
+            splitAmount: 0
+        }));
+        return {
+            kind: 'ITEMS_UNREADABLE',
+            summary: buildItemsUnreadableSummary(imageUri, participants),
+        };
+    } catch {
+        return {
+            kind: 'FAILURE',
+            failureType: 'NETWORK_ERROR',
+        };
+    }
   }
 }
 
@@ -105,11 +132,47 @@ export async function getExistingOcrDraft(
   roomId: number,
   expenseId: number,
 ): Promise<OcrReceiptDraft> {
-  // TODO: 실제 결제 상세 API(fetchExpenseDetailApi)와 연동하여 OCR 드래프트 구조로 변환하는 로직이 필요합니다.
-  // 현재는 상세 페이지 진입 시 깨지지 않도록 최소한의 구조만 반환합니다.
-  console.warn(`[OCR] getExistingOcrDraft logic for Expense ${expenseId} is not yet fully implemented with backend.`);
-  
-  return buildEmptyDraft('https://example.com/placeholder.jpg');
+  const [detail, members] = await Promise.all([
+    fetchExpenseDetailApi(roomId, expenseId),
+    fetchExpenseParticipantsApi(roomId),
+  ]);
+
+  const participants: OcrParticipantDraft[] = members.map((m: any) => {
+    const existing = detail.participants.find((p: any) => p.userId === m.userId);
+    return {
+      userId: m.userId,
+      userName: m.userName,
+      userTag: m.userTag,
+      profileImageUrl: m.profileImageUrl,
+      isSelected: !!existing,
+      isMe: false,
+      splitAmount: existing?.splitAmount || 0,
+    };
+  });
+
+  return {
+    imageUri: detail.paidAt || 'https://example.com/placeholder.jpg', // 실무에서는 receiptImageUrl 사용 필요
+    storeName: detail.title,
+    paidAt: detail.paidAt ? new Date(detail.paidAt) : new Date(),
+    totalAmount: detail.totalAmount,
+    splitMode: detail.items.length > 0 ? 'ITEM' : 'TOTAL',
+    participants,
+    items: detail.items.map((item: any, index: number) => ({
+      itemId: index + 1,
+      name: item.name,
+      unitPrice: Math.floor(item.totalAmount / item.quantity),
+      quantity: item.quantity,
+      amount: item.totalAmount,
+      assignment: {
+        mode: 'PERSON',
+        participantUserIds: item.itemParticipants.map((ip: any) => ip.userId),
+        quantityAllocations: item.itemParticipants.map((ip: any) => ({
+          userId: ip.userId,
+          quantity: ip.quantity,
+        })),
+      },
+    })),
+  };
 }
 
 export async function getUnreadableReceiptFailure(
@@ -122,10 +185,11 @@ export async function getUnreadableReceiptFailure(
 export async function getItemsUnreadableResult(
   roomId: number,
   imageUri: string,
+  participants: OcrParticipantDraft[],
 ): Promise<OcrRecognitionResult> {
   void roomId;
   return {
     kind: 'ITEMS_UNREADABLE',
-    summary: buildItemsUnreadableSummary(imageUri),
+    summary: buildItemsUnreadableSummary(imageUri, participants),
   };
 }

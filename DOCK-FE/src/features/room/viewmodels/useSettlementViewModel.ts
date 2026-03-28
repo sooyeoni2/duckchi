@@ -48,8 +48,7 @@ const getGuideMessage = (tone: DeadlineTone): string => {
 
 const toViewItem = (item: SettlementItem, nowMs: number): SettlementViewItem => {
   const tone = getTone(item, nowMs);
-  const remainingSeconds = Math.floor((new Date(item.dueAt).getTime() - nowMs) / 1000);
-
+  
   if (tone === 'DONE') {
     const completedAt = item.paidAt ? new Date(item.paidAt) : new Date(item.dueAt);
     const hh = String(completedAt.getHours()).padStart(2, '0');
@@ -58,17 +57,27 @@ const toViewItem = (item: SettlementItem, nowMs: number): SettlementViewItem => 
 
     return {
       ...item,
-      timeLabel: '정산 시간',
+      timeLabel: '정산 완료',
       timeText: `${hh}:${mm}:${ss}`,
       tone,
       guideMessage: getGuideMessage(tone),
     };
   }
 
+  // 백엔드 날짜 형식이 "YYYY-MM-DD HH:mm:ss"인 경우 JS Date가 시간대를 오해할 수 있으므로 표준 ISO로 보정한 후 KST(+09:00)를 명시한다.
+  let requestedDateStr = item.requestedAt.replace(' ', 'T');
+  if (!requestedDateStr.includes('+') && !requestedDateStr.endsWith('Z')) {
+    requestedDateStr += '+09:00';
+  }
+  const requestedAtMs = new Date(requestedDateStr).getTime();
+  
+  // 클라이언트와 서버간의 미세한 시간차로 인해 음수가 될 수 있으므로 0으로 보정한다.
+  const elapsedSeconds = Math.max(0, Math.floor((nowMs - requestedAtMs) / 1000));
+
   return {
     ...item,
-    timeLabel: remainingSeconds >= 0 ? '남은 시간' : '초과된 시간',
-    timeText: toDurationText(remainingSeconds),
+    timeLabel: '정산 요청 후',
+    timeText: toDurationText(elapsedSeconds),
     tone,
     guideMessage: getGuideMessage(tone),
   };

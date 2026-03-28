@@ -11,6 +11,7 @@ export interface ReportCategoryData {
   count: number;
   percentage: number;
   color: string;
+  monthlyDiff?: number;
 }
 
 export interface ReportAmountRankingItem {

@@ -2,6 +2,7 @@ package com.duckchi.insight.domain.spending.controller;
 
 import com.duckchi.insight.domain.spending.dto.response.CategorySpendResponse;
 import com.duckchi.insight.domain.spending.dto.response.MonthlySummaryResponse;
+import com.duckchi.insight.domain.spending.dto.response.RoomFrequencyResponse;
 import com.duckchi.insight.domain.spending.dto.response.RoomSpendResponse;
 import com.duckchi.insight.domain.spending.dto.response.MonthlyTrendResponse;
 import com.duckchi.insight.domain.spending.service.SpendingInsightService;
@@ -18,8 +19,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 소비 분석 API 컨트롤러 (명세서 AN-01 ~ AN-04 준수)
- * 사용자의 월별 지출 통계 및 트렌드를 제공함.
+ * 소비 분석 API 컨트롤러 (명세서 AN-01 ~ AN-06 준수)
+ * 사용자의 월별 지출 통계, 트렌드 및 가용 월 정보를 제공함.
  */
 @Tag(name = "Insight", description = "소비 분석 및 지출 통계 API")
 @RestController
@@ -63,12 +64,32 @@ public class InsightController {
         return ApiResponseDto.success(insightService.getRoomStatistics(userId, month));
     }
 
-    @Operation(summary = "AN-04: 최근 6개월 소비 트렌드 조회", 
-               description = "최근 6개월간의 월별 총 지출액 추이를 조회함.")
+    @Operation(summary = "AN-04: 최근 3개월 소비 트렌드 조회",
+               description = "최근 3개월간의 월별 총 지출액 추이를 조회함.")
     @GetMapping("/trends")
     public ApiResponseDto<List<MonthlyTrendResponse>> getTrends(
             @Parameter(description = "사용자 식별자", required = true)
             @RequestHeader(USER_ID_HEADER) Long userId) {
         return ApiResponseDto.success(insightService.getSpendingTrends(userId));
+    }
+
+    @Operation(summary = "AN-05: 모임별 정산 빈도 랭킹 조회",
+               description = "요청한 월에 정산이 발생한 모임방을 정산 횟수 순으로 랭킹을 매겨 조회함.")
+    @GetMapping("/monthly/rooms-frequency")
+    public ApiResponseDto<List<RoomFrequencyResponse>> getRoomFrequencyRanking(
+            @Parameter(description = "사용자 식별자", required = true)
+            @RequestHeader(USER_ID_HEADER) Long userId,
+            @Parameter(description = "조회 대상 월 (yyyy-MM)", example = "2026-03", required = true)
+            @RequestParam("month") String month) {
+        return ApiResponseDto.success(insightService.getRoomFrequencyRanking(userId, month));
+    }
+
+    @Operation(summary = "AN-06: 지출 데이터 존재 월 목록 조회",
+               description = "사용자의 지출 내역이 존재하는 모든 월(yyyy-MM) 목록을 조회하여 리포트 이동에 활용함.")
+    @GetMapping("/monthly/available-months")
+    public ApiResponseDto<List<String>> getAvailableMonths(
+            @Parameter(description = "사용자 식별자", required = true)
+            @RequestHeader(USER_ID_HEADER) Long userId) {
+        return ApiResponseDto.success(insightService.getAvailableMonths(userId));
     }
 }

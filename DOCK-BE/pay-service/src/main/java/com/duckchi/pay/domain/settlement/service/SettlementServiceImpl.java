@@ -9,6 +9,7 @@ import com.duckchi.pay.domain.room.entity.RoomParticipant;
 import com.duckchi.pay.domain.room.entity.Room;
 import com.duckchi.pay.domain.room.repository.RoomParticipantRepository;
 import com.duckchi.pay.domain.room.repository.RoomRepository;
+import com.duckchi.pay.domain.room.service.RoomService;
 import com.duckchi.pay.domain.settlement.dto.event.ExpenseSettledNotificationEvent;
 import com.duckchi.pay.domain.settlement.dto.event.SettlementRequestNotificationEvent;
 import com.duckchi.pay.domain.settlement.dto.request.SettlementManualTransferRequest;
@@ -61,6 +62,7 @@ public class SettlementServiceImpl implements SettlementService {
     private final SettlementTransferExecutor settlementTransferExecutor;
     private final OutboxEventCommandService outboxEventCommandService;
     private final BadgeTriggerService badgeTriggerService;
+    private final RoomService roomService;
 
     /**
      * SET-01: 결제안 목록 기준으로 정산 요청 레코드를 생성한다.
@@ -116,8 +118,9 @@ public class SettlementServiceImpl implements SettlementService {
         // settlement 생성이 확정된 뒤에만 expense 상태를 REQUESTED로 전이한다.
         expenses.forEach(Expense::markRequested);
 
+        Long roomId = expenses.get(0).getRoomId();
         publishSettlementRequestNotificationEvents(settlements, expenses);
-
+        roomService.publishRoomRankingUpdated(roomId);
 
     }
 

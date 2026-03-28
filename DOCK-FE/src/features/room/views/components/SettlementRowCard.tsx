@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 
 import { AppColorStyles } from '@core/theme/colors';
-import { KBODiaGothicTextStyle } from '@core/theme/typography';
+import { KBODiaGothicTextStyle, PretendardTextStyle } from '@core/theme/typography';
 import type { RoomSettlementRow } from '../../models/roomSettlementOverviewTypes';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -53,7 +53,14 @@ export function SettlementRowCard({
     <>
       <View style={styles.textArea}>
         <Text style={styles.rowTitle}>{item.title}</Text>
-        <Text style={styles.rowSubtitle}>{item.subtitle}</Text>
+        <View style={styles.subtitleRow}>
+          <Text style={styles.rowSubtitle}>{item.subtitle}</Text>
+          {item.myStatus === 'DONE' && (
+            <View style={styles.statusBadge}>
+              <Text style={styles.statusBadgeText}>정산완료</Text>
+            </View>
+          )}
+        </View>
       </View>
 
       <View style={styles.trailingArea}>
@@ -136,6 +143,24 @@ const styles = StyleSheet.create({
       fontSize: 20 * s,
       lineHeight: 20 * s,
       color: AppColorStyles.gray1,
+    }),
+  },
+  subtitleRow: {
+    marginTop: 6 * s,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  statusBadge: {
+    marginLeft: 8 * s,
+    backgroundColor: '#E8F5E9',
+    paddingHorizontal: 6 * s,
+    paddingVertical: 2 * s,
+    borderRadius: 4 * s,
+  },
+  statusBadgeText: {
+    ...PretendardTextStyle.bold({
+      fontSize: 10 * s,
+      color: '#43A047',
     }),
   },
 });
