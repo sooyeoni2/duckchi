@@ -9,6 +9,7 @@ export interface SettlementItem {
   amount: number;
   status: SettlementTab;
   dueAt: string;
+  requestedAt: string;
   paidAt?: string;
   paidCount: number;
   totalCount: number;

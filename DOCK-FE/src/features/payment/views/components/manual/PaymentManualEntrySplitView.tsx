@@ -2,6 +2,7 @@ import { MaterialCommunityIcons as MaterialDesignIcons } from '@expo/vector-icon
 import React from 'react';
 import {
   ActivityIndicator,
+  Image,
   StyleSheet,
   Text,
   TextInput,
@@ -157,22 +158,34 @@ export function PaymentManualEntrySplitView({
         {selectedParticipants.map((participant: any) => (
           <View key={participant.userId} style={styles.participantRow}>
             <View style={styles.participantInfo}>
-              <View style={styles.avatarCircle}>
-                <MaterialDesignIcons
-                  name="account-outline"
-                  size={28}
-                  color={AppColorStyles.gray2}
+              {participant.profileImageUrl ? (
+                <Image
+                  source={{ uri: participant.profileImageUrl }}
+                  style={styles.avatarImage}
                 />
-              </View>
+              ) : (
+                <View style={styles.avatarCircle}>
+                  <MaterialDesignIcons
+                    name="account-outline"
+                    size={28}
+                    color={AppColorStyles.gray2}
+                  />
+                </View>
+              )}
 
-              <Text
-                style={KBODiaGothicTextStyle.medium({
-                  fontSize: 18,
-                  color: AppColorStyles.black,
-                })}
-              >
-                {participant.userName}
-              </Text>
+              <View style={styles.participantNameRow}>
+                <Text
+                  style={KBODiaGothicTextStyle.medium({
+                    fontSize: 18,
+                    color: AppColorStyles.black,
+                  })}
+                >
+                  {participant.userName}
+                </Text>
+                {participant.userTag && (
+                  <Text style={styles.participantTag}>#{participant.userTag}</Text>
+                )}
+              </View>
             </View>
 
             <View style={styles.amountInputWrapper}>
@@ -323,15 +336,34 @@ const styles = StyleSheet.create({
     paddingRight: 16,
   },
   avatarCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 999,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: AppColorStyles.white,
     borderWidth: 1,
     borderColor: AppColorStyles.divider,
     marginRight: 14,
+  },
+  avatarImage: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    marginRight: 14,
+    borderWidth: 1,
+    borderColor: AppColorStyles.divider,
+  },
+  participantNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  participantTag: {
+    marginLeft: 6,
+    ...PretendardTextStyle.medium({
+      fontSize: 13,
+      color: AppColorStyles.textHint,
+    }),
   },
   amountInput: {
     flex: 1,

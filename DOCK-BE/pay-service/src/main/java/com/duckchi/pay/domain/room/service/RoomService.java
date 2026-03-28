@@ -3,14 +3,10 @@ package com.duckchi.pay.domain.room.service;
 import com.duckchi.pay.domain.room.dto.request.CreateRoomRequest;
 import com.duckchi.pay.domain.room.dto.request.DelegateAdminRequest;
 import com.duckchi.pay.domain.room.dto.request.UpdateRoomRequest;
-import com.duckchi.pay.domain.room.dto.response.CreateRoomResponse;
-import com.duckchi.pay.domain.room.dto.response.GetAutoDebitConsentResponse;
-import com.duckchi.pay.domain.room.dto.response.RoomListResponse;
-import com.duckchi.pay.domain.room.dto.response.RoomMySetResponse;
-import com.duckchi.pay.domain.room.dto.response.RoomParticipantListResponse;
-import com.duckchi.pay.domain.room.dto.response.RoomSettlementDetailResponse;
-import com.duckchi.pay.domain.room.dto.response.UpdateAutoDebitConsentResponse;
+import com.duckchi.pay.domain.room.dto.response.*;
 import com.duckchi.pay.domain.room.type.AutoDebitConsentStatus;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
 import java.util.List;
 
 public interface RoomService {
@@ -51,6 +47,12 @@ public interface RoomService {
     void delegateAdmin(Long roomId, Long currentUserId, DelegateAdminRequest request);
 
     List<RoomParticipantListResponse> getParticipantList(Long roomId, Long currentUserId);
+
+    RoomRankingSnapshotResponse getRoomRankingSnapshot(Long roomId, Long currentUserId);
+
+    SseEmitter subscribeRoomRanking(Long roomId, Long currentUserId, Long since, String lastEventId);
+
+    void publishRoomRankingUpdated(Long roomId);
 }
 
 

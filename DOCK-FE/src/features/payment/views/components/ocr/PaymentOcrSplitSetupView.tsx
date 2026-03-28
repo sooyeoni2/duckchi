@@ -1,6 +1,6 @@
 import { MaterialCommunityIcons as MaterialDesignIcons } from '@expo/vector-icons';
 import React from 'react';
-import { StyleSheet, Switch, Text, View } from 'react-native';
+import { Image, StyleSheet, Switch, Text, View } from 'react-native';
 import { AppColorStyles } from '@core/theme/colors';
 import {
   KBODiaGothicTextStyle,
@@ -117,33 +117,45 @@ export function PaymentOcrSplitSetupView({
       {draft.participants.map((participant: any) => (
         <View key={participant.userId} style={styles.participantRow}>
           <View style={styles.participantInfo}>
-            <View
-              style={[
-                styles.avatarCircle,
-                !participant.isSelected && styles.avatarCircleInactive,
-              ]}
-            >
-              <MaterialDesignIcons
-                name="account-outline"
-                size={28}
-                color={
-                  participant.isSelected
-                    ? AppColorStyles.gray2
-                    : AppColorStyles.gray3
-                }
+            {participant.profileImageUrl ? (
+              <Image
+                source={{ uri: participant.profileImageUrl }}
+                style={styles.avatarImage}
               />
-            </View>
+            ) : (
+              <View
+                style={[
+                  styles.avatarCircle,
+                  !participant.isSelected && styles.avatarCircleInactive,
+                ]}
+              >
+                <MaterialDesignIcons
+                  name="account-outline"
+                  size={28}
+                  color={
+                    participant.isSelected
+                      ? AppColorStyles.gray2
+                      : AppColorStyles.gray3
+                  }
+                />
+              </View>
+            )}
 
-            <Text
-              style={KBODiaGothicTextStyle.medium({
-                fontSize: 18,
-                color: participant.isSelected
-                  ? AppColorStyles.black
-                  : AppColorStyles.textSecondary,
-              })}
-            >
-              {participant.userName}
-            </Text>
+            <View style={styles.participantNameRow}>
+              <Text
+                style={KBODiaGothicTextStyle.medium({
+                  fontSize: 18,
+                  color: participant.isSelected
+                    ? AppColorStyles.black
+                    : AppColorStyles.textSecondary,
+                })}
+              >
+                {participant.userName}
+              </Text>
+              {participant.userTag && (
+                <Text style={styles.participantTag}>#{participant.userTag}</Text>
+              )}
+            </View>
           </View>
 
           <Switch
@@ -276,8 +288,27 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 14,
   },
+  avatarImage: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    marginRight: 14,
+    borderWidth: 1,
+    borderColor: AppColorStyles.gray4,
+  },
   avatarCircleInactive: {
     opacity: 0.6,
+  },
+  participantNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  participantTag: {
+    marginLeft: 6,
+    ...PretendardTextStyle.medium({
+      fontSize: 13,
+      color: AppColorStyles.textHint,
+    }),
   },
   perPersonCard: {
     minHeight: 64,

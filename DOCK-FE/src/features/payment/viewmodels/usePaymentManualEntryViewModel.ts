@@ -128,6 +128,7 @@ export function usePaymentManualEntryViewModel(roomId: number) {
           roomSessionId: detail.roomSessionId,
           title: detail.title,
           totalAmount: detail.totalAmount,
+          paidAt: detail.paidAt,
           participants: hydratedParticipants,
         },
       });

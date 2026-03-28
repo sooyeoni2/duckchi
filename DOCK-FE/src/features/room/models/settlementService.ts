@@ -50,6 +50,7 @@ const toSettlementItem = (dto: RoomMySetItemDto): SettlementItem => ({
   amount: dto.payableAmount,
   status: isCompletedSettlement(dto) ? 'COMPLETED' : 'IN_PROGRESS',
   dueAt: toDeadlineIso(dto.requestedAt),
+  requestedAt: dto.requestedAt,
   // 완료 시각 필드가 없을 수 있어 요청 시각으로 폴백해 UI 완료 탭 시간 표기를 유지한다.
   paidAt: isCompletedSettlement(dto) ? dto.completedAt ?? dto.requestedAt : undefined,
   paidCount: isCompletedSettlement(dto) ? dto.setUserCount : 0,
