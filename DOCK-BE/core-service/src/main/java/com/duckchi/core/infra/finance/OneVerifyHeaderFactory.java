@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -15,9 +16,10 @@ public class OneVerifyHeaderFactory {
 
     private static final String INSTITUTION_CODE = "00100";
     private static final String FINTECH_APP_NO = "001";
+    private static final ZoneId KST_ZONE_ID = ZoneId.of("Asia/Seoul");
 
     public OneVerifyApiRequestHeader create(String apiName, String userKey) {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(KST_ZONE_ID);
 
         String transmissionDate = now.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         String transmissionTime = now.format(DateTimeFormatter.ofPattern("HHmmss"));
