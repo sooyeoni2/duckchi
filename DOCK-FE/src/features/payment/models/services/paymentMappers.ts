@@ -71,7 +71,8 @@ export const toMyExpenseDetail = (dto: ExpenseDetailDto): MyExpenseDetail => {
       profileImageUrl: p.profileImageUrl,
       splitAmount: p.splitAmount,
       isRequester: p.userId === dto.payerUserId,
-      isSettled: false,
+      // PAY-05 상세 응답에는 참여자별 정산 상태 필드가 없어, 결제 전체 상태로 완료 여부를 보정한다.
+      isSettled: dto.status === 'SETTLED' && p.userId !== dto.payerUserId,
     })),
     lineItems: dto.items.map((item, index) => ({
       itemId: index + 1,
