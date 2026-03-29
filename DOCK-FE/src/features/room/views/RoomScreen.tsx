@@ -272,11 +272,13 @@ export function RoomScreen() {
 
   const handleOpenSettlementRequestList = React.useCallback(
     (item: RoomSettlementRow) => {
-      // 정산 요청 목록(나에게 온 요청)을 누르면 실제로 송금을 진행할 수 있는 전체 정산 페이지로 이동한다.
-      // (기존 SettlementRequestList는 총무 전용 화면이므로 일반 참여자가 접근하면 권한 오류가 발생한다.)
-      setViewMode('TRANSFER');
+      navigation.navigate('SettlementRequestList', {
+        roomId: route.params.roomId,
+        expenseId: item.id,
+        expenseTitle: item.title,
+      });
     },
-    [],
+    [navigation, route.params.roomId],
   );
 
   const handleBack = React.useCallback(() => {
