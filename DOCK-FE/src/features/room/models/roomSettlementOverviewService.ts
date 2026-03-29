@@ -45,13 +45,10 @@ const EMPTY_OVERVIEW_DATA: RoomSettlementOverviewData = {
 };
 
 const toExpenseStatusText = (status?: string | null): string => {
-  if (status === 'SETTLED') return '완료';
-  if (status === 'REQUESTED') return '진행중';
-  return '대기';
+  if (status === 'SETTLED') return '\uC644\uB8CC';
+  if (status === 'REQUESTED') return '\uC9C4\uD589\uC911';
+  return '\uB300\uAE30';
 };
-
-const toSettlementStatusText = (isCompleted: boolean): string =>
-  isCompleted ? '완료' : '진행중';
 
 const toParticipatedRow = (
   expense: ExpenseSummaryDto,
@@ -59,16 +56,16 @@ const toParticipatedRow = (
 ): RoomSettlementRow => ({
   id: expense.expenseId,
   title: expense.title,
-  subtitle: `${expense.payerUserName ?? '알 수 없음'}님이 올림 · ${toExpenseStatusText(expense.status)}`,
+  subtitle: `${expense.payerUserName ?? '\uC54C \uC218 \uC5C6\uC74C'}\uB2D8\uC774 \uC62C\uB9BC \u00B7 ${toExpenseStatusText(expense.status)}`,
   amount: expense.totalAmount,
   myStatus: mySetItem ? (mySetItem.isCompleted ? 'DONE' : 'PENDING') : null,
 });
 
-const toSettlementRequestRow = (item: RoomMySetItemDto): RoomSettlementRow => ({
-  id: item.expenseId,
-  title: item.title,
-  subtitle: `${item.requesterUserName}님이 올림 · ${toSettlementStatusText(item.isCompleted)}`,
-  amount: item.payableAmount,
+const toSettlementRequestRow = (expense: ExpenseSummaryDto): RoomSettlementRow => ({
+  id: expense.expenseId,
+  title: expense.title,
+  subtitle: `${expense.payerUserName ?? '\uC54C \uC218 \uC5C6\uC74C'}\uB2D8\uC774 \uC62C\uB9BC \u00B7 ${toExpenseStatusText(expense.status)}`,
+  amount: expense.totalAmount,
 });
 
 const unwrapOrThrow = <T>(response: ApiEnvelope<T>, fallbackMessage: string): T => {
@@ -82,13 +79,13 @@ export const fetchRoomSettlementOverview = async (
   roomId: number,
   currentUserName?: string,
 ): Promise<RoomSettlementOverviewData> => {
-  // 정산 탭 핵심 데이터는 my-set 응답이므로, 이 호출 실패는 화면 실패로 취급한다.
+  // my-set is the source of expected amount / room total in settlement tab.
   const mySetResponse = await axiosClient.get<ApiEnvelope<RoomMySetDto>>(
     ENDPOINTS.room.mySet(roomId),
   );
   const mySetData = unwrapOrThrow(
     mySetResponse.data,
-    '정산 요약 정보를 불러오지 못했습니다.',
+    '\uC815\uC0B0 \uC694\uC57D \uC815\uBCF4\uB97C \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.',
   );
 
   let expenseData: ExpenseSummaryDto[] = [];
@@ -98,24 +95,40 @@ export const fetchRoomSettlementOverview = async (
     );
     expenseData = unwrapOrThrow(
       expensesResponse.data,
-      '결제 목록을 불러오지 못했습니다.',
+      '\uACB0\uC81C \uBAA9\uB85D\uC744 \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.',
     );
   } catch {
-    // 결제 목록 API 실패가 정산하기 진입을 막으면 안 되므로, 해당 섹션만 빈 값으로 폴백한다.
     expenseData = [];
   }
+
+  // requester-only settlement request cards should come from "my expenses".
+  let myExpenseData: ExpenseSummaryDto[] = [];
+  try {
+    const myExpensesResponse = await axiosClient.get<ApiEnvelope<ExpenseSummaryDto[]>>(
+      ENDPOINTS.payment.myExpenses(roomId),
+    );
+    myExpenseData = unwrapOrThrow(
+      myExpensesResponse.data,
+      '\uB0B4\uAC00 \uC62C\uB9B0 \uACB0\uC81C \uBAA9\uB85D\uC744 \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.',
+    );
+  } catch {
+    // Keep behavior resilient even when my-expenses API is temporarily unavailable.
+    myExpenseData = (expenseData ?? []).filter((expense) => expense.payerUserName === currentUserName);
+  }
+
+  const myExpenseIdSet = new Set((myExpenseData ?? []).map((expense) => expense.expenseId));
 
   return {
     expectedAmount: mySetData.myTotal ?? 0,
     totalAmount: mySetData.roomTotalAmount ?? 0,
     participatedPayments: (expenseData ?? [])
-      .filter(exp => exp.payerUserName !== currentUserName)
-      .map(exp => {
-        const myDebit = (mySetData.mySet ?? []).find(ms => ms.expenseId === exp.expenseId);
-        return toParticipatedRow(exp, myDebit);
+      .filter((expense) => !myExpenseIdSet.has(expense.expenseId))
+      .map((expense) => {
+        const myDebit = (mySetData.mySet ?? []).find((settlement) => settlement.expenseId === expense.expenseId);
+        return toParticipatedRow(expense, myDebit);
       }),
-    settlementRequests: (mySetData.mySet ?? [])
-      .filter(ms => !ms.isCompleted) // '송금 전'인 것만 액션 존에 노출
+    settlementRequests: (myExpenseData ?? [])
+      .filter((expense) => expense.status === 'REQUESTED')
       .map(toSettlementRequestRow),
   };
 };
