@@ -14,7 +14,6 @@ import { AppColorStyles } from '@core/theme/colors';
 import { KBODiaGothicTextStyle, PretendardTextStyle } from '@core/theme/typography';
 import { CustomAppBar } from '@shared/components/app_bar/CustomAppBar';
 import { useReportViewModel } from '../viewmodels/useReportViewModel';
-import { ReportCategoryData } from '../models/reportTypes';
 import { SpendingDonutChart } from './components/SpendingDonutChart';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -45,13 +44,14 @@ export function ReportScreen() {
   } = useReportViewModel();
 
   const [popupVisible, setPopupVisible] = useState(false);
-  const [popupContent, setPopupContent] = useState('');
+  const [popupContent] = useState('');
   const [rankingMode, setRankingMode] = useState<'amount' | 'frequency'>('amount');
 
   useEffect(() => {
     void reload();
   }, [reload]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const categories = reportData?.categories ?? [];
   const sortedCategories = useMemo(() => [...categories].sort((a, b) => b.amount - a.amount), [categories]);
   const monthLabel = reportData?.month.label ?? '----년 --월';
@@ -63,17 +63,9 @@ export function ReportScreen() {
 
   const top3 = currentRankList.slice(0, 3);
   const others = currentRankList.slice(3);
-  const maxVal = currentRankList.length > 0 
-    ? (rankingMode === 'amount' ? ((currentRankList[0] as any).amount ?? (currentRankList[0] as any).totalAmount) : (currentRankList[0] as any).count) 
+  const maxVal = currentRankList.length > 0
+    ? (rankingMode === 'amount' ? ((currentRankList[0] as any).amount ?? (currentRankList[0] as any).totalAmount) : (currentRankList[0] as any).count)
     : 1;
-
-  const showFullName = (name: string) => {
-    if (name.length > 8) {
-      setPopupContent(name);
-      setPopupVisible(true);
-    }
-  };
-
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <CustomAppBar
@@ -126,7 +118,7 @@ export function ReportScreen() {
             {reportData.topCategoryName !== '-' && (
               <View style={styles.insightCard}>
                 <View style={[styles.insightIcon, { backgroundColor: sortedCategories[0]?.color ?? AppColorStyles.yellow }]}>
-                   <Text style={styles.insightIconText}>💡</Text>
+                  <Text style={styles.insightIconText}>💡</Text>
                 </View>
                 <View style={styles.insightTextContainer}>
                   <Text style={styles.insightTitle}>가장 많이 소비한 카테고리</Text>
@@ -382,7 +374,7 @@ const styles = StyleSheet.create({
   rankNameRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 * s },
   rankNameText: { ...PretendardTextStyle.medium({ fontSize: 14 * s, color: AppColorStyles.textPrimary }), flex: 1, marginRight: 8 * s },
   rankValueText: { ...KBODiaGothicTextStyle.bold({ fontSize: 14 * s, color: AppColorStyles.black }) },
-  
+
   gaugeTrack: { height: 4 * s, backgroundColor: '#F3F4F6', borderRadius: 2 * s, overflow: 'hidden' },
   gaugeFill: { height: '100%', backgroundColor: AppColorStyles.yellow, borderRadius: 2 * s },
 
