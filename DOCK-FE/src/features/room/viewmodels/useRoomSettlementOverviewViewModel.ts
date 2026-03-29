@@ -6,6 +6,7 @@ import {
   getEmptyRoomSettlementOverviewData,
 } from '../models/roomSettlementOverviewService';
 import type { RoomSettlementOverviewState } from '../models/roomSettlementOverviewTypes';
+import { useAuthStore } from '../../auth/models/authStore';
 
 const toOverviewErrorMessage = (error: unknown): string => {
   if (axios.isAxiosError(error)) {
@@ -27,10 +28,12 @@ export const useRoomSettlementOverviewViewModel = (roomId: number) => {
   const [state, setState] = useState<RoomSettlementOverviewState>({ status: 'loading' });
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  const user = useAuthStore(s => s.user);
+
   const load = useCallback(async () => {
     setState({ status: 'loading' });
     try {
-      const data = await fetchRoomSettlementOverview(roomId);
+      const data = await fetchRoomSettlementOverview(roomId, user?.name);
       setState({ status: 'loaded', data });
     } catch (error) {
       setState({
@@ -44,7 +47,7 @@ export const useRoomSettlementOverviewViewModel = (roomId: number) => {
   const refresh = useCallback(async () => {
     setIsRefreshing(true);
     try {
-      const data = await fetchRoomSettlementOverview(roomId);
+      const data = await fetchRoomSettlementOverview(roomId, user?.name);
       setState({ status: 'loaded', data });
     } catch (error) {
       setState({

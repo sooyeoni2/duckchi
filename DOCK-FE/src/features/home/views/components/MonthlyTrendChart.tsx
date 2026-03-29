@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 
 import { AppColorStyles } from '@core/theme/colors';
 import { KBODiaGothicTextStyle, PretendardTextStyle } from '@core/theme/typography';
@@ -12,12 +12,18 @@ interface MonthlyTrendChartProps {
 }
 
 const toManwon = (amount: number): number => Math.round(amount / 10000);
-const formatMonth = (month: string): string => `${month.slice(5, 7)}월`;
+const formatMonth = (month: string): string => {
+  // "2026-03" -> "26/03"
+  const parts = month.split('-');
+  if (parts.length < 2) return month;
+  return `${parts[0].slice(2, 4)}/${parts[1]}`;
+};
 const CHART_HEIGHT = 124;
 const MIN_AXIS_MAX = 30;
 const AXIS_STEP = 10;
 
 export function MonthlyTrendChart({ trends }: MonthlyTrendChartProps) {
+  const [selectedIdx, setSelectedIdx] = React.useState<number | null>(null);
   const filledTrends = trends.filter((item) => item.totalAmount > 0);
 
   if (filledTrends.length === 0) {
@@ -30,19 +36,24 @@ export function MonthlyTrendChart({ trends }: MonthlyTrendChartProps) {
 
   const displayItems = filledTrends.slice(-3);
   const maxValue = Math.max(...displayItems.map((item) => item.totalAmount), 1);
-  const maxManwon = Math.max(toManwon(maxValue), AXIS_STEP);
-  const axisMax = Math.max(MIN_AXIS_MAX, Math.ceil(maxManwon / AXIS_STEP) * AXIS_STEP);
-  const yTicks: number[] = [];
-  for (let value = AXIS_STEP; value <= axisMax; value += AXIS_STEP) {
-    yTicks.push(value);
-  }
+  const maxManwon = toManwon(maxValue);
+  
+  // 최소 5만원(5만용) 기준, 최대값의 1.2배 정도로 여유를 두고 축 설정 (단, 너무 작으면 5 고정)
+  const axisMax = Math.max(5, Math.ceil(maxManwon * 1.15));
+  
+  // 3단계의 보조선 라벨 계산 (Max, 2/3, 1/3)
+  const yTicks: number[] = [
+    axisMax,
+    Math.round((axisMax * 2) / 3),
+    Math.round(axisMax / 3),
+  ];
 
   return (
     <View style={styles.chartContainer}>
       <Text style={styles.yLabel}>만원</Text>
       <View style={styles.plotRow}>
         <View style={styles.yAxisLabelColumn}>
-          {[...yTicks].reverse().map((tick) => (
+          {yTicks.map((tick) => (
             <Text key={tick} style={styles.yAxisLabel}>
               {tick}
             </Text>
@@ -53,16 +64,36 @@ export function MonthlyTrendChart({ trends }: MonthlyTrendChartProps) {
           <View style={styles.barsContainer}>
             {displayItems.map((item, index) => {
               const isLast = index === displayItems.length - 1;
-              const barHeight = (toManwon(item.totalAmount) / axisMax) * hs(CHART_HEIGHT - 4);
+              const isSelected = selectedIdx === index;
+              // axisMax는 만원 단위이므로 10000을 곱해 원 단위로 변환 후 비율 계산
+              const barHeight = (item.totalAmount / (axisMax * 10000)) * hs(CHART_HEIGHT - 4);
+              const actualBarHeight = Math.max(barHeight, hs(8));
+              
               return (
                 <View key={`${item.month}-${index}`} style={styles.barItem}>
-                  <View
-                    style={[
-                      styles.barFill,
-                      isLast ? styles.barFillActive : styles.barFillDefault,
-                      { height: Math.max(barHeight, hs(8)) },
-                    ]}
-                  />
+                  {isSelected && (
+                    <View style={[styles.tooltipContainer, { bottom: actualBarHeight + hs(4) }]}>
+                      <View style={styles.tooltipBox}>
+                        <Text style={styles.tooltipText}>
+                          {item.totalAmount.toLocaleString()}원
+                        </Text>
+                      </View>
+                      <View style={styles.tooltipArrow} />
+                    </View>
+                  )}
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => setSelectedIdx(isSelected ? null : index)}
+                    style={styles.barTouchArea}
+                  >
+                    <View
+                      style={[
+                        styles.barFill,
+                        isLast ? styles.barFillActive : styles.barFillDefault,
+                        { height: actualBarHeight },
+                      ]}
+                    />
+                  </TouchableOpacity>
                 </View>
               );
             })}
@@ -153,6 +184,39 @@ const styles = StyleSheet.create({
   },
   barFillActive: {
     backgroundColor: AppColorStyles.yellow,
+  },
+  barTouchArea: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+  tooltipContainer: {
+    position: 'absolute',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  tooltipBox: {
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    paddingHorizontal: hs(8),
+    paddingVertical: hs(4),
+    borderRadius: hs(6),
+  },
+  tooltipText: {
+    ...PretendardTextStyle.medium({
+      fontSize: hs(11),
+      color: AppColorStyles.white,
+    }),
+  },
+  tooltipArrow: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: hs(5),
+    borderLeftColor: 'transparent',
+    borderRightWidth: hs(5),
+    borderRightColor: 'transparent',
+    borderTopWidth: hs(5),
+    borderTopColor: 'rgba(0, 0, 0, 0.8)',
+    marginTop: -1,
   },
   baseline: {
     borderBottomWidth: 1,

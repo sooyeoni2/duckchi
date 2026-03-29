@@ -53,11 +53,15 @@ const toExpenseStatusText = (status?: string | null): string => {
 const toSettlementStatusText = (isCompleted: boolean): string =>
   isCompleted ? '완료' : '진행중';
 
-const toParticipatedRow = (expense: ExpenseSummaryDto): RoomSettlementRow => ({
+const toParticipatedRow = (
+  expense: ExpenseSummaryDto,
+  mySetItem?: RoomMySetItemDto,
+): RoomSettlementRow => ({
   id: expense.expenseId,
   title: expense.title,
   subtitle: `${expense.payerUserName ?? '알 수 없음'}님이 올림 · ${toExpenseStatusText(expense.status)}`,
   amount: expense.totalAmount,
+  myStatus: mySetItem ? (mySetItem.isCompleted ? 'DONE' : 'PENDING') : null,
 });
 
 const toSettlementRequestRow = (item: RoomMySetItemDto): RoomSettlementRow => ({
@@ -76,6 +80,7 @@ const unwrapOrThrow = <T>(response: ApiEnvelope<T>, fallbackMessage: string): T 
 
 export const fetchRoomSettlementOverview = async (
   roomId: number,
+  currentUserName?: string,
 ): Promise<RoomSettlementOverviewData> => {
   // 정산 탭 핵심 데이터는 my-set 응답이므로, 이 호출 실패는 화면 실패로 취급한다.
   const mySetResponse = await axiosClient.get<ApiEnvelope<RoomMySetDto>>(
@@ -103,8 +108,15 @@ export const fetchRoomSettlementOverview = async (
   return {
     expectedAmount: mySetData.myTotal ?? 0,
     totalAmount: mySetData.roomTotalAmount ?? 0,
-    participatedPayments: (expenseData ?? []).map(toParticipatedRow),
-    settlementRequests: (mySetData.mySet ?? []).map(toSettlementRequestRow),
+    participatedPayments: (expenseData ?? [])
+      .filter(exp => exp.payerUserName !== currentUserName)
+      .map(exp => {
+        const myDebit = (mySetData.mySet ?? []).find(ms => ms.expenseId === exp.expenseId);
+        return toParticipatedRow(exp, myDebit);
+      }),
+    settlementRequests: (mySetData.mySet ?? [])
+      .filter(ms => !ms.isCompleted) // '송금 전'인 것만 액션 존에 노출
+      .map(toSettlementRequestRow),
   };
 };
 

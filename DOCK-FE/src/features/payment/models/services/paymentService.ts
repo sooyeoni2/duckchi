@@ -56,7 +56,13 @@ export const getAccountHistoryEntryDraft = async (roomId: number | string): Prom
     transactionAt: new Date().toISOString(),
     title: '',
     totalAmount: 0,
-    participants: participants.map((p: any) => ({ ...p, isSelected: true, splitAmount: 0 })),
+    participants: participants.map((p: any) => ({
+      ...p,
+      isSelected: true,
+      splitAmount: 0,
+      userTag: p.userTag,
+      profileImageUrl: p.profileImageUrl,
+    })),
     selectedHistoryIds: [],
   };
 };
@@ -75,6 +81,8 @@ export const getManualEntryDraft = async (roomId: number | string): Promise<Manu
     participants: participants.map((participant: any) => ({
       userId: participant.userId,
       userName: participant.userName,
+      userTag: participant.userTag,
+      profileImageUrl: participant.profileImageUrl,
       isSelected: true,
       splitAmount: 0,
     })),

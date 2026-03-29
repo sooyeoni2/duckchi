@@ -20,6 +20,11 @@ public interface SpendingInsightService {
     List<MonthlyTrendResponse> getSpendingTrends(Long userId);
 
     /**
+     * 지출 데이터가 존재하는 모든 월 조회 (AN-06)
+     */
+    List<String> getAvailableMonths(Long userId);
+
+    /**
      * 월간 지출 요약 조회 (AN-02)
      * 이번 달 총 지출액과 이전 달 총 지출액을 비교함.
      */

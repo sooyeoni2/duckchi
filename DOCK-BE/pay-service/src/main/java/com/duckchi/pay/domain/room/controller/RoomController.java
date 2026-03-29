@@ -4,13 +4,7 @@ import com.duckchi.pay.domain.room.dto.request.CreateRoomRequest;
 import com.duckchi.pay.domain.room.dto.request.DelegateAdminRequest;
 import com.duckchi.pay.domain.room.dto.request.StartRoomRequest;
 import com.duckchi.pay.domain.room.dto.request.UpdateRoomRequest;
-import com.duckchi.pay.domain.room.dto.response.CreateRoomResponse;
-import com.duckchi.pay.domain.room.dto.response.GetAutoDebitConsentResponse;
-import com.duckchi.pay.domain.room.dto.response.RoomListResponse;
-import com.duckchi.pay.domain.room.dto.response.RoomMySetResponse;
-import com.duckchi.pay.domain.room.dto.response.RoomParticipantListResponse;
-import com.duckchi.pay.domain.room.dto.response.RoomSettlementDetailResponse;
-import com.duckchi.pay.domain.room.dto.response.UpdateAutoDebitConsentResponse;
+import com.duckchi.pay.domain.room.dto.response.*;
 import com.duckchi.pay.domain.room.service.RoomService;
 import com.duckchi.pay.domain.room.type.AutoDebitConsentStatus;
 import com.duckchi.pay.global.error.CustomException;
@@ -22,6 +16,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -34,6 +29,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @RestController
 @RequiredArgsConstructor
@@ -225,6 +221,35 @@ public class RoomController {
         Long currentUserId = resolveRequiredUserId(userIdHeader);
         List<RoomParticipantListResponse> response = roomService.getParticipantList(roomId, currentUserId);
         return ResponseEntity.ok(ApiResponseDto.success(response));
+    }
+
+    /*
+    * [ROOM-10] 총무 금액 순위 조회
+    */
+    @GetMapping("/{roomId}/rankings")
+    @Operation(summary =  "ROOM-10 : 총무 금액 순위 조회")
+    public ResponseEntity<ApiResponseDto<RoomRankingSnapshotResponse>> getRoomRanking(
+            @PathVariable Long roomId,
+            @RequestHeader(value = USER_ID_HEADER, required = false) String userIdHeader
+    ) {
+        Long currentUserId = resolveRequiredUserId(userIdHeader);
+        RoomRankingSnapshotResponse response = roomService.getRoomRankingSnapshot(roomId, currentUserId);
+        return ResponseEntity.ok(ApiResponseDto.success(response));
+    }
+
+    /*
+     * [ROOM-11] 랭킹 SSE 스트림
+     */
+    @GetMapping(value = "/{roomId}/rankings/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @Operation(summary = "ROOM-11: 랭킹 SSE 스트림")
+    public SseEmitter streamRoomRanking(
+            @PathVariable Long roomId,
+            @RequestParam(value = "since", required = false) Long since,
+            @RequestHeader(value = "Last-Event-ID", required = false) String lastEventId,
+            @RequestHeader(value = USER_ID_HEADER, required = false) String userIdHeader
+    ) {
+        Long currentUserId = resolveRequiredUserId(userIdHeader);
+        return roomService.subscribeRoomRanking(roomId, currentUserId, since, lastEventId);
     }
 
     private Long resolveRequiredUserId(String userIdHeader) {

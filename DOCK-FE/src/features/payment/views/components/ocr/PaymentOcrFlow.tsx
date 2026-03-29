@@ -12,6 +12,7 @@ import {
 } from '@core/theme/typography';
 import type { OcrImageSource } from '../../../models/types/paymentTypes';
 import { usePaymentOcrViewModel } from '../../../viewmodels/usePaymentOcrViewModel';
+import { createExpense, updateExpense } from '../../../models/services/paymentService';
 import { PaymentOcrAssignSheet } from './PaymentOcrAssignSheet';
 import { PaymentOcrEditorView } from './PaymentOcrEditorView';
 import { PaymentOcrEntryView } from './PaymentOcrEntryView';
@@ -77,6 +78,7 @@ export const PaymentOcrFlow = React.forwardRef<
   const [sceneHistory, setSceneHistory] = React.useState<OcrScene[]>([
     mode === 'create' ? 'entry' : 'editor',
   ]);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const {
     state,
@@ -93,10 +95,14 @@ export const PaymentOcrFlow = React.forwardRef<
     recognizeImage,
     loadExistingDraft,
     fallbackToTotalOnly,
+    fallbackToManualEditor,
+    updateStoreName,
+    updateTotalAmount,
     updateLineItemName,
     updateLineItemUnitPrice,
     updateLineItemQuantity,
     addLineItem,
+    removeLineItem,
     setSplitMode,
     toggleParticipant,
     openAssignSheet,
@@ -221,11 +227,118 @@ export const PaymentOcrFlow = React.forwardRef<
     pushScene('splitSetup');
   }, [draft, onClearFeedback, onFeedback, pushScene]);
 
-  const completeFlow = React.useCallback(() => {
-    const hasLineItems = (draft?.items.length ?? 0) > 0;
-    const message = buildCompleteMessage(mode === 'edit', hasLineItems);
-    onComplete(message.title, message.description);
-  }, [draft?.items.length, mode, onComplete]);
+  const completeFlow = React.useCallback(async () => {
+    if (draft == null || isSubmitting) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const selectedParticipants = draft.participants.filter((p) => p.isSelected);
+      const participantTotalSplits = new Map<number, number>();
+      selectedParticipants.forEach((p) => participantTotalSplits.set(p.userId, 0));
+
+      // draft -> API payload 변환
+      const processedItems = draft.items.map((item) => {
+        const assignment = item.assignment;
+        let splits: any[] = [];
+
+        if (assignment) {
+          const { mode, participantUserIds, quantityAllocations } = assignment;
+          
+          if (mode === 'PERSON' || mode === 'EQUAL_SPLIT' || mode === 'MANUAL_SPLIT') {
+            const count = participantUserIds.length;
+            if (count > 0) {
+              const base = Math.floor(item.amount / count);
+              let remainder = item.amount % count;
+              splits = participantUserIds.map((uid) => {
+                const bonus = remainder > 0 ? 1 : 0;
+                remainder--;
+                return {
+                  userId: uid,
+                  splitAmount: base + bonus,
+                  quantity: 1,
+                };
+              });
+            }
+          } else if (mode === 'QUANTITY' || mode === 'QUANTITY_SPLIT') {
+            splits = (quantityAllocations ?? [])
+              .filter((a) => a.quantity > 0)
+              .map((a) => ({
+                userId: a.userId,
+                splitAmount: item.unitPrice * a.quantity,
+                quantity: a.quantity,
+              }));
+          }
+        } else {
+          // 미지정 메뉴: 선택된 모든 참여자에게 N빵 적용 (폴백)
+          const count = selectedParticipants.length;
+          if (count > 0) {
+            const base = Math.floor(item.amount / count);
+            let remainder = item.amount % count;
+            splits = selectedParticipants.map((p) => {
+              const bonus = remainder > 0 ? 1 : 0;
+              remainder--;
+              return {
+                userId: p.userId,
+                splitAmount: base + bonus,
+                quantity: 0,
+              };
+            });
+          }
+        }
+
+        // 결과 누적
+        splits.forEach((s) => {
+          const current = participantTotalSplits.get(s.userId) || 0;
+          participantTotalSplits.set(s.userId, current + s.splitAmount);
+        });
+
+        return {
+          name: item.name,
+          quantity: item.quantity,
+          totalAmount: item.amount,
+          splits,
+        };
+      });
+
+      // 만약 세부 품목이 하나도 없는 경우 (전체 나누기 모드 등)는 기존 draft의 splitAmount를 그대로 사용
+      const finalParticipants = draft.items.length === 0 
+        ? selectedParticipants.map((p) => ({ userId: p.userId, splitAmount: p.splitAmount }))
+        : selectedParticipants.map((p) => ({
+            userId: p.userId,
+            splitAmount: participantTotalSplits.get(p.userId) || 0,
+          }));
+
+      const payload: any = {
+        roomSessionId: (draft as any).roomSessionId ?? 1,
+        inputType: 'OCR' as const,
+        title: draft.storeName || '영수증 결제',
+        totalAmount: draft.totalAmount,
+        paidAt: draft.paidAt instanceof Date ? new Date(draft.paidAt.getTime() - draft.paidAt.getTimezoneOffset() * 60000).toISOString().slice(0, -1) : new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, -1),
+        items: processedItems,
+        participants: finalParticipants,
+        receiptImageUrl: draft.imageUri,
+      };
+
+      if (mode === 'edit' && expenseId != null) {
+        await updateExpense(roomId, expenseId, payload);
+      } else {
+        await createExpense(roomId, payload);
+      }
+
+      const hasLineItems = draft.items.length > 0;
+      const message = buildCompleteMessage(mode === 'edit', hasLineItems);
+      onComplete(message.title, message.description);
+    } catch (error) {
+      onFeedback(
+        '등록 실패',
+        error instanceof Error ? error.message : '결제안 등록 중 오류가 발생했습니다.',
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [draft, expenseId, isSubmitting, mode, onComplete, onFeedback, roomId]);
 
   const handleSplitModeChange = React.useCallback(
     (nextMode: 'TOTAL' | 'ITEM') => {
@@ -283,9 +396,9 @@ export const PaymentOcrFlow = React.forwardRef<
       return;
     }
 
-    fallbackToTotalOnly();
-    pushScene('splitSetup');
-  }, [fallbackToTotalOnly, onOpenManualFallback, pushScene, state]);
+    fallbackToManualEditor();
+    pushScene('editor');
+  }, [fallbackToManualEditor, onOpenManualFallback, pushScene, state]);
 
   const handleConfirmAssignSheet = React.useCallback(() => {
     const confirmed = confirmAssignSheet();
@@ -331,10 +444,10 @@ export const PaymentOcrFlow = React.forwardRef<
 
       <PaymentAnimatedTouchable
         activeOpacity={0.85}
-        onPress={handleRetryExistingDraft}
-        style={styles.retryButton}
+        onPress={onOpenManualFallback}
+        style={styles.fallbackButton}
       >
-        <Text style={styles.retryButtonText}>다시 시도하기</Text>
+        <Text style={styles.fallbackButtonText}>상세 메뉴 직접 입력</Text>
       </PaymentAnimatedTouchable>
     </View>
   );
@@ -396,10 +509,13 @@ export const PaymentOcrFlow = React.forwardRef<
       return (
         <PaymentOcrEditorView
           draft={draft}
+          onStoreNameChange={updateStoreName}
+          onTotalAmountChange={updateTotalAmount}
           onItemNameChange={updateLineItemName}
           onItemUnitPriceChange={updateLineItemUnitPrice}
           onItemQuantityChange={updateLineItemQuantity}
           onAddItem={addLineItem}
+          onRemoveItem={removeLineItem}
           onNext={handleEditorNext}
         />
       );
@@ -499,9 +615,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   retryButtonText: {
-    ...KBODiaGothicTextStyle.medium({
-      fontSize: 15,
-      color: AppColorStyles.black,
-    }),
+    ...KBODiaGothicTextStyle.medium({ fontSize: 16, color: AppColorStyles.black }),
+  },
+  fallbackButton: {
+    height: 56,
+    borderRadius: 14,
+    backgroundColor: AppColorStyles.white,
+    borderWidth: 1,
+    borderColor: AppColorStyles.divider,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 12,
+  },
+  fallbackButtonText: {
+    ...KBODiaGothicTextStyle.medium({ fontSize: 16, color: AppColorStyles.textSecondary }),
   },
 });

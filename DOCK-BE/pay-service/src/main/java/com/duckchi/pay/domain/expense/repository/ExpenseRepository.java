@@ -2,6 +2,7 @@ package com.duckchi.pay.domain.expense.repository;
 
 import com.duckchi.pay.domain.expense.entity.Expense;
 import com.duckchi.pay.domain.expense.repository.projection.ExpenseTitleProjection;
+import com.duckchi.pay.domain.expense.repository.projection.RoomRankingPayerAmountProjection;
 import com.duckchi.pay.domain.room.repository.projection.RoomExpenseSummaryProjection;
 import jakarta.persistence.LockModeType;
 import java.util.List;
@@ -84,6 +85,16 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
     Optional<Expense> findByIdAndRoomId(Long expenseId, Long roomId);
 
     long countByRoomIdAndStatus(Long roomId, String status);
+
+    @Query("""
+        select e.payerUserId as userId,
+               coalesce(sum(e.totalAmount), 0) as amount
+        from Expense e
+        where e.roomId = :roomId
+          and e.status = 'REQUESTED'
+        group by e.payerUserId
+        """)
+    List<RoomRankingPayerAmountProjection> sumRequestedAmountByPayer(@Param("roomId") Long roomId);
 }
 
 

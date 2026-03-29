@@ -63,6 +63,12 @@ public class SpendingInsightServiceImpl implements SpendingInsightService {
                 .toList();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<String> getAvailableMonths(Long userId) {
+        return userMonthlySpendRepository.findDistinctSpendMonthByUserIdOrderBySpendMonthAsc(userId);
+    }
+
     /**
      * 월간 지출 요약 조회 로직 (AN-02).
      * 이번 달 총 지출액과 이전 달 총 지출액을 비교함.
