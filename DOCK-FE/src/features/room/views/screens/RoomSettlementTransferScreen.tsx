@@ -2,7 +2,6 @@ import React, { useCallback } from 'react';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import {
-  Alert,
   Animated,
   Dimensions,
   Easing,
@@ -14,7 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import type { RootStackParamList } from '@core/navigation/types';
+import type { RootStackParamList, RoomStackParamList } from '@core/navigation/types';
 import { AppColorStyles } from '@core/theme/colors';
 import { KBODiaGothicTextStyle, PretendardTextStyle } from '@core/theme/typography';
 import { CustomAppBar } from '@shared/components/app_bar/CustomAppBar';
@@ -40,6 +39,7 @@ export function RoomSettlementTransferScreen({
   roomId,
 }: RoomSettlementTransferScreenProps) {
   const rootNavigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const roomNavigation = useNavigation<NativeStackNavigationProp<RoomStackParamList>>();
   const {
     state,
     selectedTab,
@@ -47,8 +47,6 @@ export function RoomSettlementTransferScreen({
     isTransferring,
     inProgressCount,
     settlementItems,
-    transferSingle,
-    transferAllPending,
     checkAutoDebitAgreed,
     reload,
     refresh,
@@ -76,33 +74,36 @@ export function RoomSettlementTransferScreen({
     [settlementItems],
   );
 
-  const executeTransferAction = useCallback(
-    async (action: PaymentAction) => {
-      try {
-        if (action.type === 'all') {
-          await transferAllPending();
-          return;
-        }
-        await transferSingle(action.id);
-      } catch (error) {
-        Alert.alert(
-          '송금 실패',
-          error instanceof Error
-            ? error.message
-            : '송금 처리 중 오류가 발생했습니다.',
-        );
+  const openTransferActionScreen = useCallback(
+    (action: PaymentAction) => {
+      const settlementIds =
+        action.type === 'single'
+          ? [action.id]
+          : state.status === 'loaded'
+            ? state.items
+                .filter((item) => item.status === 'IN_PROGRESS')
+                .map((item) => item.id)
+            : [];
+
+      if (settlementIds.length === 0) {
+        return;
       }
+
+      roomNavigation.navigate('SettlementTransferAction', {
+        roomId,
+        settlementIds,
+      });
     },
-    [transferAllPending, transferSingle],
+    [roomId, roomNavigation, state],
   );
 
   useFocusEffect(
     useCallback(() => {
       const result = consume();
       if (result?.confirmed) {
-        executeTransferAction(result.action).catch(() => undefined);
+        openTransferActionScreen(result.action);
       }
-    }, [consume, executeTransferAction]),
+    }, [consume, openTransferActionScreen]),
   );
 
   useFocusEffect(
@@ -124,7 +125,7 @@ export function RoomSettlementTransferScreen({
 
           // 버튼 클릭 시점에 서버 GET으로 동의 여부를 확정하고 분기한다.
           if (isAgreed) {
-            await executeTransferAction(action);
+            openTransferActionScreen(action);
             return;
           }
 
@@ -139,7 +140,7 @@ export function RoomSettlementTransferScreen({
     },
     [
       checkAutoDebitAgreed,
-      executeTransferAction,
+      openTransferActionScreen,
       isCheckingConsent,
       isTransferring,
       rootNavigation,
