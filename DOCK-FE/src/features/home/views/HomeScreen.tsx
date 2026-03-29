@@ -2,7 +2,6 @@ import React, { useCallback } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import {
-  ActivityIndicator,
   Animated,
   RefreshControl,
   ScrollView,
@@ -16,6 +15,7 @@ import type { AppTabParamList } from '@core/navigation/types';
 import { AppColorStyles } from '@core/theme/colors';
 import { PretendardTextStyle } from '@core/theme/typography';
 import { FilledButton } from '@shared/components/buttons/FilledButton';
+import { ShimmerBlock } from '@shared/components/feedback/ShimmerBlock';
 
 import { useHomeViewModel } from '../viewmodels/useHomeViewModel';
 import { HomeHeaderSection } from './components/HomeHeaderSection';
@@ -82,9 +82,33 @@ export function HomeScreen() {
 
   if (dashboardData == null) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color={AppColorStyles.yellow} />
-      </View>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.contentContainer}
+        >
+          <View style={styles.skeletonHeaderCard}>
+            <ShimmerBlock width="36%" height={hs(16)} borderRadius={hs(8)} />
+            <ShimmerBlock width="58%" height={hs(28)} borderRadius={hs(10)} style={{ marginTop: hs(10) }} />
+            <ShimmerBlock width="28%" height={hs(14)} borderRadius={hs(7)} style={{ marginTop: hs(16) }} />
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={styles.skeletonSectionCard}>
+            <ShimmerBlock width="42%" height={hs(16)} borderRadius={hs(8)} />
+            <ShimmerBlock width="100%" height={hs(84)} borderRadius={hs(14)} style={{ marginTop: hs(12) }} />
+            <ShimmerBlock width="100%" height={hs(84)} borderRadius={hs(14)} style={{ marginTop: hs(8) }} />
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={styles.skeletonSectionCard}>
+            <ShimmerBlock width="34%" height={hs(16)} borderRadius={hs(8)} />
+            <ShimmerBlock width="100%" height={hs(124)} borderRadius={hs(14)} style={{ marginTop: hs(12) }} />
+          </View>
+        </ScrollView>
+      </SafeAreaView>
     );
   }
 
@@ -172,6 +196,25 @@ const styles = StyleSheet.create({
     backgroundColor: AppColorStyles.background,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  skeletonHeaderCard: {
+    marginTop: hs(4),
+    backgroundColor: AppColorStyles.surface,
+    borderRadius: hs(16),
+    borderWidth: 1,
+    borderColor: AppColorStyles.divider,
+    paddingHorizontal: hs(14),
+    paddingVertical: hs(14),
+  },
+  skeletonSectionCard: {
+    marginTop: hs(16),
+    backgroundColor: AppColorStyles.surface,
+    borderRadius: hs(16),
+    borderWidth: 1,
+    borderColor: AppColorStyles.divider,
+    paddingHorizontal: hs(14),
+    paddingTop: hs(14),
+    paddingBottom: hs(14),
   },
   divider: {
     marginTop: hs(24),

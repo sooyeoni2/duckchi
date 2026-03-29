@@ -68,6 +68,15 @@ const AutoTransferJoinScreen: React.FC = () => {
     };
   }, [inviteToken, navigation, roomId, validateInviteBeforeJoin]);
 
+  const openInviteSheetWithLink = async () => {
+    const inviteLink = await fetchInviteLink();
+    if (!inviteLink) {
+      Alert.alert('초대 링크 생성 실패', '잠시 후 다시 시도해 주세요.');
+      return;
+    }
+    setSheetVisible(true);
+  };
+
   const handleAgree = async () => {
     if (state.isProcessing || isInviteValidating) return;
     const result = await agreeAndJoin(inviteToken);
@@ -76,7 +85,7 @@ const AutoTransferJoinScreen: React.FC = () => {
       return;
     }
     if (result.type === 'consent-only') {
-      setSheetVisible(true);
+      await openInviteSheetWithLink();
     }
   };
 
@@ -88,7 +97,7 @@ const AutoTransferJoinScreen: React.FC = () => {
       return;
     }
     if (result.type === 'consent-only') {
-      setSheetVisible(true);
+      await openInviteSheetWithLink();
     }
   };
 
