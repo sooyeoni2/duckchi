@@ -18,22 +18,22 @@ DuckChi는 마이크로서비스 아키텍처를 기반으로 한 금융 관리 
 
 DuckChi 아키텍처는 다음과 같이 구성됩니다.
 
-- 개발자는 **GitLab**에 코드를 푸시하고, **Jenkins**가 웹훅 트리거를 통해 **AWS EC2**에서 Docker 이미지를 빌드 및 배포합니다.
-- **Nginx**가 리버스 프록시 역할을 하며, 외부 요청을 **API Gateway**로 전달합니다.
-- 백엔드는 **Eureka** 서비스 디스커버리를 통해 마이크로서비스를 등록하고 라우팅합니다.
-- 주요 마이크로서비스:
+- 🧑‍💻 개발자는 **GitLab**에 코드를 푸시하고, **Jenkins**가 웹훅 트리거를 통해 **AWS EC2**에서 Docker 이미지를 빌드하고 배포합니다.
+- 🌐 **Nginx**는 리버스 프록시로 외부 요청을 받고, 내부 **API Gateway**로 전달합니다.
+- 🧭 백엔드 서비스들은 **Eureka**에 등록되어 동적으로 발견되고 라우팅됩니다.
+- 🔧 주요 백엔드 서비스:
   - **Core Service**: 인증, 사용자 관리, 알림 처리
   - **Pay Service**: 결제 트랜잭션 처리
   - **Insight Service**: 데이터 분석 및 인사이트 제공
-- 메시징과 비동기 처리에는 **Kafka**를 사용하며, 캐시는 **Redis**로 처리합니다.
-- 데이터 저장소는 **AWS RDS(MySQL)**의 Core DB, Payment DB, Insight DB로 분리되어 있습니다.
-- 정적 파일과 이미지 저장은 **AWS S3**를 사용합니다.
-- 외부 서비스 연동:
+- 📦 비동기 메시징은 **Kafka**로 처리하고, 캐시/세션 데이터는 **Redis**에 저장합니다.
+- 🗄️ 데이터는 **AWS RDS(MySQL)**로 분리된 Core DB, Payment DB, Insight DB에 저장됩니다.
+- ☁️ 정적 파일과 이미지 저장은 **AWS S3**를 사용합니다.
+- 🔌 외부 서비스 연동:
   - **SSAFY 금융 API**
   - **Naver Clova OCR**
   - **Firebase FCM** 푸시 알림
-- 모바일 앱은 **React Native** 기반으로 구현되어 있으며, REST API를 통해 백엔드와 통신합니다.
-- 모니터링은 **Prometheus**로 수집하고, **Grafana**를 통해 시각화합니다.
+- 📱 모바일 앱은 **React Native** 기반이고, REST API를 통해 백엔드와 통신합니다.
+- 📊 모니터링은 **Prometheus**로 수집하고, **Grafana**로 시각화합니다.
 
 ### 마이크로서비스 구성
 
@@ -127,18 +127,18 @@ Jenkins 파이프라인을 통해 자동 배포됩니다.
 
 ## API 문서
 
-Swagger UI를 통해 API 문서를 확인할 수 있습니다:
+로컬 개발 환경에서 실행 중인 경우 다음 주소에서 Swagger UI를 확인할 수 있습니다.
 - Core Service: http://localhost:8081/swagger-ui.html
-- 기타 서비스 포트 확인 필요
 
-## 기여
+> 참고: 현재 README에 기재된 주소는 로컬 개발 환경 기준입니다. 실제 운영 서버 주소는 배포 환경 설정에 따라 다릅니다.
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+## 협업 방식
+
+- 팀 개발 시에는 기능별 브랜치를 생성하고, 코드 리뷰 후 병합합니다.
+- 예시 브랜치: `feature/<기능명>` 또는 `hotfix/<이슈명>`.
+- 커밋 메시지는 변경 내용을 간결하게 설명합니다.
+- Jenkins 파이프라인을 통해 빌드와 배포를 자동화합니다.
 
 ## 라이선스
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+현재 이 저장소에는 별도 라이선스 파일이 포함되어 있지 않습니다. 포트폴리오용 프로젝트로 관리 중이며, 공개 배포 시에는 적절한 라이선스를 추가하는 것이 좋습니다.
